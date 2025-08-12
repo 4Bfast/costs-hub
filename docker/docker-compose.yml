@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # Define o serviço do nosso banco de dados PostgreSQL
+  postgres:
+    # Usa a imagem oficial do PostgreSQL, versão 16 (uma versão estável e recente)
+    image: postgres:16
+
+    # Nome do container para fácil identificação
+    container_name: costs_huby_postgres
+
+    # Variáveis de ambiente para configurar o container do PostgreSQL.
+    # Estes valores DEVEM ser os mesmos que você colocou no seu arquivo .env
+    # para a variável DATABASE_URL.
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=costs_huby_db_mvp
+
+    # Mapeia a porta 5432 do container para a porta 5432 da sua máquina local.
+    # Isso permite que nossa aplicação Flask (rodando localmente) se conecte ao banco.
+    ports:
+      - "5432:5432"
+
+    # Define um volume para persistir os dados do banco de dados.
+    # Isso garante que, mesmo que você pare ou remova o container, seus dados
+    # (tabelas, registros, etc.) não sejam perdidos.
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    # Política de reinicialização. "unless-stopped" garante que o container
+    # suba automaticamente com o Docker, a menos que você o pare manualmente.
+    restart: unless-stopped
+
+# Declara o volume nomeado que usamos acima. O Docker gerencia este volume.
+volumes:
+  postgres_data:
