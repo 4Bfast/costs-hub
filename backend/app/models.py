@@ -26,17 +26,36 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     organization_id = db.Column(db.Integer, db.ForeignKey('organizations.id'), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(255), nullable=False)
+    password_hash = db.Column(db.String(255), nullable=True)  # MODIFICADO: Nullable para usuários convidados
     is_email_verified = db.Column(db.Boolean, default=False, nullable=False)
     email_verification_token = db.Column(db.String(255), nullable=True)
     email_verification_sent_at = db.Column(db.DateTime, nullable=True)
+    
+    # NOVAS COLUNAS PARA GESTÃO DE USUÁRIOS
+    status = db.Column(db.String(50), default='ACTIVE', nullable=False)  # ACTIVE, PENDING_INVITE
+    role = db.Column(db.String(50), default='MEMBER', nullable=False)    # ADMIN, MEMBER
+    invitation_token = db.Column(db.String(255), nullable=True)          # Token seguro único
+    invitation_expires_at = db.Column(db.DateTime, nullable=True)        # Data de expiração do convite
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relacionamento: Um usuário pertence a uma organização
     organization = db.relationship('Organization', back_populates='users')
 
     def __repr__(self):
-        return f'<User {self.email}>'
+        return f'<User {self.email} ({self.role})>'
+    
+    def is_admin(self):
+        """Verifica se o usuário é administrador."""
+        return self.role == 'ADMIN'
+    
+    def is_active(self):
+        """Verifica se o usuário está ativo."""
+        return self.status == 'ACTIVE'
+    
+    def is_pending_invite(self):
+        """Verifica se o usuário tem convite pendente."""
+        return self.status == 'PENDING_INVITE'
 
 class AWSAccount(db.Model):
     """Modelo para as contas AWS conectadas por uma organização."""
@@ -45,28 +64,88 @@ class AWSAccount(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     organization_id = db.Column(db.Integer, db.ForeignKey('organizations.id'), nullable=False)
     account_name = db.Column(db.String(255), nullable=False)
-    iam_role_arn = db.Column(db.String(255), unique=True, nullable=False)
-    focus_s3_bucket_path = db.Column(db.String(255), nullable=False) # Ex: s3://my-bucket/path/to/reports
+    iam_role_arn = db.Column(db.String(255), unique=True, nullable=True)  # MODIFICADO: Nullable para onboarding
+    focus_s3_bucket_path = db.Column(db.String(255), nullable=True)  # MODIFICADO: Nullable para onboarding
     is_connection_active = db.Column(db.Boolean, default=False, nullable=False)
-    history_imported = db.Column(db.Boolean, default=False, nullable=False)  # NOVO CAMPO
-    monthly_budget = db.Column(db.Numeric(15, 2), nullable=False, server_default='0.00')  # NOVO CAMPO: Orçamento mensal
+    history_imported = db.Column(db.Boolean, default=False, nullable=False)
+    monthly_budget = db.Column(db.Numeric(15, 2), nullable=False, server_default='0.00')
+    
+    # NOVAS COLUNAS PARA ONBOARDING SEGURO
+    status = db.Column(db.String(50), default='PENDING', nullable=False)  # PENDING, ACTIVE, ERROR
+    external_id = db.Column(db.String(255), unique=True, nullable=True)   # UUID único para segurança
+    payer_account_id = db.Column(db.String(20), nullable=True)            # ID de 12 dígitos da conta do cliente
+    s3_prefix = db.Column(db.String(100), nullable=True)                  # Prefixo escolhido pelo usuário
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relacionamento: Uma conta AWS pertence a uma organização
     organization = db.relationship('Organization', back_populates='aws_accounts')
 
     def __repr__(self):
-        return f'<AWSAccount {self.account_name}>'
+        return f'<AWSAccount {self.account_name} ({self.status})>'
+    
+    def is_pending(self):
+        """Verifica se a conexão está pendente."""
+        return self.status == 'PENDING'
+    
+    def is_active(self):
+        """Verifica se a conexão está ativa."""
+        return self.status == 'ACTIVE'
+    
+    def is_error(self):
+        """Verifica se a conexão tem erro."""
+        return self.status == 'ERROR'
+
+class MemberAccount(db.Model):
+    """
+    Representa uma conta AWS descoberta automaticamente a partir dos arquivos FOCUS.
+    Pode ser uma conta Payer (is_payer=True) ou uma conta-membro (is_payer=False).
+    ATUALIZADO: Agora suporta identificação de contas Payer vs Membro.
+    """
+    __tablename__ = 'member_accounts'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    aws_account_id = db.Column(db.String(20), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(255), nullable=False)
+    payer_connection_id = db.Column(db.Integer, db.ForeignKey('aws_accounts.id'), nullable=False)
+    organization_id = db.Column(db.Integer, db.ForeignKey('organizations.id'), nullable=False)
+    is_payer = db.Column(db.Boolean, nullable=False, default=False)  # NOVA COLUNA
+    monthly_budget = db.Column(db.Numeric(15, 2), default=0.00)
+    first_seen_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_seen_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relacionamentos
+    payer_connection = db.relationship('AWSAccount', backref='member_accounts')
+    organization = db.relationship('Organization', backref='member_accounts')
+    
+    def __repr__(self):
+        payer_flag = " [PAYER]" if self.is_payer else ""
+        return f'<MemberAccount {self.aws_account_id}: {self.name}{payer_flag}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'aws_account_id': self.aws_account_id,
+            'name': self.name,
+            'payer_connection_id': self.payer_connection_id,
+            'organization_id': self.organization_id,
+            'is_payer': self.is_payer,  # NOVO CAMPO
+            'monthly_budget': float(self.monthly_budget) if self.monthly_budget else 0.0,
+            'first_seen_at': self.first_seen_at.isoformat() if self.first_seen_at else None,
+            'last_seen_at': self.last_seen_at.isoformat() if self.last_seen_at else None
+        }
+
 
 class DailyFocusCosts(db.Model):
     """
     Modelo para armazenar os dados de custo diários, já processados e agregados.
     Baseado na especificação FOCUS.
+    ATUALIZADO: Agora referencia member_accounts em vez de aws_accounts.
     """
     __tablename__ = 'daily_focus_costs'
 
     id = db.Column(db.Integer, primary_key=True)
-    aws_account_id = db.Column(db.Integer, db.ForeignKey('aws_accounts.id'), nullable=False)
+    member_account_id = db.Column(db.Integer, db.ForeignKey('member_accounts.id'), nullable=False)
     usage_date = db.Column(db.Date, nullable=False, index=True)
     
     # Exemplo de Dimensões Chave do FOCUS
@@ -77,8 +156,11 @@ class DailyFocusCosts(db.Model):
     # Métrica Chave do FOCUS
     cost = db.Column(db.Numeric(12, 6), nullable=False) # Numeric para precisão financeira
 
-    # Garante que não teremos dados duplicados para a mesma conta, dia e serviço
-    __table_args__ = (db.UniqueConstraint('aws_account_id', 'usage_date', 'service_category', 'aws_service', name='_unique_daily_cost_uc'),)
+    # Relacionamento
+    member_account = db.relationship('MemberAccount', backref='daily_costs')
+
+    # Garante que não teremos dados duplicados para a mesma conta-membro, dia e serviço
+    __table_args__ = (db.UniqueConstraint('member_account_id', 'usage_date', 'service_category', 'aws_service', name='_unique_daily_cost_uc'),)
 
     def __repr__(self):
         return f'<DailyFocusCosts {self.usage_date} {self.aws_service} ${self.cost}>'

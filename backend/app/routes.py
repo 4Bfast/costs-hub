@@ -3,7 +3,7 @@
 from flask import request, jsonify, current_app, Blueprint
 import jwt
 from . import db
-from .models import Organization, User, AWSAccount, DailyFocusCosts, Alarm, AlarmEvent, AlarmEventAction
+from .models import Organization, User, AWSAccount, DailyFocusCosts, Alarm, AlarmEvent, AlarmEventAction, MemberAccount
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone, date
 from sqlalchemy import func
@@ -14,6 +14,8 @@ from botocore.exceptions import ClientError
 import secrets
 import uuid
 import logging
+import os
+from urllib.parse import urlencode
 
 auth_bp = Blueprint('auth_bp', __name__, url_prefix='/auth')
 api_bp = Blueprint('api_bp', __name__, url_prefix='/api/v1')
@@ -504,13 +506,20 @@ def get_daily_costs(current_user):
     if not account_to_check:
         return jsonify({'error': 'Forbidden. You do not have access to this AWS account.'}), 403
 
-    # 3. Query dos Dados de Custo Agregados
+    # 3. Buscar contas-membro associadas a esta conta Payer
+    member_accounts = MemberAccount.query.filter_by(payer_connection_id=aws_account_id).all()
+    member_account_ids = [ma.id for ma in member_accounts]
+    
+    if not member_account_ids:
+        return jsonify([])  # Retorna lista vazia se não há contas-membro
+
+    # 4. Query dos Dados de Custo Agregados
     # Agrupa por data e soma os custos de todos os serviços para cada dia.
     daily_costs = db.session.query(
         DailyFocusCosts.usage_date,
         func.sum(DailyFocusCosts.cost).label('total_cost')
     ).filter(
-        DailyFocusCosts.aws_account_id == aws_account_id,
+        DailyFocusCosts.member_account_id.in_(member_account_ids),
         DailyFocusCosts.usage_date >= start_date,
         DailyFocusCosts.usage_date <= end_date
     ).group_by(
@@ -563,15 +572,24 @@ def get_costs_by_service(current_user):
 
     # 3. Filtra pela conta específica OU por todas as contas da organização
     if aws_account_id:
-        # Verifica se o usuário pode acessar esta conta específica
+        # Verifica se o usuário pode acessar esta conta Payer específica
         account_to_check = AWSAccount.query.filter_by(id=aws_account_id, organization_id=current_user.organization_id).first_or_404()
-        query_base = query_base.filter(DailyFocusCosts.aws_account_id == aws_account_id)
+        
+        # Buscar contas-membro associadas a esta conta Payer
+        member_accounts = MemberAccount.query.filter_by(payer_connection_id=aws_account_id).all()
+        member_account_ids = [ma.id for ma in member_accounts]
+        
+        if member_account_ids:
+            query_base = query_base.filter(DailyFocusCosts.member_account_id.in_(member_account_ids))
+        else:
+            return jsonify([])  # Retorna lista vazia se não há contas-membro
     else:
-        # Busca os IDs de todas as contas da organização do usuário logado
-        org_account_ids = [acc.id for acc in AWSAccount.query.filter_by(organization_id=current_user.organization_id).all()]
-        if not org_account_ids:
+        # Busca todas as contas-membro da organização do usuário logado
+        org_member_accounts = MemberAccount.query.filter_by(organization_id=current_user.organization_id).all()
+        org_member_account_ids = [acc.id for acc in org_member_accounts]
+        if not org_member_account_ids:
             return jsonify([]) # Retorna lista vazia se não há contas
-        query_base = query_base.filter(DailyFocusCosts.aws_account_id.in_(org_account_ids))
+        query_base = query_base.filter(DailyFocusCosts.member_account_id.in_(org_member_account_ids))
 
     # 4. Executa a query final
     costs_by_service = query_base.group_by(
@@ -625,20 +643,27 @@ def get_time_series_by_service(current_user):
 
     # 3. Filtra pela conta específica OU por todas as contas da organização
     if aws_account_id:
-        # Verifica se o usuário pode acessar esta conta específica
+        # Verifica se o usuário pode acessar esta conta Payer específica
         account_to_check = AWSAccount.query.filter_by(
             id=aws_account_id, 
             organization_id=current_user.organization_id
         ).first_or_404()
-        query_base = query_base.filter(DailyFocusCosts.aws_account_id == aws_account_id)
+        
+        # Buscar contas-membro associadas a esta conta Payer
+        member_accounts = MemberAccount.query.filter_by(payer_connection_id=aws_account_id).all()
+        member_account_ids = [ma.id for ma in member_accounts]
+        
+        if member_account_ids:
+            query_base = query_base.filter(DailyFocusCosts.member_account_id.in_(member_account_ids))
+        else:
+            return jsonify([])  # Retorna lista vazia se não há contas-membro
     else:
-        # Busca os IDs de todas as contas da organização do usuário logado
-        org_account_ids = [acc.id for acc in AWSAccount.query.filter_by(
-            organization_id=current_user.organization_id
-        ).all()]
-        if not org_account_ids:
+        # Busca todas as contas-membro da organização do usuário logado
+        org_member_accounts = MemberAccount.query.filter_by(organization_id=current_user.organization_id).all()
+        org_member_account_ids = [acc.id for acc in org_member_accounts]
+        if not org_member_account_ids:
             return jsonify([])  # Retorna lista vazia se não há contas
-        query_base = query_base.filter(DailyFocusCosts.aws_account_id.in_(org_account_ids))
+        query_base = query_base.filter(DailyFocusCosts.member_account_id.in_(org_member_account_ids))
 
     # 4. Executa a query final
     time_series_data = query_base.group_by(
@@ -689,17 +714,26 @@ def get_costs_summary(current_user):
 
     # 3. Filtra pela conta específica OU por todas as contas da organização
     if aws_account_id:
-        # Verifica se o usuário pode acessar esta conta específica
+        # Verifica se o usuário pode acessar esta conta Payer específica
         account_to_check = AWSAccount.query.filter_by(id=aws_account_id, organization_id=current_user.organization_id).first()
         if not account_to_check:
             return jsonify({'error': 'Forbidden. You do not have access to this AWS account.'}), 403
-        query_base = query_base.filter(DailyFocusCosts.aws_account_id == aws_account_id)
+        
+        # Buscar contas-membro associadas a esta conta Payer
+        member_accounts = MemberAccount.query.filter_by(payer_connection_id=aws_account_id).all()
+        member_account_ids = [ma.id for ma in member_accounts]
+        
+        if member_account_ids:
+            query_base = query_base.filter(DailyFocusCosts.member_account_id.in_(member_account_ids))
+        else:
+            return jsonify([])  # Retorna lista vazia se não há contas-membro
     else:
-        # Busca os IDs de todas as contas da organização
-        org_account_ids = [acc.id for acc in AWSAccount.query.filter_by(organization_id=current_user.organization_id).all()]
-        if not org_account_ids:
+        # Busca todas as contas-membro da organização do usuário logado
+        org_member_accounts = MemberAccount.query.filter_by(organization_id=current_user.organization_id).all()
+        org_member_account_ids = [acc.id for acc in org_member_accounts]
+        if not org_member_account_ids:
             return jsonify([]) # Retorna lista vazia se não há contas conectadas
-        query_base = query_base.filter(DailyFocusCosts.aws_account_id.in_(org_account_ids))
+        query_base = query_base.filter(DailyFocusCosts.member_account_id.in_(org_member_account_ids))
 
     costs_data = query_base.all()
 
@@ -782,19 +816,40 @@ def update_aws_account(current_user, account_id):
 @token_required
 def delete_aws_account(current_user, account_id):
     """
-    Endpoint para deletar uma conta AWS e seus custos associados.
+    Endpoint para deletar uma conta AWS (Payer) e seus custos associados.
+    ATUALIZADO: Agora deleta contas-membro e custos associados.
     """
+    from app.models import MemberAccount
+    
     # Busca a conta e verifica se ela pertence à organização do usuário
     account = AWSAccount.query.filter_by(id=account_id, organization_id=current_user.organization_id).first_or_404()
 
-    # Deleta os custos associados a esta conta primeiro
-    DailyFocusCosts.query.filter_by(aws_account_id=account.id).delete()
-    
-    # Deleta a conta em si
-    db.session.delete(account)
-    db.session.commit()
-    
-    return jsonify({'message': f'Account {account.id} and all its associated costs have been deleted.'})
+    try:
+        # 1. Buscar todas as contas-membro associadas a esta conta Payer
+        member_accounts = MemberAccount.query.filter_by(payer_connection_id=account.id).all()
+        member_account_ids = [ma.id for ma in member_accounts]
+        
+        # 2. Deletar todos os custos associados às contas-membro
+        if member_account_ids:
+            DailyFocusCosts.query.filter(DailyFocusCosts.member_account_id.in_(member_account_ids)).delete(synchronize_session=False)
+        
+        # 3. Deletar todas as contas-membro
+        MemberAccount.query.filter_by(payer_connection_id=account.id).delete()
+        
+        # 4. Deletar a conta Payer em si
+        db.session.delete(account)
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'Payer Account {account.id} and all its associated member accounts and costs have been deleted.',
+            'deleted_member_accounts': len(member_accounts),
+            'account_name': account.account_name
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Erro ao deletar conta Payer {account_id}: {str(e)}")
+        return jsonify({'error': 'Erro interno do servidor ao deletar conta'}), 500
 
 # NOVA FUNCIONALIDADE: IMPORTADOR DE HISTÓRICO DE CUSTOS
 # Implementação conforme especificação do Estrategista de Produto
@@ -847,124 +902,139 @@ def import_cost_history_task(account_id, organization_id):
     Tarefa em background para importar histórico de custos REAL da AWS
     Executada pelo BOTÃO na interface - não por script externo
     """
-    try:
-        logging.info(f"Iniciando importação REAL via botão para conta {account_id}")
-        
-        # Buscar dados da conta
-        account = AWSAccount.query.filter_by(
-            id=account_id, 
-            organization_id=organization_id
-        ).first()
-        
-        if not account:
-            logging.error(f"Conta {account_id} não encontrada para importação")
-            return
-        
+    from app import create_app, db
+    from app.models import AWSAccount, MemberAccount, DailyFocusCosts
+    
+    # Criar contexto da aplicação para a thread
+    app = create_app()
+    with app.app_context():
         try:
-            # IMPORTAÇÃO REAL: Usar credenciais do ambiente ou da conta
-            session = boto3.Session()
+            logging.info(f"Iniciando importação REAL via botão para conta {account_id}")
             
-            # Verificar se há credenciais disponíveis
-            credentials = session.get_credentials()
-            if credentials is None:
-                logging.error("Nenhuma credencial AWS encontrada no ambiente")
-                # Marcar como falha mas não quebrar
+            # Buscar dados da conta
+            account = AWSAccount.query.filter_by(
+                id=account_id, 
+                organization_id=organization_id
+            ).first()
+            
+            if not account:
+                logging.error(f"Conta {account_id} não encontrada para importação")
                 return
             
-            # Criar cliente Cost Explorer
-            ce_client = session.client('ce', region_name='us-east-1')
+            # Buscar conta-membro associada (Payer)
+            member_account = MemberAccount.query.filter_by(
+                payer_connection_id=account_id,
+                is_payer=True
+            ).first()
             
-            # Definir período (últimos 12 meses)
-            end_date = datetime.now().date()
-            start_date = end_date - timedelta(days=365)
+            if not member_account:
+                logging.error(f"Conta-membro Payer não encontrada para conta {account_id}")
+                return
             
-            logging.info(f"Importando dados REAIS de {start_date} até {end_date}")
-            
-            # Fazer chamada REAL para AWS Cost Explorer
-            imported_records = 0
-            next_page_token = None
-            
-            while True:
-                # Parâmetros para Cost Explorer API
-                params = {
-                    'TimePeriod': {
-                        'Start': start_date.strftime('%Y-%m-%d'),
-                        'End': end_date.strftime('%Y-%m-%d')
-                    },
-                    'Granularity': 'DAILY',
-                    'Metrics': ['UnblendedCost'],
-                    'GroupBy': [
-                        {
-                            'Type': 'DIMENSION',
-                            'Key': 'SERVICE'
-                        }
-                    ]
-                }
+            try:
+                # IMPORTAÇÃO REAL: Usar credenciais do ambiente ou da conta
+                session = boto3.Session()
                 
-                # Lidar com paginação
-                if next_page_token:
-                    params['NextPageToken'] = next_page_token
+                # Verificar se há credenciais disponíveis
+                credentials = session.get_credentials()
+                if credentials is None:
+                    logging.error("Nenhuma credencial AWS encontrada no ambiente")
+                    return
                 
-                # CHAMADA REAL PARA AWS
-                response = ce_client.get_cost_and_usage(**params)
+                # Criar cliente Cost Explorer
+                ce_client = session.client('ce', region_name='us-east-1')
                 
-                # Processar resultados REAIS
-                for result in response['ResultsByTime']:
-                    usage_date = datetime.strptime(result['TimePeriod']['Start'], '%Y-%m-%d').date()
+                # Definir período (últimos 12 meses)
+                end_date = datetime.now().date()
+                start_date = end_date - timedelta(days=365)
+                
+                logging.info(f"Importando dados REAIS de {start_date} até {end_date}")
+                
+                # Fazer chamada REAL para AWS Cost Explorer
+                imported_records = 0
+                next_page_token = None
+                
+                while True:
+                    # Parâmetros para Cost Explorer API
+                    params = {
+                        'TimePeriod': {
+                            'Start': start_date.strftime('%Y-%m-%d'),
+                            'End': end_date.strftime('%Y-%m-%d')
+                        },
+                        'Granularity': 'DAILY',
+                        'Metrics': ['UnblendedCost'],
+                        'GroupBy': [
+                            {
+                                'Type': 'DIMENSION',
+                                'Key': 'SERVICE'
+                            }
+                        ]
+                    }
                     
-                    for group in result['Groups']:
-                        aws_service = group['Keys'][0] if group['Keys'] else 'Unknown'
-                        cost_amount = float(group['Metrics']['UnblendedCost']['Amount'])
+                    # Lidar com paginação
+                    if next_page_token:
+                        params['NextPageToken'] = next_page_token
+                    
+                    # CHAMADA REAL PARA AWS
+                    response = ce_client.get_cost_and_usage(**params)
+                    
+                    # Processar resultados REAIS
+                    for result in response['ResultsByTime']:
+                        usage_date = datetime.strptime(result['TimePeriod']['Start'], '%Y-%m-%d').date()
                         
-                        if cost_amount > 0:  # Só importar custos > 0
-                            # Mapear categoria
-                            service_category = map_service_to_category(aws_service)
+                        for group in result['Groups']:
+                            aws_service = group['Keys'][0] if group['Keys'] else 'Unknown'
+                            cost_amount = float(group['Metrics']['UnblendedCost']['Amount'])
                             
-                            # Verificar se já existe (UPSERT)
-                            existing = DailyFocusCosts.query.filter_by(
-                                aws_account_id=account_id,
-                                usage_date=usage_date,
-                                aws_service=aws_service
-                            ).first()
-                            
-                            if existing:
-                                existing.cost = round(cost_amount, 2)
-                                existing.service_category = service_category
-                            else:
-                                new_record = DailyFocusCosts(
-                                    aws_account_id=account_id,
+                            if cost_amount > 0:  # Só importar custos > 0
+                                # Mapear categoria
+                                service_category = map_service_to_category(aws_service)
+                                
+                                # Verificar se já existe (UPSERT)
+                                existing = DailyFocusCosts.query.filter_by(
+                                    member_account_id=member_account.id,  # CORRIGIDO: usar member_account_id
                                     usage_date=usage_date,
-                                    aws_service=aws_service,
-                                    service_category=service_category,
-                                    cost=round(cost_amount, 2)
-                                )
-                                db.session.add(new_record)
-                            
-                            imported_records += 1
+                                    aws_service=aws_service
+                                ).first()
+                                
+                                if existing:
+                                    existing.cost = round(cost_amount, 2)
+                                    existing.service_category = service_category
+                                else:
+                                    new_record = DailyFocusCosts(
+                                        member_account_id=member_account.id,  # CORRIGIDO: usar member_account_id
+                                        usage_date=usage_date,
+                                        aws_service=aws_service,
+                                        service_category=service_category,
+                                        charge_category='Usage',  # Padrão
+                                        cost=round(cost_amount, 2)
+                                    )
+                                    db.session.add(new_record)
+                                
+                                imported_records += 1
+                    
+                    # Verificar se há mais páginas
+                    next_page_token = response.get('NextPageToken')
+                    if not next_page_token:
+                        break
                 
-                # Verificar se há mais páginas
-                next_page_token = response.get('NextPageToken')
-                if not next_page_token:
-                    break
+                # Commit dos dados REAIS
+                db.session.commit()
+                
+                # Marcar conta como importada
+                account.history_imported = True
+                db.session.commit()
+                
+                logging.info(f"Importação REAL concluída via botão: {imported_records} registros")
+                
+            except Exception as aws_error:
+                logging.error(f"Erro na importação REAL da AWS: {str(aws_error)}")
+                db.session.rollback()
+                logging.info("Importação falhou - credenciais AWS não configuradas ou sem permissão")
             
-            # Commit dos dados REAIS
-            db.session.commit()
-            
-            # Marcar conta como importada
-            account.history_imported = True
-            db.session.commit()
-            
-            logging.info(f"Importação REAL concluída via botão: {imported_records} registros")
-            
-        except Exception as aws_error:
-            logging.error(f"Erro na importação REAL da AWS: {str(aws_error)}")
-            
-            # Se não conseguir acessar AWS, não fazer nada
-            # O usuário verá que a importação falhou
-            logging.info("Importação falhou - credenciais AWS não configuradas ou sem permissão")
-        
-    except Exception as e:
-        logging.error(f"Erro na importação da conta {account_id}: {str(e)}")
+        except Exception as e:
+            logging.error(f"Erro na importação da conta {account_id}: {str(e)}")
+            db.session.rollback()
 
 def map_service_to_category(aws_service):
     """Mapeia serviços AWS para categorias FOCUS"""
@@ -992,21 +1062,114 @@ def map_service_to_category(aws_service):
     
     return mapping.get(aws_service, 'Other')
 
+@api_bp.route('/member-accounts', methods=['GET'])
+@token_required
+def get_member_accounts(current_user):
+    """
+    Endpoint para listar contas-membro descobertas.
+    Retorna todas as contas-membro da organização do usuário.
+    ATUALIZADO: Agora inclui campo is_payer para identificar contas Payer vs Membro.
+    
+    Returns:
+        JSON: Array de objetos { id, name, aws_account_id, is_payer, monthly_budget, ... }
+    """
+    try:
+        from app.models import MemberAccount
+        
+        # Buscar contas-membro da organização do usuário
+        member_accounts = MemberAccount.query.filter_by(
+            organization_id=current_user.organization_id
+        ).order_by(MemberAccount.name).all()
+        
+        # Usar método to_dict() que inclui is_payer
+        accounts_data = [account.to_dict() for account in member_accounts]
+        
+        return jsonify(accounts_data), 200
+        
+    except Exception as e:
+        logging.error(f"Erro ao buscar contas-membro: {str(e)}")
+        return jsonify({'error': 'Erro interno do servidor'}), 500
+
+
+@api_bp.route('/member-accounts/<int:account_id>', methods=['PUT'])
+@token_required
+def update_member_account(current_user, account_id):
+    """
+    Endpoint para atualizar dados de uma conta-membro (principalmente orçamento).
+    
+    Args:
+        account_id (int): ID da conta-membro
+        
+    Body JSON:
+        {
+            "monthly_budget": 1000.00
+        }
+    
+    Returns:
+        JSON: Dados atualizados da conta-membro
+    """
+    try:
+        from app.models import MemberAccount
+        from app import db
+        
+        # Buscar conta-membro
+        member_account = MemberAccount.query.filter_by(
+            id=account_id,
+            organization_id=current_user.organization_id
+        ).first()
+        
+        if not member_account:
+            return jsonify({'error': 'Conta-membro não encontrada'}), 404
+        
+        # Obter dados do request
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Dados não fornecidos'}), 400
+        
+        # Atualizar campos permitidos
+        if 'monthly_budget' in data:
+            monthly_budget = data['monthly_budget']
+            
+            # Validar orçamento
+            if not isinstance(monthly_budget, (int, float)) or monthly_budget < 0:
+                return jsonify({'error': 'Orçamento deve ser um número positivo'}), 400
+            
+            if monthly_budget > 999999:
+                return jsonify({'error': 'Orçamento não pode exceder $999,999'}), 400
+            
+            member_account.monthly_budget = monthly_budget
+            logging.info(f"💰 Orçamento atualizado para conta {member_account.name}: ${monthly_budget}")
+        
+        # Salvar mudanças
+        db.session.commit()
+        
+        # Retornar dados atualizados
+        return jsonify(member_account.to_dict()), 200
+        
+    except Exception as e:
+        logging.error(f"Erro ao atualizar conta-membro {account_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': 'Erro interno do servidor'}), 500
+
+
 # NOVO ENDPOINT: Dashboard Estratégico
 @api_bp.route('/dashboards/main', methods=['GET'])
 @token_required
 def get_main_dashboard(current_user):
     """
     Endpoint do Dashboard Estratégico
-    Conforme especificação técnica detalhada
+    ATUALIZADO: Agora trabalha com member_accounts em vez de aws_accounts
     """
     try:
+        from app.models import MemberAccount
+        
         # 3.1. Autenticação e Autorização
         organization_id = current_user.organization_id
         
         # Validar parâmetros obrigatórios
         start_date_str = request.args.get('start_date')
         end_date_str = request.args.get('end_date')
+        member_account_id = request.args.get('member_account_id')  # NOVO: Filtro por conta-membro
         
         if not start_date_str or not end_date_str:
             return jsonify({'error': 'start_date e end_date são obrigatórios'}), 400
@@ -1023,16 +1186,26 @@ def get_main_dashboard(current_user):
         previous_start_date = previous_end_date - timedelta(days=period_duration - 1)
         
         # 3.3. Estratégia de Consulta de Dados
-        # Identificar todas as contas AWS da organização
-        aws_accounts = AWSAccount.query.filter_by(organization_id=organization_id).all()
-        account_ids = [acc.id for acc in aws_accounts]
+        # Identificar todas as contas-membro da organização
+        member_accounts_query = MemberAccount.query.filter_by(organization_id=organization_id)
         
-        if not account_ids:
-            return jsonify({'error': 'Nenhuma conta AWS encontrada para esta organização'}), 404
+        # NOVO: Filtrar por conta-membro específica se fornecida
+        if member_account_id:
+            try:
+                member_account_id = int(member_account_id)
+                member_accounts_query = member_accounts_query.filter_by(id=member_account_id)
+            except ValueError:
+                return jsonify({'error': 'member_account_id deve ser um número inteiro'}), 400
+        
+        member_accounts = member_accounts_query.all()
+        member_account_ids = [acc.id for acc in member_accounts]
+        
+        if not member_account_ids:
+            return jsonify({'error': 'Nenhuma conta-membro encontrada para esta organização'}), 404
         
         # Consulta única para ambos os períodos
         all_costs = DailyFocusCosts.query.filter(
-            DailyFocusCosts.aws_account_id.in_(account_ids),
+            DailyFocusCosts.member_account_id.in_(member_account_ids),
             db.or_(
                 db.and_(
                     DailyFocusCosts.usage_date >= start_date,
@@ -1051,13 +1224,17 @@ def get_main_dashboard(current_user):
         
         # Separar dados por período
         for cost in all_costs:
+            # Buscar informações da conta-membro
+            member_account = next((acc for acc in member_accounts if acc.id == cost.member_account_id), None)
+            
             cost_data = {
                 'date': cost.usage_date,
                 'cost': float(cost.cost),
                 'service': cost.aws_service,
                 'service_category': cost.service_category,
                 'charge_category': cost.charge_category,
-                'account_id': cost.aws_account_id
+                'member_account_id': cost.member_account_id,
+                'member_account_name': member_account.name if member_account else 'Unknown'
             }
             
             if start_date <= cost.usage_date <= end_date:
@@ -1129,18 +1306,18 @@ def get_main_dashboard(current_user):
         # Ordenar por variação absoluta
         service_variation.sort(key=lambda x: abs(x['variationValue']), reverse=True)
         
-        # Custo por Conta com Previsão e Orçamento
-        current_by_account = defaultdict(float)
+        # Custo por Conta-Membro com Previsão e Orçamento
+        current_by_member_account = defaultdict(float)
         for c in current_period_costs:
-            current_by_account[c['account_id']] += c['cost']
+            current_by_member_account[c['member_account_id']] += c['cost']
         
         cost_by_account = []
         
         # Obter data atual para cálculos de previsão
         today = datetime.now().date()
         
-        for account in aws_accounts:
-            account_cost = current_by_account.get(account.id, 0)
+        for member_account in member_accounts:
+            account_cost = current_by_member_account.get(member_account.id, 0)
             percentage = (account_cost / total_cost * 100) if total_cost > 0 else 0
             
             # NOVA LÓGICA: Cálculo de Previsão de Custo
@@ -1164,16 +1341,17 @@ def get_main_dashboard(current_user):
                 forecasted_cost = account_cost
             
             cost_by_account.append({
-                'accountId': account.id,
-                'accountName': account.account_name,
+                'accountId': member_account.id,
+                'accountName': member_account.name,
+                'aws_account_id': member_account.aws_account_id,
                 'totalCost': round(account_cost, 2),
                 'percentageOfTotal': round(percentage, 1),
-                'monthlyBudget': float(account.monthly_budget) if account.monthly_budget else 0.00,  # NOVO CAMPO
-                'forecastedCost': round(forecasted_cost, 2)  # NOVO CAMPO
+                'monthlyBudget': float(member_account.monthly_budget) if member_account.monthly_budget else 0.00,
+                'forecastedCost': round(forecasted_cost, 2)
             })
         
         # Cálculo do Orçamento Total da Organização
-        total_monthly_budget = sum(float(account.monthly_budget) if account.monthly_budget else 0.00 for account in aws_accounts)
+        total_monthly_budget = sum(float(member_account.monthly_budget) if member_account.monthly_budget else 0.00 for member_account in member_accounts)
         
         # 4. Estrutura da Resposta (JSON Payload)
         response = {
@@ -1340,17 +1518,17 @@ def list_services(current_user):
     try:
         organization_id = current_user.organization_id
         
-        # Obter IDs das contas AWS da organização
-        account_ids = [acc.id for acc in AWSAccount.query.filter_by(
+        # Obter IDs das contas-membro da organização
+        member_account_ids = [acc.id for acc in MemberAccount.query.filter_by(
             organization_id=organization_id
         ).all()]
         
-        if not account_ids:
+        if not member_account_ids:
             return jsonify([]), 200
         
         # Query para obter serviços distintos
         services = db.session.query(DailyFocusCosts.aws_service).filter(
-            DailyFocusCosts.aws_account_id.in_(account_ids)
+            DailyFocusCosts.member_account_id.in_(member_account_ids)
         ).distinct().order_by(DailyFocusCosts.aws_service).all()
         
         # Converter para lista de strings
@@ -1737,3 +1915,415 @@ def get_alarm_event_history(current_user, event_id):
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# --- ENDPOINTS DE GESTÃO DE USUÁRIOS ---
+
+def generate_invitation_token():
+    """Gera um token seguro para convites."""
+    return secrets.token_urlsafe(32)
+
+@api_bp.route('/users/invite', methods=['POST'])
+@token_required
+def invite_user(current_user):
+    """Convida um novo usuário para a organização (apenas ADMIN)."""
+    try:
+        # Verificar se o usuário atual é ADMIN
+        if not current_user.is_admin():
+            return jsonify({'error': 'Acesso negado. Apenas administradores podem convidar usuários.'}), 403
+        
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        
+        if not email:
+            return jsonify({'error': 'Email é obrigatório'}), 400
+        
+        # Verificar se já existe um usuário com este email
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            if existing_user.organization_id == current_user.organization_id:
+                return jsonify({'error': 'Este usuário já faz parte da organização'}), 400
+            else:
+                return jsonify({'error': 'Este email já está em uso por outra organização'}), 400
+        
+        # Gerar token de convite
+        invitation_token = generate_invitation_token()
+        invitation_expires_at = datetime.utcnow() + timedelta(hours=48)  # 48 horas
+        
+        # Criar novo usuário com status PENDING_INVITE
+        new_user = User(
+            email=email,
+            organization_id=current_user.organization_id,
+            status='PENDING_INVITE',
+            role='MEMBER',
+            invitation_token=invitation_token,
+            invitation_expires_at=invitation_expires_at,
+            password_hash=None  # Será definido quando aceitar o convite
+        )
+        
+        db.session.add(new_user)
+        db.session.commit()
+        
+        # Enviar email de convite
+        try:
+            from .notifications import send_invitation_email
+            send_invitation_email(new_user, current_user.organization)
+        except Exception as email_error:
+            logging.error(f"Erro ao enviar email de convite: {str(email_error)}")
+            # Não falhar a operação por causa do email
+        
+        return jsonify({
+            'message': 'Convite enviado com sucesso',
+            'user_id': new_user.id,
+            'email': new_user.email
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/invitations/verify', methods=['GET'])
+def verify_invitation():
+    """Verifica um token de convite (público)."""
+    try:
+        token = request.args.get('token')
+        
+        if not token:
+            return jsonify({'error': 'Token é obrigatório'}), 400
+        
+        # Buscar usuário pelo token
+        user = User.query.filter_by(
+            invitation_token=token,
+            status='PENDING_INVITE'
+        ).first()
+        
+        if not user:
+            return jsonify({'error': 'Token inválido ou expirado'}), 404
+        
+        # Verificar se o token não expirou
+        if user.invitation_expires_at and user.invitation_expires_at < datetime.utcnow():
+            return jsonify({'error': 'Token expirado'}), 400
+        
+        return jsonify({
+            'email': user.email,
+            'organization_name': user.organization.name,
+            'valid': True
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/invitations/accept', methods=['POST'])
+def accept_invitation():
+    """Aceita um convite e ativa a conta (público)."""
+    try:
+        data = request.get_json()
+        token = data.get('token')
+        password = data.get('password')
+        
+        if not token or not password:
+            return jsonify({'error': 'Token e senha são obrigatórios'}), 400
+        
+        # Buscar usuário pelo token
+        user = User.query.filter_by(
+            invitation_token=token,
+            status='PENDING_INVITE'
+        ).first()
+        
+        if not user:
+            return jsonify({'error': 'Token inválido'}), 404
+        
+        # Verificar se o token não expirou
+        if user.invitation_expires_at and user.invitation_expires_at < datetime.utcnow():
+            return jsonify({'error': 'Token expirado'}), 400
+        
+        # Validar senha
+        if len(password) < 6:
+            return jsonify({'error': 'Senha deve ter pelo menos 6 caracteres'}), 400
+        
+        # Ativar conta
+        user.password_hash = generate_password_hash(password)
+        user.status = 'ACTIVE'
+        user.is_email_verified = True
+        user.invitation_token = None
+        user.invitation_expires_at = None
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Conta ativada com sucesso',
+            'user_id': user.id,
+            'email': user.email
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/users', methods=['GET'])
+@token_required
+def list_users(current_user):
+    """Lista todos os usuários da organização (apenas ADMIN)."""
+    try:
+        # Verificar se o usuário atual é ADMIN
+        if not current_user.is_admin():
+            return jsonify({'error': 'Acesso negado. Apenas administradores podem listar usuários.'}), 403
+        
+        # Buscar todos os usuários da organização
+        users = User.query.filter_by(
+            organization_id=current_user.organization_id
+        ).order_by(User.created_at.desc()).all()
+        
+        users_data = []
+        for user in users:
+            users_data.append({
+                'id': user.id,
+                'email': user.email,
+                'status': user.status,
+                'role': user.role,
+                'is_email_verified': user.is_email_verified,
+                'created_at': user.created_at.isoformat(),
+                'invitation_expires_at': user.invitation_expires_at.isoformat() if user.invitation_expires_at else None
+            })
+        
+        return jsonify(users_data), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@token_required
+def remove_user(current_user, user_id):
+    """Remove um usuário da organização (apenas ADMIN)."""
+    try:
+        # Verificar se o usuário atual é ADMIN
+        if not current_user.is_admin():
+            return jsonify({'error': 'Acesso negado. Apenas administradores podem remover usuários.'}), 403
+        
+        # Buscar usuário a ser removido
+        user_to_remove = User.query.filter_by(
+            id=user_id,
+            organization_id=current_user.organization_id
+        ).first()
+        
+        if not user_to_remove:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+        
+        # Não permitir que o usuário remova a si mesmo
+        if user_to_remove.id == current_user.id:
+            return jsonify({'error': 'Você não pode remover sua própria conta'}), 400
+        
+        # Verificar se não é o último ADMIN
+        admin_count = User.query.filter_by(
+            organization_id=current_user.organization_id,
+            role='ADMIN',
+            status='ACTIVE'
+        ).count()
+        
+        if user_to_remove.role == 'ADMIN' and admin_count <= 1:
+            return jsonify({'error': 'Não é possível remover o último administrador da organização'}), 400
+        
+        # Remover usuário
+        db.session.delete(user_to_remove)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Usuário removido com sucesso',
+            'removed_user': {
+                'id': user_to_remove.id,
+                'email': user_to_remove.email
+            }
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# --- ENDPOINTS DE ONBOARDING SEGURO ---
+
+@api_bp.route('/connections/initiate', methods=['POST'])
+@token_required
+def initiate_connection(current_user):
+    """Inicia o processo de onboarding seguro de uma nova conexão AWS."""
+    try:
+        # Verificar se o usuário atual é ADMIN
+        if not current_user.is_admin():
+            return jsonify({'error': 'Acesso negado. Apenas administradores podem iniciar conexões.'}), 403
+        
+        data = request.get_json()
+        payer_account_id = data.get('payer_account_id', '').strip()
+        s3_prefix = data.get('s3_prefix', '').strip().lower()
+        
+        # Validações
+        if not payer_account_id:
+            return jsonify({'error': 'ID da conta payer é obrigatório'}), 400
+        
+        if not payer_account_id.isdigit() or len(payer_account_id) != 12:
+            return jsonify({'error': 'ID da conta deve ter exatamente 12 dígitos'}), 400
+        
+        if not s3_prefix:
+            return jsonify({'error': 'Prefixo do bucket S3 é obrigatório'}), 400
+        
+        if len(s3_prefix) < 3 or len(s3_prefix) > 30:
+            return jsonify({'error': 'Prefixo do bucket deve ter entre 3 e 30 caracteres'}), 400
+        
+        # Verificar se já existe uma conexão para esta conta
+        existing_connection = AWSAccount.query.filter_by(
+            organization_id=current_user.organization_id,
+            payer_account_id=payer_account_id
+        ).first()
+        
+        if existing_connection:
+            return jsonify({'error': 'Já existe uma conexão para esta conta AWS'}), 400
+        
+        # Gerar External ID único
+        external_id = str(uuid.uuid4())
+        
+        # Obter ID da conta do CostsHub da variável de ambiente
+        costshub_account_id = os.getenv('COSTSHUB_AWS_ACCOUNT_ID')
+        if not costshub_account_id:
+            return jsonify({'error': 'Configuração do servidor incompleta. Entre em contato com o suporte.'}), 500
+        
+        # Criar novo registro de conexão com status PENDING
+        new_connection = AWSAccount(
+            organization_id=current_user.organization_id,
+            account_name=f'Conta AWS {payer_account_id}',  # Nome temporário
+            status='PENDING',
+            external_id=external_id,
+            payer_account_id=payer_account_id,
+            s3_prefix=s3_prefix,
+            iam_role_arn=None,  # Será preenchido na finalização
+            focus_s3_bucket_path=None,  # Será preenchido na finalização
+            is_connection_active=False
+        )
+        
+        db.session.add(new_connection)
+        db.session.commit()
+        
+        # Construir URL do CloudFormation Quick-Create
+        base_url = 'https://console.aws.amazon.com/cloudformation/home'
+        template_url = f"{request.host_url}api/v1/cloudformation-template"
+        
+        params = {
+            'region': 'us-east-1',  # Região padrão para billing
+            'stackName': f'CostsHub-Connection-{payer_account_id}',
+            'templateURL': template_url,
+            'param_CostsHubAccountID': costshub_account_id,
+            'param_ExternalID': external_id,
+            'param_S3BucketPrefix': s3_prefix
+        }
+        
+        cloudformation_url = f"{base_url}?{urlencode(params)}"
+        
+        return jsonify({
+            'message': 'Processo de onboarding iniciado com sucesso',
+            'connection_id': new_connection.id,
+            'cloudformation_url': cloudformation_url,
+            'external_id': external_id,
+            'instructions': [
+                '1. Clique no link do CloudFormation para abrir o console AWS',
+                '2. Revise os parâmetros e clique em "Create Stack"',
+                '3. Aguarde a criação dos recursos (pode levar alguns minutos)',
+                '4. Na aba "Outputs", copie o valor de "CostsHubRoleArn"',
+                '5. Volte ao CostsHub e cole o ARN para finalizar a conexão'
+            ]
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Erro ao iniciar conexão: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/connections/<int:connection_id>/finalize', methods=['POST'])
+@token_required
+def finalize_connection(current_user, connection_id):
+    """Finaliza o processo de onboarding verificando e ativando a conexão."""
+    try:
+        # Verificar se o usuário atual é ADMIN
+        if not current_user.is_admin():
+            return jsonify({'error': 'Acesso negado. Apenas administradores podem finalizar conexões.'}), 403
+        
+        data = request.get_json()
+        role_arn = data.get('role_arn', '').strip()
+        
+        if not role_arn:
+            return jsonify({'error': 'ARN da Role IAM é obrigatório'}), 400
+        
+        # Buscar conexão pendente
+        connection = AWSAccount.query.filter_by(
+            id=connection_id,
+            organization_id=current_user.organization_id,
+            status='PENDING'
+        ).first()
+        
+        if not connection:
+            return jsonify({'error': 'Conexão não encontrada ou já finalizada'}), 404
+        
+        # Validar formato do ARN
+        if not role_arn.startswith('arn:aws:iam::') or ':role/' not in role_arn:
+            return jsonify({'error': 'Formato de ARN inválido'}), 400
+        
+        # Extrair account ID do ARN para validação
+        try:
+            arn_parts = role_arn.split(':')
+            arn_account_id = arn_parts[4]
+            
+            if arn_account_id != connection.payer_account_id:
+                return jsonify({'error': 'ARN não pertence à conta AWS especificada'}), 400
+        except (IndexError, ValueError):
+            return jsonify({'error': 'Formato de ARN inválido'}), 400
+        
+        # Construir caminho do bucket S3
+        s3_bucket_path = f"s3://{connection.s3_prefix}-costshub-{connection.payer_account_id}/cost-reports/"
+        
+        # Atualizar conexão com sucesso (sem teste AWS por enquanto)
+        connection.iam_role_arn = role_arn
+        connection.focus_s3_bucket_path = s3_bucket_path
+        connection.status = 'ACTIVE'
+        connection.is_connection_active = True
+        connection.account_name = f"Conta AWS {connection.payer_account_id}"
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Conexão ativada com sucesso!',
+            'connection': {
+                'id': connection.id,
+                'account_name': connection.account_name,
+                'status': connection.status,
+                'payer_account_id': connection.payer_account_id,
+                's3_bucket_path': connection.focus_s3_bucket_path
+            }
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Erro ao finalizar conexão: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+# --- ENDPOINT PARA SERVIR TEMPLATE CLOUDFORMATION ---
+
+@api_bp.route('/cloudformation-template', methods=['GET'])
+def get_cloudformation_template():
+    """Serve o template CloudFormation para onboarding seguro."""
+    try:
+        import os
+        from flask import current_app, send_file
+        
+        # Caminho para o template
+        template_path = os.path.join(current_app.root_path, '..', 'templates', 'costshub-onboarding-template.yaml')
+        
+        # Verificar se arquivo existe
+        if not os.path.exists(template_path):
+            return jsonify({'error': 'Template CloudFormation não encontrado'}), 404
+        
+        # Servir arquivo com headers corretos
+        return send_file(
+            template_path,
+            mimetype='text/yaml',
+            as_attachment=False,
+            download_name='costshub-onboarding-template.yaml'
+        )
+        
+    except Exception as e:
+        logging.error(f"Erro ao servir template CloudFormation: {str(e)}")
+        return jsonify({'error': 'Erro interno do servidor'}), 500

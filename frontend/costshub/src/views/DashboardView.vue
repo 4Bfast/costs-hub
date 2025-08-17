@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from 'vue';
 import { apiService } from '@/services/api';
 import flatPickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
-import { Portuguese } from 'flatpickr/dist/l10n/pt.js';
+import { Portuguese } from 'flatpickr/dist/l10n/pt';
 
 // PrimeVue Components
 import Card from 'primevue/card';
@@ -15,14 +15,17 @@ import Column from 'primevue/column';
 import ProgressBar from 'primevue/progressbar';
 import ProgressSpinner from 'primevue/progressspinner';
 import Message from 'primevue/message';
+import Dropdown from 'primevue/dropdown';
 
 // --- GERENCIAMENTO DE ESTADO ---
 const dashboardData = ref(null);
+const memberAccounts = ref([]);
+const selectedMemberAccount = ref(null);
 const isLoading = ref(true);
 const error = ref(null);
 const dateRange = ref([
-  new Date(Date.now() - 29 * 24 * 60 * 60 * 1000), // 29 dias atrás
-  new Date() // hoje
+  new Date('2025-08-09'), // Data que sabemos que tem dados
+  new Date('2025-08-16')  // Data que sabemos que tem dados
 ]);
 
 // --- PROPRIEDADES COMPUTADAS ---
@@ -35,10 +38,15 @@ const kpis = computed(() => dashboardData.value?.kpis || {
 });
 
 const chartData = computed(() => {
+  console.log('🔍 Computing chartData, dashboardData:', dashboardData.value);
+  
   if (!dashboardData.value?.timeSeries) return { labels: [], datasets: [] };
   
   const currentPeriod = dashboardData.value.timeSeries.currentPeriod || [];
   const previousPeriod = dashboardData.value.timeSeries.previousPeriod || [];
+  
+  console.log('📊 Current period data:', currentPeriod);
+  console.log('📊 Previous period data:', previousPeriod);
   
   // Criar labels baseados nas datas ou índices
   const maxLength = Math.max(currentPeriod.length, previousPeriod.length);
@@ -199,6 +207,24 @@ const datePickerConfig = {
 };
 
 // --- FUNÇÕES ---
+async function fetchMemberAccounts() {
+  try {
+    const accounts = await apiService.getMemberAccounts();
+    memberAccounts.value = [
+      { id: null, name: 'Todas as Contas', aws_account_id: 'ALL' },
+      ...accounts
+    ];
+    // Selecionar "Todas as Contas" por padrão
+    selectedMemberAccount.value = memberAccounts.value[0];
+  } catch (error) {
+    console.error('Erro ao buscar contas-membro:', error);
+  }
+}
+
+function onMemberAccountChange() {
+  fetchData();
+}
+
 async function fetchData() {
   if (!dateRange.value || dateRange.value.length !== 2) return;
   
@@ -217,8 +243,11 @@ async function fetchData() {
     const startDateStr = startDate.toISOString().split('T')[0];
     const endDateStr = endDate.toISOString().split('T')[0];
     
-    console.log('Fetching dashboard data:', { startDateStr, endDateStr });
-    dashboardData.value = await apiService.getDashboardData(startDateStr, endDateStr);
+    // Incluir filtro de conta-membro se selecionada
+    const memberAccountId = selectedMemberAccount.value && selectedMemberAccount.value.id ? selectedMemberAccount.value.id : null;
+    
+    console.log('Fetching dashboard data:', { startDateStr, endDateStr, memberAccountId });
+    dashboardData.value = await apiService.getDashboardData(startDateStr, endDateStr, memberAccountId);
     console.log('Dashboard data received:', dashboardData.value);
   } catch (err) {
     console.error('Error fetching dashboard data:', err);
@@ -297,15 +326,15 @@ function getBudgetProgressColor() {
   const percentage = getBudgetConsumptionPercentage();
   
   if (percentage <= 50) {
-    return '#28a745'; // Verde
+    return '#28a745';
   } else if (percentage <= 75) {
-    return '#17a2b8'; // Azul
+    return '#17a2b8';
   } else if (percentage <= 90) {
-    return '#ffc107'; // Amarelo
+    return '#ffc107';
   } else if (percentage <= 100) {
-    return '#fd7e14'; // Laranja
+    return '#fd7e14';
   } else {
-    return '#dc3545'; // Vermelho
+    return '#dc3545';
   }
 }
 
@@ -314,15 +343,15 @@ function getBudgetStatusIcon() {
   const percentage = getBudgetConsumptionPercentage();
   
   if (percentage <= 50) {
-    return '✅'; // Seguro
+    return '✅';
   } else if (percentage <= 75) {
-    return '⚠️'; // Atenção
+    return '⚠️';
   } else if (percentage <= 90) {
-    return '🟡'; // Alerta
+    return '🟡';
   } else if (percentage <= 100) {
-    return '🔴'; // Crítico
+    return '🔴';
   } else {
-    return '🚨'; // Ultrapassou
+    return '🚨';
   }
 }
 
@@ -469,7 +498,8 @@ function getForecastVariationClass(accountData) {
 }
 
 // --- LIFECYCLE ---
-onMounted(() => {
+onMounted(async () => {
+  await fetchMemberAccounts();
   fetchData();
 });
 </script>
@@ -488,6 +518,39 @@ onMounted(() => {
     <Card class="controls-card mb-4">
       <template #content>
         <div class="controls-section">
+          <!-- Filtro de Conta-Membro -->
+          <div class="account-filter">
+            <label class="control-label">Filtrar por Conta:</label>
+            <Dropdown 
+              v-model="selectedMemberAccount" 
+              :options="memberAccounts" 
+              optionLabel="name" 
+              placeholder="Selecione uma conta"
+              @change="onMemberAccountChange"
+              class="w-full md:w-14rem"
+            >
+              <template #value="slotProps">
+                <div v-if="slotProps.value" class="flex align-items-center gap-2">
+                  <i class="pi pi-building text-blue-500"></i>
+                  <span>{{ slotProps.value.name }}</span>
+                  <small v-if="slotProps.value.aws_account_id !== 'ALL'" class="text-gray-500">
+                    ({{ slotProps.value.aws_account_id }})
+                  </small>
+                </div>
+                <span v-else>Selecione uma conta</span>
+              </template>
+              <template #option="slotProps">
+                <div class="flex align-items-center gap-2">
+                  <i :class="slotProps.option.aws_account_id === 'ALL' ? 'pi pi-globe text-green-500' : 'pi pi-building text-blue-500'"></i>
+                  <span>{{ slotProps.option.name }}</span>
+                  <small v-if="slotProps.option.aws_account_id !== 'ALL'" class="text-gray-500">
+                    ({{ slotProps.option.aws_account_id }})
+                  </small>
+                </div>
+              </template>
+            </Dropdown>
+          </div>
+          
           <!-- Botões de Período Pré-definido -->
           <div class="period-buttons">
             <label class="control-label">Períodos Rápidos:</label>
@@ -901,7 +964,7 @@ onMounted(() => {
 /* Controles */
 .controls-section {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 2rem;
   align-items: end;
 }
@@ -911,6 +974,12 @@ onMounted(() => {
   font-weight: 600;
   color: #333;
   margin-bottom: 0.5rem;
+}
+
+.account-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .period-buttons {
@@ -1065,8 +1134,24 @@ onMounted(() => {
   color: #721c24;
   background-color: #f8d7da;
 }
-  text-align: center;
-  font-weight: 500;
+
+/* Responsividade para modal */
+@media (max-width: 768px) {
+  .detail-row {
+    flex-direction: column;
+    align-items: start;
+    gap: 0.25rem;
+  }
+  
+  .history-header {
+    flex-direction: column;
+    align-items: start;
+    gap: 0.5rem;
+  }
+  
+  .history-meta {
+    align-items: start;
+  }
 }
 
 /* Gráfico Principal - Largura Total */

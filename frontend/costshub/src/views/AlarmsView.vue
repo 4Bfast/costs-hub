@@ -76,6 +76,9 @@ const timePeriodOptions = [
   { label: 'Mensal', value: 'MONTHLY' }
 ];
 
+// Opções para contas AWS
+const awsAccountOptions = ref([]);
+
 // Opções pré-definidas para níveis de severidade
 const severityNameOptions = [
   { label: 'Informativo', value: 'Informativo' },
@@ -157,6 +160,19 @@ async function fetchServices() {
     services.value = response.map(service => ({ label: service, value: service }));
   } catch (error) {
     console.error('Erro ao carregar serviços:', error);
+  }
+}
+
+async function fetchAwsAccounts() {
+  try {
+    const response = await apiService.getAccounts();
+    awsAccountOptions.value = response.map(account => ({
+      label: `${account.account_name} (${account.id})`,
+      value: account.id.toString()
+    }));
+  } catch (error) {
+    console.error('Erro ao buscar contas AWS:', error);
+    awsAccountOptions.value = [];
   }
 }
 
@@ -439,6 +455,7 @@ onMounted(() => {
   fetchAlarmEvents();
   fetchAlarms();
   fetchServices();
+  fetchAwsAccounts();
 });
 </script>
 
@@ -732,6 +749,23 @@ onMounted(() => {
         </div>
 
         <!-- Valor do Escopo (condicional) -->
+        <div v-if="alarmForm.scope_type === 'AWS_ACCOUNT'" class="field mb-4">
+          <label for="alarm-account" class="font-semibold mb-2 block">Conta AWS</label>
+          <Dropdown
+            id="alarm-account"
+            v-model="alarmForm.scope_value"
+            :options="awsAccountOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Selecione a conta AWS"
+            :filter="true"
+          />
+          <small class="text-gray-600 mt-1 block">
+            <i class="pi pi-info-circle mr-1"></i>
+            Selecione a conta AWS específica que será monitorada por este alarme.
+          </small>
+        </div>
+
         <div v-if="alarmForm.scope_type === 'SERVICE'" class="field mb-4">
           <label for="alarm-service" class="font-semibold mb-2 block">Serviço AWS</label>
           <Dropdown
@@ -743,6 +777,10 @@ onMounted(() => {
             placeholder="Selecione o serviço"
             :filter="true"
           />
+          <small class="text-gray-600 mt-1 block">
+            <i class="pi pi-info-circle mr-1"></i>
+            Selecione o serviço AWS específico que será monitorado por este alarme.
+          </small>
         </div>
 
         <!-- Período -->
@@ -925,16 +963,24 @@ onMounted(() => {
           <template #title>Ações</template>
           <template #content>
             <div class="action-section">
-              <div class="field mb-3">
-                <label for="action-comment" class="font-semibold mb-2 block">
+              <div class="field mb-4 comment-field">
+                <label for="action-comment" class="font-semibold mb-3 block comment-label">
                   {{ getNextStatus(selectedEvent.status) === 'RESOLVED' ? 'Comentário (obrigatório):' : 'Comentário (opcional):' }}
                 </label>
+                <small class="text-gray-600 mb-2 block comment-help">
+                  <i class="pi pi-info-circle mr-1"></i>
+                  {{ getNextStatus(selectedEvent.status) === 'RESOLVED' ? 
+                      'Descreva detalhadamente como o problema foi resolvido para referência futura.' : 
+                      'Adicione contexto sobre a ação tomada ou observações relevantes.' 
+                  }}
+                </small>
                 <Textarea 
                   id="action-comment"
                   v-model="actionComment" 
-                  rows="3" 
+                  rows="8" 
                   :placeholder="getNextStatus(selectedEvent.status) === 'RESOLVED' ? 'Descreva a resolução do problema...' : 'Adicione um comentário sobre a ação tomada...'"
-                  class="w-full"
+                  class="w-full comment-textarea-large"
+                  :autoResize="true"
                 />
               </div>
               
@@ -1357,4 +1403,95 @@ onMounted(() => {
     align-items: start;
   }
 }
+
+/* Melhorias para o campo de comentário */
+.comment-field {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e9ecef;
+  margin-bottom: 1.5rem !important;
+}
+
+.comment-label {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  color: #2c3e50 !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.comment-help {
+  color: #6c757d !important;
+  font-size: 0.9rem !important;
+  line-height: 1.5 !important;
+  margin-bottom: 0.75rem !important;
+  padding: 0.5rem 0.75rem;
+  background: #e3f2fd;
+  border-radius: 0.5rem;
+  border-left: 4px solid #2196f3;
+}
+
+.comment-help .pi {
+  color: #2196f3 !important;
+  font-size: 0.9rem !important;
+}
+
+.comment-textarea-large {
+  min-height: 180px !important;
+  max-height: 400px !important;
+  resize: vertical !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 1rem !important;
+  line-height: 1.6 !important;
+  padding: 1rem !important;
+  border-radius: 0.75rem !important;
+  border: 2px solid #dee2e6 !important;
+  transition: all 0.3s ease !important;
+  background: white !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.comment-textarea-large:focus {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.15) !important;
+  outline: none !important;
+  background: #ffffff !important;
+}
+
+.comment-textarea-large:hover {
+  border-color: #adb5bd !important;
+  background: #ffffff !important;
+}
+
+.comment-textarea-large::placeholder {
+  color: #6c757d !important;
+  font-style: italic !important;
+  opacity: 0.8 !important;
+}
+
+/* Responsividade para o campo de comentário */
+@media (max-width: 768px) {
+  .comment-field {
+    padding: 1rem;
+    margin-bottom: 1rem !important;
+  }
+  
+  .comment-textarea-large {
+    min-height: 150px !important;
+    font-size: 0.95rem !important;
+    padding: 0.875rem !important;
+  }
+  
+  .comment-label {
+    font-size: 1rem !important;
+  }
+  
+  .comment-help {
+    font-size: 0.85rem !important;
+    padding: 0.5rem;
+  }
+}
+
+/* Estilo para texto de ajuda do comentário - REMOVIDO (duplicado) */
 </style>

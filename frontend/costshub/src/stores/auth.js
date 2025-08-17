@@ -27,7 +27,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function login(email, password) {
     try {
-      const response = await fetch('http://127.0.0.1:5000/auth/login', {
+      const response = await fetch('http://127.0.0.1:5001/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -48,7 +48,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function register(payload) {
     try {
-      const response = await fetch('http://127.0.0.1:5000/auth/register', {
+      const response = await fetch('http://127.0.0.1:5001/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

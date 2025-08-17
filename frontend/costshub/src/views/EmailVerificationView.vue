@@ -126,7 +126,7 @@ async function verifyEmailToken(token) {
   isVerifying.value = true
   
   try {
-    const response = await fetch('http://127.0.0.1:5000/auth/verify-email', {
+    const response = await fetch('http://127.0.0.1:5001/auth/verify-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token })
@@ -159,7 +159,7 @@ async function resendVerification() {
   errorMessage.value = ''
   
   try {
-    const response = await fetch('http://127.0.0.1:5000/auth/resend-verification', {
+    const response = await fetch('http://127.0.0.1:5001/auth/resend-verification', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.value })

@@ -7,8 +7,10 @@ import MainLayout from '../layouts/MainLayout.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import EmailVerificationView from '../views/EmailVerificationView.vue'
+import AcceptInviteView from '../views/AcceptInviteView.vue'  // NOVO: Aceitar convites
 import DashboardView from '../views/DashboardView.vue'
-import SettingsView from '../views/SettingsView.vue'
+import ConnectionsView from '../views/ConnectionsView.vue'  // NOVO: Gerenciamento de contas AWS
+import SettingsView from '../views/SettingsView.vue'        // ATUALIZADO: Configurações da aplicação
 import AnalysisView from '../views/AnalysisView.vue'
 import AlarmsView from '../views/AlarmsView.vue'
 
@@ -29,6 +31,12 @@ const routes = [
     component: EmailVerificationView,
   },
   {
+    // NOVO: Rota pública para aceitar convites
+    path: '/accept-invite',
+    name: 'accept-invite',
+    component: AcceptInviteView,
+  },
+  {
     // Rota "Pai" que contém o nosso layout com a barra lateral
     path: '/',
     component: MainLayout,
@@ -45,6 +53,13 @@ const routes = [
         component: DashboardView,
       },
       {
+        // NOVO: Rota para gerenciamento de conexões AWS
+        path: 'connections',
+        name: 'connections',
+        component: ConnectionsView,
+      },
+      {
+        // ATUALIZADO: Rota para configurações da aplicação
         path: 'settings',
         name: 'settings',
         component: SettingsView,

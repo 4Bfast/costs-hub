@@ -1,7 +1,12 @@
 // src/services/api.js
 import { useAuthStore } from '@/stores/auth';
 
-const BASE_URL = 'http://127.0.0.1:5000/api/v1';
+// Configuração da API usando variáveis de ambiente
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5001';
+const API_VERSION = import.meta.env.VITE_API_VERSION || 'v1';
+const BASE_URL = `${API_BASE_URL}/api/${API_VERSION}`;
+
+console.log('🔧 API Configuration:', { API_BASE_URL, API_VERSION, BASE_URL });
 
 // Função auxiliar para fazer requisições autenticadas
 async function authenticatedFetch(url, options = {}) {
@@ -81,16 +86,152 @@ export const apiService = {
         });
     },
 
+    /**
+     * Lista todas as contas AWS conectadas
+     */
+    getAccounts() {
+        return authenticatedFetch('/aws-accounts');
+    },
+
+    /**
+     * Atualiza uma conta AWS
+     */
+    updateAccount(accountId, data) {
+        return authenticatedFetch(`/aws-accounts/${accountId}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    },
+
+    /**
+     * Remove uma conta AWS
+     */
+    deleteAccount(accountId) {
+        return authenticatedFetch(`/aws-accounts/${accountId}`, {
+            method: 'DELETE'
+        });
+    },
+
+    // --- ENDPOINTS DE GESTÃO DE USUÁRIOS ---
+
+    /**
+     * Lista todos os usuários da organização
+     */
+    getUsers() {
+        return authenticatedFetch('/users');
+    },
+
+    /**
+     * Convida um novo usuário para a organização
+     */
+    inviteUser(email) {
+        return authenticatedFetch('/users/invite', {
+            method: 'POST',
+            body: JSON.stringify({ email })
+        });
+    },
+
+    /**
+     * Remove um usuário da organização
+     */
+    removeUser(userId) {
+        return authenticatedFetch(`/users/${userId}`, {
+            method: 'DELETE'
+        });
+    },
+
+    /**
+     * Verifica um token de convite
+     */
+    verifyInvitation(token) {
+        return fetch(`${API_BASE_URL}/invitations/verify?token=${token}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }).then(response => {
+            if (!response.ok) {
+                return response.json().then(err => Promise.reject(err));
+            }
+            return response.json();
+        });
+    },
+
+    /**
+     * Aceita um convite e ativa a conta
+     */
+    acceptInvitation(token, password) {
+        return fetch(`${API_BASE_URL}/invitations/accept`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ token, password })
+        }).then(response => {
+            if (!response.ok) {
+                return response.json().then(err => Promise.reject(err));
+            }
+            return response.json();
+        });
+    },
+
+    // --- ENDPOINTS DE ONBOARDING SEGURO ---
+
+    /**
+     * Inicia processo de onboarding seguro
+     */
+    initiateConnection(payerAccountId, s3Prefix) {
+        return authenticatedFetch('/connections/initiate', {
+            method: 'POST',
+            body: JSON.stringify({
+                payer_account_id: payerAccountId,
+                s3_prefix: s3Prefix
+            })
+        });
+    },
+
+    /**
+     * Finaliza processo de onboarding
+     */
+    finalizeConnection(connectionId, roleArn) {
+        return authenticatedFetch(`/connections/${connectionId}/finalize`, {
+            method: 'POST',
+            body: JSON.stringify({
+                role_arn: roleArn
+            })
+        });
+    },
+
     // --- Endpoints de Dados ---
+
+    /**
+     * Busca as contas-membro descobertas automaticamente.
+     */
+    getMemberAccounts() {
+        return authenticatedFetch('/member-accounts');
+    },
+    updateMemberAccountBudget(accountId, monthlyBudget) {
+        return authenticatedFetch(`/member-accounts/${accountId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                monthly_budget: monthlyBudget
+            }),
+        });
+    },
 
     /**
      * Busca os dados consolidados para o Dashboard Estratégico.
      */
-    getDashboardData(startDate, endDate) {
+    getDashboardData(startDate, endDate, memberAccountId = null) {
         const params = new URLSearchParams({
             start_date: startDate,
             end_date: endDate
         });
+        
+        if (memberAccountId) {
+            params.append('member_account_id', memberAccountId);
+        }
+        
         return authenticatedFetch(`/dashboards/main?${params.toString()}`);
     },
 
