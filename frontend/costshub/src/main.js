@@ -11,6 +11,7 @@ import './assets/main.css'
 import PrimeVue from 'primevue/config'
 import Lara from '@primevue/themes/lara'
 import Tooltip from 'primevue/tooltip'
+import ToastService from 'primevue/toastservice'
 import 'primeicons/primeicons.css'
 
 const app = createApp(App)
@@ -27,6 +28,9 @@ app.use(PrimeVue, {
         }
     }
 })
+
+// Registrar ToastService
+app.use(ToastService)
 
 // Registrar diretiva Tooltip
 app.directive('tooltip', Tooltip)
