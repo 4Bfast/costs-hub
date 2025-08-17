@@ -16,7 +16,10 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    CORS(app, resources={r"/*": {"origins": "http://localhost:*"}}) #USAR ENV
+    # Configuração de CORS usando variáveis de ambiente
+    import os
+    cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:5173').split(',')
+    CORS(app, resources={r"/*": {"origins": cors_origins}})
 
     # Vincula as extensões à instância da aplicação
     db.init_app(app)

@@ -9,6 +9,7 @@ import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import Tag from 'primevue/tag';
 import InputText from 'primevue/inputtext';
+import InputNumber from 'primevue/inputnumber';
 import Textarea from 'primevue/textarea';
 import Card from 'primevue/card';
 import Message from 'primevue/message';
@@ -54,7 +55,11 @@ async function fetchAccounts() {
     isLoadingList.value = false;
   }
 }
-onMounted(fetchAccounts);
+onMounted(() => {
+  fetchAccounts();
+});
+
+// --- FUNÇÕES EXISTENTES ---
 
 async function handleAddAccount() {
   isSubmitting.value = true;
@@ -128,6 +133,7 @@ async function handleUpdateAccount() {
       account_name: editingAccount.value.account_name,
       iam_role_arn: editingAccount.value.iam_role_arn,
       focus_s3_bucket_path: editingAccount.value.focus_s3_bucket_path,
+      monthly_budget: editingAccount.value.monthly_budget || 0,
     });
     message.value = { type: 'success', text: result.message };
     
@@ -443,6 +449,25 @@ async function handleImportHistory(account) {
             required 
           />
         </div>
+        
+        <div class="field mb-5">
+          <label for="edit-monthly-budget" class="font-semibold mb-2 block">Orçamento Mensal ($)</label>
+          <InputNumber 
+            id="edit-monthly-budget" 
+            v-model="editingAccount.monthly_budget" 
+            mode="currency" 
+            currency="USD" 
+            locale="en-US"
+            size="large"
+            class="mt-2"
+            :min="0"
+            :maxFractionDigits="2"
+            placeholder="0.00"
+          />
+          <small class="text-gray-600 mt-1 block">
+            Define o orçamento mensal para esta conta AWS. Usado para calcular o consumo e previsões.
+          </small>
+        </div>
       </form>
       
       <template #footer>
@@ -457,6 +482,160 @@ async function handleImportHistory(account) {
           icon="pi pi-check" 
           :loading="isSubmitting"
           @click="handleUpdateAccount" 
+        />
+      </template>
+    </Dialog>
+
+    <!-- Modal de Criação/Edição de Alarme -->
+    <Dialog 
+      v-model:visible="isAlarmModalVisible" 
+      modal 
+      :header="isEditingAlarm ? 'Editar Regra de Alarme' : 'Criar Nova Regra de Alarme'"
+      :style="{ width: '60vw' }"
+      :breakpoints="{ '960px': '80vw', '641px': '95vw' }"
+    >
+      <form @submit.prevent="handleSaveAlarm" class="p-fluid">
+        <!-- Nome do Alarme -->
+        <div class="field mb-4">
+          <label for="alarm-name" class="font-semibold mb-2 block">Nome da Regra</label>
+          <InputText 
+            id="alarm-name" 
+            v-model="alarmForm.name" 
+            placeholder="Ex: Alerta Custo EC2 Produção"
+            required 
+          />
+        </div>
+
+        <!-- Escopo -->
+        <div class="field mb-4">
+          <label for="alarm-scope-type" class="font-semibold mb-2 block">Escopo</label>
+          <Dropdown
+            id="alarm-scope-type"
+            v-model="alarmForm.scope_type"
+            :options="scopeTypeOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Selecione o escopo"
+          />
+        </div>
+
+        <!-- Valor do Escopo (condicional) -->
+        <div v-if="alarmForm.scope_type === 'AWS_ACCOUNT'" class="field mb-4">
+          <label for="alarm-account" class="font-semibold mb-2 block">Conta AWS</label>
+          <Dropdown
+            id="alarm-account"
+            v-model="alarmForm.scope_value"
+            :options="accounts.map(acc => ({ label: acc.account_name, value: acc.id.toString() }))"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Selecione a conta AWS"
+          />
+        </div>
+
+        <div v-if="alarmForm.scope_type === 'SERVICE'" class="field mb-4">
+          <label for="alarm-service" class="font-semibold mb-2 block">Serviço AWS</label>
+          <Dropdown
+            id="alarm-service"
+            v-model="alarmForm.scope_value"
+            :options="services"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Selecione o serviço"
+            :filter="true"
+          />
+        </div>
+
+        <!-- Período -->
+        <div class="field mb-4">
+          <label for="alarm-period" class="font-semibold mb-2 block">Período de Avaliação</label>
+          <Dropdown
+            id="alarm-period"
+            v-model="alarmForm.time_period"
+            :options="timePeriodOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Selecione o período"
+          />
+        </div>
+
+        <!-- Níveis de Severidade -->
+        <div class="field mb-4">
+          <div class="severity-header">
+            <label class="font-semibold mb-2 block">Níveis de Severidade</label>
+            <Button
+              type="button"
+              label="Adicionar Nível"
+              icon="pi pi-plus"
+              class="p-button-sm p-button-outlined"
+              @click="addSeverityLevel"
+              :disabled="alarmForm.severity_levels.length >= 4"
+            />
+          </div>
+          
+          <div class="severity-levels">
+            <div 
+              v-for="(level, index) in alarmForm.severity_levels" 
+              :key="index"
+              class="severity-level-row"
+            >
+              <div class="severity-inputs">
+                <div class="field">
+                  <label class="severity-label">Nome:</label>
+                  <InputText 
+                    v-model="level.name" 
+                    placeholder="Ex: Alto, Crítico"
+                    required
+                  />
+                </div>
+                <div class="field">
+                  <label class="severity-label">Limite ($):</label>
+                  <InputNumber 
+                    v-model="level.threshold" 
+                    mode="currency" 
+                    currency="USD" 
+                    locale="en-US"
+                    :min="0"
+                    required
+                  />
+                </div>
+              </div>
+              <Button
+                type="button"
+                icon="pi pi-trash"
+                class="p-button-rounded p-button-danger p-button-text"
+                @click="removeSeverityLevel(index)"
+                :disabled="alarmForm.severity_levels.length <= 1"
+                v-tooltip="'Remover nível'"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Status Ativo -->
+        <div class="field mb-4">
+          <div class="field-checkbox">
+            <Checkbox 
+              id="alarm-enabled" 
+              v-model="alarmForm.is_enabled" 
+              :binary="true"
+            />
+            <label for="alarm-enabled" class="ml-2">Alarme ativo</label>
+          </div>
+        </div>
+      </form>
+      
+      <template #footer>
+        <Button 
+          label="Cancelar" 
+          icon="pi pi-times" 
+          severity="secondary"
+          @click="closeAlarmModal" 
+        />
+        <Button 
+          :label="isEditingAlarm ? 'Atualizar' : 'Criar'"
+          icon="pi pi-check" 
+          :loading="isSubmitting"
+          @click="handleSaveAlarm" 
         />
       </template>
     </Dialog>

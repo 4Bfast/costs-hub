@@ -264,6 +264,210 @@ function setLastMonth() {
   fetchData();
 }
 
+// --- FUNÇÕES PARA ORÇAMENTO TOTAL DA ORGANIZAÇÃO ---
+
+// Calcula a porcentagem de consumo do orçamento total
+function getBudgetConsumptionPercentage() {
+  if (!kpis.value.totalMonthlyBudget || kpis.value.totalMonthlyBudget === 0) {
+    return 0;
+  }
+  const percentage = (kpis.value.totalCost / kpis.value.totalMonthlyBudget) * 100;
+  return Math.min(percentage, 100); // Limita a 100% para a barra de progresso
+}
+
+// Determina a severidade da barra de progresso do orçamento total
+function getBudgetConsumptionSeverity() {
+  const percentage = getBudgetConsumptionPercentage();
+  
+  if (percentage <= 50) {
+    return 'success'; // Verde - Seguro (0-50%)
+  } else if (percentage <= 75) {
+    return 'info'; // Azul - Atenção (51-75%)
+  } else if (percentage <= 90) {
+    return 'warning'; // Amarelo - Alerta (76-90%)
+  } else if (percentage <= 100) {
+    return 'danger'; // Vermelho - Crítico (91-100%)
+  } else {
+    return 'danger'; // Vermelho - Ultrapassou (>100%)
+  }
+}
+
+// Obtém a cor CSS personalizada para a barra de progresso
+function getBudgetProgressColor() {
+  const percentage = getBudgetConsumptionPercentage();
+  
+  if (percentage <= 50) {
+    return '#28a745'; // Verde
+  } else if (percentage <= 75) {
+    return '#17a2b8'; // Azul
+  } else if (percentage <= 90) {
+    return '#ffc107'; // Amarelo
+  } else if (percentage <= 100) {
+    return '#fd7e14'; // Laranja
+  } else {
+    return '#dc3545'; // Vermelho
+  }
+}
+
+// Obtém o ícone baseado na porcentagem do orçamento
+function getBudgetStatusIcon() {
+  const percentage = getBudgetConsumptionPercentage();
+  
+  if (percentage <= 50) {
+    return '✅'; // Seguro
+  } else if (percentage <= 75) {
+    return '⚠️'; // Atenção
+  } else if (percentage <= 90) {
+    return '🟡'; // Alerta
+  } else if (percentage <= 100) {
+    return '🔴'; // Crítico
+  } else {
+    return '🚨'; // Ultrapassou
+  }
+}
+
+// Obtém o texto de status baseado na porcentagem
+function getBudgetStatusText() {
+  const percentage = getBudgetConsumptionPercentage();
+  
+  if (percentage <= 50) {
+    return 'Orçamento Seguro';
+  } else if (percentage <= 75) {
+    return 'Atenção ao Orçamento';
+  } else if (percentage <= 90) {
+    return 'Alerta de Orçamento';
+  } else if (percentage <= 100) {
+    return 'Orçamento Crítico';
+  } else {
+    return 'Orçamento Ultrapassado';
+  }
+}
+
+// --- FUNÇÕES PARA ORÇAMENTO E PREVISÃO ---
+
+// Formata valores monetários com casas decimais completas
+function formatCurrencyFull(value) {
+  if (typeof value !== 'number') {
+    value = parseFloat(value) || 0;
+  }
+  return value.toLocaleString('en-US', { 
+    minimumFractionDigits: 2, 
+    maximumFractionDigits: 2 
+  });
+}
+
+// Formata valores monetários de forma compacta (para espaços pequenos)
+function formatCurrency(value) {
+  if (typeof value !== 'number') {
+    value = parseFloat(value) || 0;
+  }
+  
+  if (value >= 1000000) {
+    return (value / 1000000).toFixed(1) + 'M';
+  } else if (value >= 1000) {
+    return (value / 1000).toFixed(1) + 'K';
+  } else {
+    return value.toFixed(2);
+  }
+}
+
+// Calcula a porcentagem de consumo do orçamento
+function getBudgetPercentage(accountData) {
+  if (!accountData.monthlyBudget || accountData.monthlyBudget === 0) {
+    return 0;
+  }
+  const percentage = (accountData.totalCost / accountData.monthlyBudget) * 100;
+  return Math.round(percentage * 10) / 10; // Arredondar para 1 casa decimal
+}
+
+// Determina a severidade da barra de progresso do orçamento
+function getBudgetSeverity(accountData) {
+  const percentage = getBudgetPercentage(accountData);
+  
+  if (percentage < 80) {
+    return 'success'; // Verde
+  } else if (percentage <= 100) {
+    return 'warning'; // Amarelo
+  } else {
+    return 'danger'; // Vermelho
+  }
+}
+
+// Retorna o status textual do orçamento
+function getBudgetStatus(accountData) {
+  const percentage = getBudgetPercentage(accountData);
+  
+  if (percentage < 80) {
+    return 'OK';
+  } else if (percentage <= 100) {
+    return 'Atenção';
+  } else {
+    return 'Excedido';
+  }
+}
+
+// Retorna a classe CSS para o status do orçamento
+function getBudgetStatusClass(accountData) {
+  const percentage = getBudgetPercentage(accountData);
+  
+  if (percentage < 80) {
+    return 'status-ok';
+  } else if (percentage <= 100) {
+    return 'status-warning';
+  } else {
+    return 'status-danger';
+  }
+}
+
+// Calcula a variação da previsão em relação ao orçamento
+function getForecastVariation(accountData) {
+  if (!accountData.monthlyBudget || accountData.monthlyBudget === 0) {
+    return { percentage: 0, isAbove: false };
+  }
+  
+  const variation = accountData.forecastedCost - accountData.monthlyBudget;
+  const percentage = Math.abs((variation / accountData.monthlyBudget) * 100);
+  
+  return {
+    percentage: Math.round(percentage * 10) / 10,
+    isAbove: variation > 0
+  };
+}
+
+// Retorna o texto da variação da previsão
+function getForecastVariationText(accountData) {
+  const variation = getForecastVariation(accountData);
+  
+  if (variation.percentage === 0) {
+    return 'No orçamento';
+  }
+  
+  const direction = variation.isAbove ? 'acima' : 'abaixo';
+  return `${variation.percentage}% ${direction}`;
+}
+
+// Retorna o ícone da variação da previsão
+function getForecastIcon(accountData) {
+  const variation = getForecastVariation(accountData);
+  
+  if (variation.percentage === 0) {
+    return 'pi pi-minus';
+  }
+  
+  return variation.isAbove ? 'pi pi-arrow-up' : 'pi pi-arrow-down';
+}
+
+// Retorna a classe CSS para a variação da previsão
+function getForecastVariationClass(accountData) {
+  const variation = getForecastVariation(accountData);
+  
+  if (variation.percentage === 0) {
+    return 'forecast-neutral';
+  }
+  
+  return variation.isAbove ? 'forecast-above' : 'forecast-below';
+}
+
 // --- LIFECYCLE ---
 onMounted(() => {
   fetchData();
@@ -339,21 +543,61 @@ onMounted(() => {
     <div v-else-if="dashboardData">
       <!-- Seção de KPIs -->
       <div class="kpis-section mb-4">
-        <!-- KPI 1 - Custo Total -->
+        <!-- KPI 1 - Custo Total com Barra de Progresso -->
         <Card class="kpi-card kpi-primary">
           <template #content>
             <div class="kpi-content">
               <div class="kpi-icon">💰</div>
               <div class="kpi-info">
-                <h3>Custo Total</h3>
+                <h3>Custo Total no Período</h3>
                 <p class="kpi-value">${{ kpis.totalCost.toFixed(2) }}</p>
-                <span class="kpi-period">Período selecionado</span>
+                
+                <!-- Barra de Progresso do Orçamento -->
+                <div v-if="kpis.totalMonthlyBudget > 0" class="budget-progress-container">
+                  <div class="budget-status-header">
+                    <span class="budget-status-icon">{{ getBudgetStatusIcon() }}</span>
+                    <span class="budget-status-text">{{ getBudgetStatusText() }}</span>
+                  </div>
+                  
+                  <ProgressBar 
+                    :value="getBudgetConsumptionPercentage()" 
+                    :severity="getBudgetConsumptionSeverity()"
+                    class="budget-progress-kpi"
+                    :showValue="false"
+                    :style="{ '--progress-color': getBudgetProgressColor() }"
+                  />
+                  
+                  <div class="budget-details">
+                    <span class="budget-info">
+                      <strong>${{ kpis.totalCost.toFixed(2) }}</strong> de ${{ kpis.totalMonthlyBudget.toFixed(2) }} orçados
+                    </span>
+                    <span class="budget-percentage" :class="getBudgetConsumptionSeverity()">
+                      {{ getBudgetConsumptionPercentage().toFixed(1) }}%
+                    </span>
+                  </div>
+                </div>
+                
+                <span v-else class="kpi-period">Período selecionado</span>
               </div>
             </div>
           </template>
         </Card>
 
-        <!-- KPI 2 - Variação -->
+        <!-- KPI 2 - Orçamento Total (NOVO) -->
+        <Card class="kpi-card kpi-budget">
+          <template #content>
+            <div class="kpi-content">
+              <div class="kpi-icon">🎯</div>
+              <div class="kpi-info">
+                <h3>Orçamento Total no Mês</h3>
+                <p class="kpi-value">${{ kpis.totalMonthlyBudget.toFixed(2) }}</p>
+                <span class="kpi-period">Meta mensal</span>
+              </div>
+            </div>
+          </template>
+        </Card>
+
+        <!-- KPI 3 - Variação -->
         <Card :class="['kpi-card', kpis.totalVariationPercentage >= 0 ? 'kpi-warning' : 'kpi-success']">
           <template #content>
             <div class="kpi-content">
@@ -366,20 +610,6 @@ onMounted(() => {
                 <span class="kpi-detail">
                   ${{ kpis.totalVariationValue >= 0 ? '+' : '' }}{{ kpis.totalVariationValue.toFixed(2) }}
                 </span>
-              </div>
-            </div>
-          </template>
-        </Card>
-
-        <!-- KPI 3 - Taxas -->
-        <Card class="kpi-card kpi-info">
-          <template #content>
-            <div class="kpi-content">
-              <div class="kpi-icon">🏛️</div>
-              <div class="kpi-info">
-                <h3>Custos com Taxas</h3>
-                <p class="kpi-value">${{ kpis.taxCost.toFixed(2) }}</p>
-                <span class="kpi-period">TAX</span>
               </div>
             </div>
           </template>
@@ -500,63 +730,135 @@ onMounted(() => {
           </template>
         </Card>
 
-        <!-- Tabela 2 - Custo por Conta -->
+        <!-- Tabela 2 - Custo por Conta com Orçamento e Previsão -->
         <Card class="table-card">
           <template #title>
             <i class="pi pi-building mr-2"></i>
-            Custo por Conta
+            Governança Financeira por Conta
           </template>
           <template #content>
-            <DataTable 
-              :value="costByAccountData" 
-              :paginator="true" 
-              :rows="10"
-              responsiveLayout="scroll"
-              size="small"
-              sortMode="single"
-              :sortField="'totalCost'"
-              :sortOrder="-1"
-              class="p-datatable-sm"
-            >
-              <Column 
-                field="accountName" 
-                header="Nome da Conta" 
-                :sortable="true"
-                style="min-width: 200px"
+            <!-- Versão Desktop: Tabela Tradicional -->
+            <div class="desktop-table-view">
+              <DataTable 
+                :value="costByAccountData" 
+                :paginator="true" 
+                :rows="10"
+                responsiveLayout="scroll"
+                size="small"
+                sortMode="single"
+                :sortField="'totalCost'"
+                :sortOrder="-1"
+                class="p-datatable-sm"
               >
-                <template #body="slotProps">
-                  <strong>{{ slotProps.data.accountName }}</strong>
-                </template>
-              </Column>
-              
-              <Column 
-                field="totalCost" 
-                header="Custo Total ($)" 
-                :sortable="true"
-                style="min-width: 150px"
-              >
-                <template #body="slotProps">
-                  ${{ (slotProps.data.totalCost || 0).toFixed(2) }}
-                </template>
-              </Column>
-              
-              <Column 
-                field="percentageOfTotal" 
-                header="% do Total" 
-                :sortable="true"
-                style="min-width: 200px"
-              >
-                <template #body="slotProps">
-                  <div class="percentage-container">
-                    <span class="percentage-text">{{ (slotProps.data.percentageOfTotal || 0).toFixed(1) }}%</span>
-                    <ProgressBar 
-                      :value="slotProps.data.percentageOfTotal || 0" 
-                      class="progress-bar-custom"
-                    />
+                <Column field="accountName" header="Conta" :sortable="true" style="width: 20%">
+                  <template #body="slotProps">
+                    <strong>{{ slotProps.data.accountName }}</strong>
+                  </template>
+                </Column>
+                
+                <Column field="totalCost" header="Custo Atual" :sortable="true" style="width: 15%">
+                  <template #body="slotProps">
+                    <span class="cost-value">
+                      ${{ formatCurrencyFull(slotProps.data.totalCost || 0) }}
+                    </span>
+                  </template>
+                </Column>
+                
+                <Column field="monthlyBudget" header="Orçamento" :sortable="true" style="width: 15%">
+                  <template #body="slotProps">
+                    <span class="budget-value">
+                      ${{ formatCurrencyFull(slotProps.data.monthlyBudget || 0) }}
+                    </span>
+                  </template>
+                </Column>
+                
+                <Column header="Consumo" style="width: 25%">
+                  <template #body="slotProps">
+                    <div class="consumption-cell">
+                      <div class="consumption-info">
+                        <span class="consumption-percentage">{{ getBudgetPercentage(slotProps.data) }}%</span>
+                        <span class="consumption-status" :class="getBudgetStatusClass(slotProps.data)">
+                          {{ getBudgetStatus(slotProps.data) }}
+                        </span>
+                      </div>
+                      <ProgressBar 
+                        :value="getBudgetPercentage(slotProps.data)" 
+                        :severity="getBudgetSeverity(slotProps.data)"
+                        class="consumption-bar"
+                        :showValue="false"
+                      />
+                    </div>
+                  </template>
+                </Column>
+                
+                <Column field="forecastedCost" header="Previsão" :sortable="true" style="width: 25%">
+                  <template #body="slotProps">
+                    <div class="forecast-cell">
+                      <div class="forecast-amount">
+                        ${{ formatCurrencyFull(slotProps.data.forecastedCost || 0) }}
+                      </div>
+                      <div class="forecast-variation" :class="getForecastVariationClass(slotProps.data)">
+                        <i :class="getForecastIcon(slotProps.data)"></i>
+                        {{ getForecastVariationText(slotProps.data) }}
+                      </div>
+                    </div>
+                  </template>
+                </Column>
+              </DataTable>
+            </div>
+
+            <!-- Versão Mobile: Cards -->
+            <div class="mobile-cards-view">
+              <div v-for="account in costByAccountData" :key="account.accountId" class="account-card">
+                <div class="account-header">
+                  <h4 class="account-name">{{ account.accountName }}</h4>
+                  <div class="account-status" :class="getBudgetStatusClass(account)">
+                    {{ getBudgetStatus(account) }}
                   </div>
-                </template>
-              </Column>
-            </DataTable>
+                </div>
+                
+                <div class="account-metrics">
+                  <div class="metric">
+                    <span class="metric-label">Custo Atual</span>
+                    <span class="metric-value cost-value">
+                      ${{ formatCurrencyFull(account.totalCost || 0) }}
+                    </span>
+                  </div>
+                  
+                  <div class="metric">
+                    <span class="metric-label">Orçamento</span>
+                    <span class="metric-value budget-value">
+                      ${{ formatCurrencyFull(account.monthlyBudget || 0) }}
+                    </span>
+                  </div>
+                  
+                  <div class="metric">
+                    <span class="metric-label">Previsão</span>
+                    <span class="metric-value forecast-value">
+                      ${{ formatCurrencyFull(account.forecastedCost || 0) }}
+                    </span>
+                  </div>
+                </div>
+                
+                <div class="account-progress">
+                  <div class="progress-header">
+                    <span>Consumo do Orçamento</span>
+                    <span class="progress-percentage">{{ getBudgetPercentage(account) }}%</span>
+                  </div>
+                  <ProgressBar 
+                    :value="getBudgetPercentage(account)" 
+                    :severity="getBudgetSeverity(account)"
+                    class="progress-bar-mobile"
+                    :showValue="false"
+                  />
+                </div>
+                
+                <div class="forecast-info" :class="getForecastVariationClass(account)">
+                  <i :class="getForecastIcon(account)"></i>
+                  <span>{{ getForecastVariationText(account) }}</span>
+                </div>
+              </div>
+            </div>
           </template>
         </Card>
       </div>
@@ -641,7 +943,7 @@ onMounted(() => {
 /* KPIs */
 .kpis-section {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
@@ -651,6 +953,7 @@ onMounted(() => {
 }
 
 .kpi-primary { border-left-color: #007BFF; }
+.kpi-budget { border-left-color: #e91e63; } /* Rosa para orçamento */
 .kpi-warning { border-left-color: #ffc107; }
 .kpi-success { border-left-color: #28a745; }
 .kpi-info { border-left-color: #17a2b8; }
@@ -688,6 +991,82 @@ onMounted(() => {
 .kpi-period, .kpi-detail {
   font-size: 0.8rem;
   color: #888;
+}
+
+/* Barra de Progresso do Orçamento Total */
+.budget-progress-container {
+  margin-top: 0.75rem;
+  width: 100%;
+}
+
+.budget-status-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.budget-status-icon {
+  font-size: 1rem;
+}
+
+.budget-status-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.budget-progress-kpi {
+  height: 8px;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+/* Cores personalizadas para a barra de progresso */
+.budget-progress-kpi :deep(.p-progressbar-value) {
+  background-color: var(--progress-color, #007bff);
+  transition: background-color 0.3s ease;
+}
+
+.budget-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.budget-info {
+  color: #6c757d;
+}
+
+.budget-percentage {
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.budget-percentage.success {
+  color: #28a745;
+  background-color: #d4edda;
+}
+
+.budget-percentage.info {
+  color: #17a2b8;
+  background-color: #d1ecf1;
+}
+
+.budget-percentage.warning {
+  color: #856404;
+  background-color: #fff3cd;
+}
+
+.budget-percentage.danger {
+  color: #721c24;
+  background-color: #f8d7da;
+}
+  text-align: center;
+  font-weight: 500;
 }
 
 /* Gráfico Principal - Largura Total */
@@ -783,6 +1162,250 @@ onMounted(() => {
   .chart-container {
     min-height: 400px;
     height: 400px;
+  }
+}
+
+/* --- ESTILOS PARA LAYOUT HÍBRIDO RESPONSIVO --- */
+
+/* Controle de visibilidade por breakpoint */
+.desktop-table-view {
+  display: block;
+}
+
+.mobile-cards-view {
+  display: none;
+}
+
+/* Estilos da tabela desktop */
+.desktop-table-view .p-datatable {
+  width: 100%;
+}
+
+.cost-value {
+  font-weight: 600;
+  color: #2563eb;
+  font-size: 0.95rem;
+}
+
+.budget-value {
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.consumption-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.consumption-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.consumption-percentage {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.consumption-status {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.status-ok {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.status-warning {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-danger {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.consumption-bar {
+  height: 8px;
+}
+
+.forecast-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.forecast-amount {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #374151;
+}
+
+.forecast-variation {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.forecast-above {
+  color: #dc2626;
+}
+
+.forecast-below {
+  color: #16a34a;
+}
+
+.forecast-neutral {
+  color: #6b7280;
+}
+
+/* Estilos dos cards mobile */
+.account-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.account-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.account-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  color: #1f2937;
+}
+
+.account-status {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.account-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.metric-label {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.metric-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.metric-value.cost-value {
+  color: #2563eb;
+}
+
+.metric-value.budget-value {
+  color: #6b7280;
+}
+
+.metric-value.forecast-value {
+  color: #374151;
+}
+
+.account-progress {
+  margin-bottom: 0.75rem;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.progress-percentage {
+  font-weight: 600;
+}
+
+.progress-bar-mobile {
+  height: 8px;
+}
+
+.forecast-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  justify-content: center;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 0.25rem;
+}
+
+/* Responsividade */
+@media (max-width: 1024px) {
+  .desktop-table-view {
+    display: none;
+  }
+  
+  .mobile-cards-view {
+    display: block;
+  }
+}
+
+@media (max-width: 640px) {
+  .account-metrics {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .metric {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 0.25rem;
+  }
+  
+  .account-header {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+}
+
+/* Melhorias gerais */
+.table-card .p-card-content {
+  padding: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .table-card .p-card-content {
+    padding: 1rem;
   }
 }
 </style>

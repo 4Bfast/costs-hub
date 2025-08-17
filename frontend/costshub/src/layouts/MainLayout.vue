@@ -12,6 +12,10 @@ const authStore = useAuthStore()
       <nav class="navigation">
         <RouterLink to="/dashboard" class="nav-link">Dashboard</RouterLink>
         <RouterLink to="/analysis" class="nav-link">Análise por Serviço</RouterLink>
+        <RouterLink to="/alarms" class="nav-link">
+          <i class="pi pi-bell"></i>
+          Alarmes
+        </RouterLink>
         <RouterLink to="/settings" class="nav-link">Configurações</RouterLink>
       </nav>
       <div class="footer">

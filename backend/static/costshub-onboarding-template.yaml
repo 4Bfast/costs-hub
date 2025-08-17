@@ -1,0 +1,225 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CostsHub - Template de Onboarding Seguro para Conexão de Conta Payer'
+
+Parameters:
+  CostsHubAccountID:
+    Type: String
+    Description: 'ID da conta AWS onde o CostsHub está hospedado'
+    AllowedPattern: '[0-9]{12}'
+    ConstraintDescription: 'Deve ser um ID de conta AWS válido (12 dígitos)'
+  
+  ExternalID:
+    Type: String
+    Description: 'ID externo único para segurança adicional'
+    MinLength: 16
+    MaxLength: 255
+    ConstraintDescription: 'Deve ter entre 16 e 255 caracteres'
+  
+  S3BucketPrefix:
+    Type: String
+    Description: 'Prefixo para o nome do bucket S3 (será combinado com o ID da conta)'
+    MinLength: 3
+    MaxLength: 30
+    AllowedPattern: '[a-z0-9-]+'
+    ConstraintDescription: 'Deve conter apenas letras minúsculas, números e hífens'
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Configuração de Segurança"
+        Parameters:
+          - CostsHubAccountID
+          - ExternalID
+      - Label:
+          default: "Configuração de Armazenamento"
+        Parameters:
+          - S3BucketPrefix
+    ParameterLabels:
+      CostsHubAccountID:
+        default: "ID da Conta CostsHub"
+      ExternalID:
+        default: "ID Externo de Segurança"
+      S3BucketPrefix:
+        default: "Prefixo do Bucket S3"
+
+Resources:
+  # IAM Role para o CostsHub acessar dados de custo
+  CostsHubRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'CostsHubRole-${AWS::AccountId}'
+      Description: 'Role para permitir acesso do CostsHub aos dados de custo desta conta'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${CostsHubAccountID}:root'
+            Action: 'sts:AssumeRole'
+            Condition:
+              StringEquals:
+                'sts:ExternalId': !Ref ExternalID
+              IpAddress:
+                'aws:SourceIp': 
+                  - '0.0.0.0/0'  # Pode ser restringido a IPs específicos se necessário
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/job-function/Billing'
+      Policies:
+        - PolicyName: 'CostsHubS3Access'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:ListBucket'
+                Resource:
+                  - !Sub '${CostsHubS3Bucket}/*'
+                  - !GetAtt CostsHubS3Bucket.Arn
+              - Effect: Allow
+                Action:
+                  - 'ce:GetCostAndUsage'
+                  - 'ce:GetUsageReport'
+                  - 'ce:GetReservationCoverage'
+                  - 'ce:GetReservationPurchaseRecommendation'
+                  - 'ce:GetReservationUtilization'
+                  - 'ce:GetSavingsPlansUtilization'
+                  - 'ce:ListCostCategoryDefinitions'
+                  - 'ce:GetRightsizingRecommendation'
+                  - 'organizations:ListAccounts'
+                  - 'organizations:DescribeOrganization'
+                  - 'cur:DescribeReportDefinitions'
+                Resource: '*'
+      Tags:
+        - Key: 'Purpose'
+          Value: 'CostsHub Integration'
+        - Key: 'CreatedBy'
+          Value: 'CostsHub Onboarding'
+
+  # S3 Bucket para armazenar relatórios de custo
+  CostsHubS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${S3BucketPrefix}-costshub-${AWS::AccountId}'
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: 'DeleteOldVersions'
+            Status: Enabled
+            NoncurrentVersionExpirationInDays: 30
+          - Id: 'TransitionToIA'
+            Status: Enabled
+            TransitionInDays: 30
+            StorageClass: STANDARD_IA
+          - Id: 'TransitionToGlacier'
+            Status: Enabled
+            TransitionInDays: 90
+            StorageClass: GLACIER
+      NotificationConfiguration:
+        CloudWatchConfigurations:
+          - Event: 's3:ObjectCreated:*'
+            CloudWatchConfiguration:
+              LogGroupName: !Ref CostsHubLogGroup
+      Tags:
+        - Key: 'Purpose'
+          Value: 'CostsHub Cost Reports Storage'
+        - Key: 'CreatedBy'
+          Value: 'CostsHub Onboarding'
+
+  # S3 Bucket Policy para permitir que o serviço de billing escreva relatórios
+  CostsHubS3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CostsHubS3Bucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: 'AllowBillingServiceAccess'
+            Effect: Allow
+            Principal:
+              Service: 'billingreports.amazonaws.com'
+            Action:
+              - 's3:GetBucketAcl'
+              - 's3:GetBucketPolicy'
+            Resource: !GetAtt CostsHubS3Bucket.Arn
+          - Sid: 'AllowBillingServiceWrite'
+            Effect: Allow
+            Principal:
+              Service: 'billingreports.amazonaws.com'
+            Action:
+              - 's3:PutObject'
+            Resource: !Sub '${CostsHubS3Bucket}/*'
+            Condition:
+              StringEquals:
+                's3:x-amz-acl': 'bucket-owner-full-control'
+
+  # CloudWatch Log Group para monitoramento
+  CostsHubLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/costshub/${AWS::AccountId}/s3-notifications'
+      RetentionInDays: 30
+      Tags:
+        - Key: 'Purpose'
+          Value: 'CostsHub S3 Monitoring'
+
+  # Cost and Usage Report Definition
+  CostsHubCURDefinition:
+    Type: AWS::CUR::ReportDefinition
+    Properties:
+      ReportName: !Sub 'costshub-report-${AWS::AccountId}'
+      TimeUnit: 'DAILY'
+      Format: 'Parquet'
+      Compression: 'GZIP'
+      AdditionalSchemaElements:
+        - 'RESOURCES'
+      S3Bucket: !Ref CostsHubS3Bucket
+      S3Prefix: 'cost-reports/'
+      S3Region: !Ref 'AWS::Region'
+      AdditionalArtifacts:
+        - 'REDSHIFT'
+        - 'ATHENA'
+      RefreshClosedReports: true
+      ReportVersioning: 'OVERWRITE_REPORT'
+
+Outputs:
+  CostsHubRoleArn:
+    Description: 'ARN da Role IAM para o CostsHub assumir'
+    Value: !GetAtt CostsHubRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-CostsHubRoleArn'
+
+  CostsHubS3BucketPath:
+    Description: 'Caminho completo do bucket S3 para relatórios de custo'
+    Value: !Sub 's3://${CostsHubS3Bucket}/cost-reports/'
+    Export:
+      Name: !Sub '${AWS::StackName}-CostsHubS3BucketPath'
+
+  CostsHubS3BucketName:
+    Description: 'Nome do bucket S3 criado'
+    Value: !Ref CostsHubS3Bucket
+    Export:
+      Name: !Sub '${AWS::StackName}-CostsHubS3BucketName'
+
+  ExternalIdUsed:
+    Description: 'ID Externo usado para segurança (para referência)'
+    Value: !Ref ExternalID
+
+  SetupInstructions:
+    Description: 'Próximos passos após a criação da stack'
+    Value: !Sub |
+      1. Copie o ARN da Role: ${CostsHubRole.Arn}
+      2. Cole no CostsHub para finalizar a conexão
+      3. O bucket S3 ${CostsHubS3Bucket} foi criado para armazenar relatórios
+      4. O relatório de custo será gerado automaticamente em: s3://${CostsHubS3Bucket}/cost-reports/

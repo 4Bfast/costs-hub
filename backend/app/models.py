@@ -49,6 +49,7 @@ class AWSAccount(db.Model):
     focus_s3_bucket_path = db.Column(db.String(255), nullable=False) # Ex: s3://my-bucket/path/to/reports
     is_connection_active = db.Column(db.Boolean, default=False, nullable=False)
     history_imported = db.Column(db.Boolean, default=False, nullable=False)  # NOVO CAMPO
+    monthly_budget = db.Column(db.Numeric(15, 2), nullable=False, server_default='0.00')  # NOVO CAMPO: Orçamento mensal
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relacionamento: Uma conta AWS pertence a uma organização
@@ -81,3 +82,62 @@ class DailyFocusCosts(db.Model):
 
     def __repr__(self):
         return f'<DailyFocusCosts {self.usage_date} {self.aws_service} ${self.cost}>'
+
+class Alarm(db.Model):
+    """Modelo para as regras de alarme criadas pelos usuários."""
+    __tablename__ = 'alarms'
+
+    id = db.Column(db.Integer, primary_key=True)
+    organization_id = db.Column(db.Integer, db.ForeignKey('organizations.id'), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    scope_type = db.Column(db.String(50), nullable=False)  # ORGANIZATION, AWS_ACCOUNT, SERVICE
+    scope_value = db.Column(db.String(255), nullable=True)  # ID da conta AWS ou nome do serviço
+    time_period = db.Column(db.String(50), nullable=False)  # DAILY, MONTHLY
+    severity_levels = db.Column(db.JSON, nullable=False)  # [{"name": "Alto", "threshold": 50.00, "notify": true}]
+    is_enabled = db.Column(db.Boolean, default=True, nullable=False)
+    notification_email = db.Column(db.String(255), nullable=True)  # Email personalizado para notificações
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relacionamento: Um alarme pertence a uma organização
+    organization = db.relationship('Organization', backref='alarms')
+
+    def __repr__(self):
+        return f'<Alarm {self.name}>'
+
+class AlarmEvent(db.Model):
+    """Modelo para registrar cada vez que uma regra de alarme é violada."""
+    __tablename__ = 'alarm_events'
+
+    id = db.Column(db.Integer, primary_key=True)
+    alarm_id = db.Column(db.Integer, db.ForeignKey('alarms.id'), nullable=False)
+    trigger_date = db.Column(db.Date, nullable=False, index=True)
+    cost_value = db.Column(db.Numeric(15, 2), nullable=False)
+    threshold_value = db.Column(db.Numeric(15, 2), nullable=False)
+    breached_severity = db.Column(db.String(50), nullable=False)
+    status = db.Column(db.String(50), default='NEW', nullable=False)  # NEW, ANALYZING, RESOLVED
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relacionamento: Um evento de alarme pertence a um alarme
+    alarm = db.relationship('Alarm', backref='events')
+
+    def __repr__(self):
+        return f'<AlarmEvent {self.alarm_id} {self.trigger_date} {self.breached_severity}>'
+
+class AlarmEventAction(db.Model):
+    """Modelo para rastrear o histórico de ações em eventos de alarme."""
+    __tablename__ = 'alarm_event_actions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    alarm_event_id = db.Column(db.Integer, db.ForeignKey('alarm_events.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    previous_status = db.Column(db.String(50), nullable=False)
+    new_status = db.Column(db.String(50), nullable=False)
+    comment = db.Column(db.Text, nullable=True)
+    action_timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relacionamentos
+    alarm_event = db.relationship('AlarmEvent', backref='actions')
+    user = db.relationship('User', backref='alarm_actions')
+
+    def __repr__(self):
+        return f'<AlarmEventAction {self.alarm_event_id} {self.previous_status}->{self.new_status}>'

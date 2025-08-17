@@ -10,6 +10,7 @@ import EmailVerificationView from '../views/EmailVerificationView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import AnalysisView from '../views/AnalysisView.vue'
+import AlarmsView from '../views/AlarmsView.vue'
 
 const routes = [
   {
@@ -52,6 +53,11 @@ const routes = [
         path: 'analysis',
         name: 'analysis',
         component: AnalysisView,
+      },
+      {
+        path: 'alarms',
+        name: 'alarms',
+        component: AlarmsView,
       },
     ]
   },

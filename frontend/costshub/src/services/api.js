@@ -152,4 +152,129 @@ export const apiService = {
         
         return authenticatedFetch(url);
     },
+
+    // --- Módulo de Alarmes ---
+    
+    /**
+     * Lista todos os serviços AWS disponíveis para criar alarmes
+     */
+    getServices() {
+        return authenticatedFetch('/services');
+    },
+
+    /**
+     * Lista todas as regras de alarme da organização
+     */
+    getAlarms() {
+        return authenticatedFetch('/alarms');
+    },
+
+    /**
+     * Cria uma nova regra de alarme
+     */
+    createAlarm(alarmData) {
+        return authenticatedFetch('/alarms', {
+            method: 'POST',
+            body: JSON.stringify(alarmData),
+        });
+    },
+
+    /**
+     * Atualiza uma regra de alarme existente
+     */
+    updateAlarm(alarmId, alarmData) {
+        return authenticatedFetch(`/alarms/${alarmId}`, {
+            method: 'PUT',
+            body: JSON.stringify(alarmData),
+        });
+    },
+
+    /**
+     * Deleta uma regra de alarme
+     */
+    deleteAlarm(alarmId) {
+        return authenticatedFetch(`/alarms/${alarmId}`, {
+            method: 'DELETE',
+        });
+    },
+
+    /**
+     * Lista todos os eventos de alarme com filtros opcionais
+     */
+    getAlarmEvents(filters = {}) {
+        const params = new URLSearchParams();
+        
+        if (filters.status) {
+            params.append('status', filters.status);
+        }
+        if (filters.severity) {
+            params.append('severity', filters.severity);
+        }
+        if (filters.page) {
+            params.append('page', filters.page);
+        }
+        if (filters.per_page) {
+            params.append('per_page', filters.per_page);
+        }
+
+        const queryString = params.toString();
+        const url = queryString ? `/alarm-events?${queryString}` : '/alarm-events';
+        
+        return authenticatedFetch(url);
+    },
+
+    /**
+     * Atualiza o status de um evento de alarme
+     */
+    updateAlarmEventStatus(eventId, statusData) {
+        return authenticatedFetch(`/alarm-events/${eventId}/status`, {
+            method: 'PUT',
+            body: JSON.stringify(statusData),
+        });
+    },
+
+    /**
+     * Obtém o histórico de ações de um evento de alarme
+     */
+    getAlarmEventHistory(eventId) {
+        return authenticatedFetch(`/alarm-events/${eventId}/history`);
+    },
+
+    // --- Métodos auxiliares ---
+    
+    /**
+     * Método genérico para GET
+     */
+    get(endpoint) {
+        return authenticatedFetch(endpoint);
+    },
+
+    /**
+     * Método genérico para POST
+     */
+    post(endpoint, data) {
+        return authenticatedFetch(endpoint, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    },
+
+    /**
+     * Método genérico para PUT
+     */
+    put(endpoint, data) {
+        return authenticatedFetch(endpoint, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+    },
+
+    /**
+     * Método genérico para DELETE
+     */
+    delete(endpoint) {
+        return authenticatedFetch(endpoint, {
+            method: 'DELETE',
+        });
+    },
 };

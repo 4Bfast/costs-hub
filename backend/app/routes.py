@@ -3,7 +3,7 @@
 from flask import request, jsonify, current_app, Blueprint
 import jwt
 from . import db
-from .models import Organization, User, AWSAccount, DailyFocusCosts
+from .models import Organization, User, AWSAccount, DailyFocusCosts, Alarm, AlarmEvent, AlarmEventAction
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone, date
 from sqlalchemy import func
@@ -11,9 +11,146 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from .decorators import token_required
 import boto3
 from botocore.exceptions import ClientError
+import secrets
+import uuid
+import logging
 
 auth_bp = Blueprint('auth_bp', __name__, url_prefix='/auth')
 api_bp = Blueprint('api_bp', __name__, url_prefix='/api/v1')
+
+# --- FUNÇÕES AUXILIARES PARA VERIFICAÇÃO DE EMAIL ---
+
+def generate_verification_token():
+    """Gera um token único para verificação de email."""
+    return str(uuid.uuid4())
+
+def send_verification_email(user_email, verification_token):
+    """
+    Envia email de verificação usando AWS SES.
+    Fallback para simulação se SES não estiver configurado.
+    """
+    verification_url = f"http://localhost:5173/verify-email?token={verification_token}"
+    
+    # Configurações do email a partir das variáveis de ambiente
+    import os
+    sender_email = os.getenv('SES_SENDER_EMAIL', 'noreply@costshub.com')
+    ses_region = os.getenv('SES_REGION', 'us-east-1')
+    subject = "Verifique seu email - CostsHub"
+    
+    # Template HTML do email
+    html_body = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Verificação de Email - CostsHub</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
+            .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }}
+            .button {{ display: inline-block; background: #007BFF; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
+            .footer {{ text-align: center; margin-top: 20px; color: #666; font-size: 12px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🚀 Bem-vindo ao CostsHub!</h1>
+            </div>
+            <div class="content">
+                <h2>Verifique seu email</h2>
+                <p>Olá!</p>
+                <p>Obrigado por se cadastrar no CostsHub. Para completar seu cadastro e começar a usar nossa plataforma, clique no botão abaixo para verificar seu email:</p>
+                
+                <div style="text-align: center;">
+                    <a href="{verification_url}" class="button">✅ Verificar Email</a>
+                </div>
+                
+                <p>Ou copie e cole este link no seu navegador:</p>
+                <p style="background: #e9ecef; padding: 10px; border-radius: 4px; word-break: break-all;">
+                    {verification_url}
+                </p>
+                
+                <p><strong>Este link expira em 24 horas.</strong></p>
+                
+                <p>Se você não criou uma conta no CostsHub, pode ignorar este email com segurança.</p>
+            </div>
+            <div class="footer">
+                <p>© 2025 CostsHub - Plataforma de FinOps e Análise de Custos</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Versão texto simples
+    text_body = f"""
+    Bem-vindo ao CostsHub!
+    
+    Obrigado por se cadastrar. Para completar seu cadastro, clique no link abaixo:
+    
+    {verification_url}
+    
+    Este link expira em 24 horas.
+    
+    Se você não criou uma conta, ignore este email.
+    
+    © 2025 CostsHub
+    """
+    
+    try:
+        # Tentar enviar via AWS SES
+        ses_client = boto3.client('ses', region_name=ses_region)
+        
+        response = ses_client.send_email(
+            Source=sender_email,
+            Destination={{
+                'ToAddresses': [user_email]
+            }},
+            Message={{
+                'Subject': {{
+                    'Data': subject,
+                    'Charset': 'UTF-8'
+                }},
+                'Body': {{
+                    'Html': {{
+                        'Data': html_body,
+                        'Charset': 'UTF-8'
+                    }},
+                    'Text': {{
+                        'Data': text_body,
+                        'Charset': 'UTF-8'
+                    }}
+                }}
+            }}
+        )
+        
+        print(f"✅ Email enviado via AWS SES para {user_email}")
+        print(f"📧 Message ID: {response['MessageId']}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Erro ao enviar via SES: {e}")
+        print(f"🔄 Usando simulação local...")
+        
+        # Fallback: Simulação local
+        print(f"\\n" + "="*60)
+        print(f"📧 EMAIL DE VERIFICAÇÃO SIMULADO")
+        print(f"="*60)
+        print(f"Para: {user_email}")
+        print(f"Assunto: {subject}")
+        print(f"")
+        print(f"Olá!")
+        print(f"")
+        print(f"Clique no link abaixo para verificar seu email:")
+        print(f"{verification_url}")
+        print(f"")
+        print(f"Se você não criou uma conta, ignore este email.")
+        print(f"="*60)
+        print(f"")
+        
+        return True
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -39,20 +176,35 @@ def register():
     db.session.flush()
 
     hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+    
+    # Gerar token de verificação de email
+    verification_token = generate_verification_token()
+    
     new_user = User(
         organization_id=new_organization.id,
         email=email,
-        password_hash=hashed_password
+        password_hash=hashed_password,
+        email_verification_token=verification_token,
+        email_verification_sent_at=datetime.utcnow(),
+        is_email_verified=False  # Usuário começa não verificado
     )
     db.session.add(new_user)
 
     db.session.commit()
+    
+    # Enviar email de verificação
+    try:
+        send_verification_email(email, verification_token)
+    except Exception as e:
+        # Se falhar o envio do email, ainda assim criamos a conta
+        print(f"Erro ao enviar email de verificação: {e}")
 
     return jsonify({
-        'message': 'Organization and user created successfully',
+        'message': 'Organization and user created successfully. Please check your email to verify your account.',
         'user': {
             'id': new_user.id,
-            'email': new_user.email
+            'email': new_user.email,
+            'is_email_verified': new_user.is_email_verified
         },
         'organization': {
             'id': new_organization.id,
@@ -77,6 +229,13 @@ def login():
     if not user or not check_password_hash(user.password_hash, password):
         return jsonify({'message': 'Invalid credentials'}), 401 # 401 Unauthorized
 
+    # Opcional: Verificar se email foi verificado (descomente para forçar verificação)
+    # if not user.is_email_verified:
+    #     return jsonify({
+    #         'error': 'Email not verified. Please check your email and verify your account.',
+    #         'requires_verification': True
+    #     }), 403
+
     payload = {
         'iat': datetime.now(timezone.utc),                               # iat (issued at): Hora em que o token foi gerado
         'exp': datetime.now(timezone.utc) + timedelta(hours=24),         # exp (expiration time): Define a validade do token (24 horas)
@@ -90,7 +249,101 @@ def login():
         algorithm='HS256'
     )
 
-    return jsonify({'access_token': token})
+    return jsonify({
+        'access_token': token,
+        'user': {
+            'id': user.id,
+            'email': user.email,
+            'is_email_verified': user.is_email_verified
+        }
+    })
+
+@auth_bp.route('/verify-email', methods=['POST'])
+def verify_email():
+    """
+    Endpoint para verificar o email do usuário usando o token enviado por email.
+    """
+    data = request.get_json()
+    
+    if not data or not data.get('token'):
+        return jsonify({'error': 'Missing verification token'}), 400
+    
+    token = data.get('token')
+    
+    # Buscar usuário pelo token de verificação
+    user = User.query.filter_by(email_verification_token=token).first()
+    
+    if not user:
+        return jsonify({'error': 'Invalid or expired verification token'}), 400
+    
+    # Verificar se o token não expirou (24 horas)
+    if user.email_verification_sent_at:
+        token_age = datetime.utcnow() - user.email_verification_sent_at
+        if token_age > timedelta(hours=24):
+            return jsonify({'error': 'Verification token has expired. Please request a new one.'}), 400
+    
+    # Marcar email como verificado
+    user.is_email_verified = True
+    user.email_verification_token = None  # Limpar o token usado
+    user.email_verification_sent_at = None
+    
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Email verified successfully! You can now log in.',
+        'user': {
+            'id': user.id,
+            'email': user.email,
+            'is_email_verified': user.is_email_verified
+        }
+    }), 200
+
+@auth_bp.route('/resend-verification', methods=['POST'])
+def resend_verification():
+    """
+    Endpoint para reenviar email de verificação.
+    """
+    data = request.get_json()
+    
+    if not data or not data.get('email'):
+        return jsonify({'error': 'Missing email address'}), 400
+    
+    email = data.get('email')
+    
+    # Buscar usuário pelo email
+    user = User.query.filter_by(email=email).first()
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Verificar se já está verificado
+    if user.is_email_verified:
+        return jsonify({'error': 'Email is already verified'}), 400
+    
+    # Verificar rate limiting (não permitir reenvio muito frequente)
+    if user.email_verification_sent_at:
+        time_since_last = datetime.utcnow() - user.email_verification_sent_at
+        if time_since_last < timedelta(minutes=2):  # Mínimo 2 minutos entre reenvios
+            return jsonify({'error': 'Please wait before requesting another verification email'}), 429
+    
+    # Gerar novo token
+    verification_token = generate_verification_token()
+    
+    # Atualizar usuário
+    user.email_verification_token = verification_token
+    user.email_verification_sent_at = datetime.utcnow()
+    
+    db.session.commit()
+    
+    # Enviar email
+    try:
+        send_verification_email(email, verification_token)
+        return jsonify({
+            'message': 'Verification email sent successfully. Please check your inbox.'
+        }), 200
+    except Exception as e:
+        print(f"Erro ao enviar email de verificação: {e}")
+        return jsonify({'error': 'Failed to send verification email. Please try again later.'}), 500
 
 @api_bp.route('/users/me', methods=['GET'])
 @token_required
@@ -214,6 +467,7 @@ def list_aws_accounts(current_user):
             'focus_s3_bucket_path': account.focus_s3_bucket_path,
             'is_connection_active': account.is_connection_active,
             'history_imported': getattr(account, 'history_imported', False),  # NOVO CAMPO
+            'monthly_budget': float(account.monthly_budget) if account.monthly_budget else 0.00,  # NOVO CAMPO: Orçamento mensal
             'created_at': account.created_at.isoformat()
         })
         
@@ -508,6 +762,16 @@ def update_aws_account(current_user, account_id):
     account.account_name = data.get('account_name', account.account_name)
     account.iam_role_arn = data.get('iam_role_arn', account.iam_role_arn)
     account.focus_s3_bucket_path = data.get('focus_s3_bucket_path', account.focus_s3_bucket_path)
+    
+    # NOVO: Suporte ao orçamento mensal
+    if 'monthly_budget' in data:
+        try:
+            monthly_budget = float(data['monthly_budget'])
+            if monthly_budget < 0:
+                return jsonify({'error': 'Monthly budget cannot be negative'}), 400
+            account.monthly_budget = monthly_budget
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Monthly budget must be a valid number'}), 400
 
     db.session.commit()
     
@@ -865,27 +1129,57 @@ def get_main_dashboard(current_user):
         # Ordenar por variação absoluta
         service_variation.sort(key=lambda x: abs(x['variationValue']), reverse=True)
         
-        # Custo por Conta
+        # Custo por Conta com Previsão e Orçamento
         current_by_account = defaultdict(float)
         for c in current_period_costs:
             current_by_account[c['account_id']] += c['cost']
         
         cost_by_account = []
+        
+        # Obter data atual para cálculos de previsão
+        today = datetime.now().date()
+        
         for account in aws_accounts:
             account_cost = current_by_account.get(account.id, 0)
             percentage = (account_cost / total_cost * 100) if total_cost > 0 else 0
+            
+            # NOVA LÓGICA: Cálculo de Previsão de Custo
+            forecasted_cost = 0.0
+            
+            # Verificar se estamos analisando o mês atual
+            if start_date.year == today.year and start_date.month == today.month:
+                # Lógica de previsão para o mês atual
+                days_in_month = (datetime(today.year, today.month + 1, 1) - datetime(today.year, today.month, 1)).days if today.month < 12 else 31
+                current_day = today.day
+                
+                if current_day > 0 and account_cost > 0:
+                    # Custo médio diário = custo acumulado / dias decorridos
+                    daily_average = account_cost / current_day
+                    # Previsão = custo médio diário * total de dias no mês
+                    forecasted_cost = daily_average * days_in_month
+                else:
+                    forecasted_cost = account_cost
+            else:
+                # Para períodos que não são o mês atual, a previsão é o próprio custo
+                forecasted_cost = account_cost
             
             cost_by_account.append({
                 'accountId': account.id,
                 'accountName': account.account_name,
                 'totalCost': round(account_cost, 2),
-                'percentageOfTotal': round(percentage, 1)
+                'percentageOfTotal': round(percentage, 1),
+                'monthlyBudget': float(account.monthly_budget) if account.monthly_budget else 0.00,  # NOVO CAMPO
+                'forecastedCost': round(forecasted_cost, 2)  # NOVO CAMPO
             })
+        
+        # Cálculo do Orçamento Total da Organização
+        total_monthly_budget = sum(float(account.monthly_budget) if account.monthly_budget else 0.00 for account in aws_accounts)
         
         # 4. Estrutura da Resposta (JSON Payload)
         response = {
             'kpis': {
                 'totalCost': round(total_cost, 2),
+                'totalMonthlyBudget': round(total_monthly_budget, 2),  # NOVO CAMPO: Orçamento total da organização
                 'previousPeriodCost': round(previous_period_cost, 2),
                 'totalVariationValue': round(total_variation_value, 2),
                 'totalVariationPercentage': round(total_variation_percentage, 2),
@@ -1031,3 +1325,415 @@ def simulate_historical_data_import(account_id):
     
     logging.info(f"Simulação REALISTA concluída: {imported_count} registros importados para conta {account_id}")
     print(f"✅ Dados históricos realistas gerados: {imported_count} registros")
+
+# ============================================================================
+# MÓDULO DE ALARMES - SISTEMA DE INTELIGÊNCIA PROATIVA
+# ============================================================================
+
+@api_bp.route('/services', methods=['GET'])
+@token_required
+def list_services(current_user):
+    """
+    Endpoint para listar todos os serviços AWS distintos da organização.
+    Usado para popular o dropdown de seleção de serviços nos alarmes.
+    """
+    try:
+        organization_id = current_user.organization_id
+        
+        # Obter IDs das contas AWS da organização
+        account_ids = [acc.id for acc in AWSAccount.query.filter_by(
+            organization_id=organization_id
+        ).all()]
+        
+        if not account_ids:
+            return jsonify([]), 200
+        
+        # Query para obter serviços distintos
+        services = db.session.query(DailyFocusCosts.aws_service).filter(
+            DailyFocusCosts.aws_account_id.in_(account_ids)
+        ).distinct().order_by(DailyFocusCosts.aws_service).all()
+        
+        # Converter para lista de strings
+        service_list = [service[0] for service in services]
+        
+        return jsonify(service_list), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/alarms', methods=['POST'])
+@token_required
+def create_alarm(current_user):
+    """
+    Endpoint para criar uma nova regra de alarme.
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Request body cannot be empty'}), 400
+        
+        # Validar campos obrigatórios
+        required_fields = ['name', 'scope_type', 'time_period', 'severity_levels']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Validar scope_type
+        valid_scope_types = ['ORGANIZATION', 'AWS_ACCOUNT', 'SERVICE']
+        if data['scope_type'] not in valid_scope_types:
+            return jsonify({'error': f'Invalid scope_type. Must be one of: {valid_scope_types}'}), 400
+        
+        # Validar time_period
+        valid_time_periods = ['DAILY', 'MONTHLY']
+        if data['time_period'] not in valid_time_periods:
+            return jsonify({'error': f'Invalid time_period. Must be one of: {valid_time_periods}'}), 400
+        
+        # Validar severity_levels
+        if not isinstance(data['severity_levels'], list) or len(data['severity_levels']) == 0:
+            return jsonify({'error': 'severity_levels must be a non-empty array'}), 400
+        
+        if len(data['severity_levels']) > 4:
+            return jsonify({'error': 'Maximum 4 severity levels allowed'}), 400
+        
+        # Validar estrutura dos níveis de severidade
+        for level in data['severity_levels']:
+            if not isinstance(level, dict) or 'name' not in level or 'threshold' not in level:
+                return jsonify({'error': 'Each severity level must have name and threshold'}), 400
+            try:
+                float(level['threshold'])
+            except (ValueError, TypeError):
+                return jsonify({'error': 'Threshold must be a valid number'}), 400
+        
+        # Validar scope_value se necessário
+        scope_value = data.get('scope_value')
+        if data['scope_type'] in ['AWS_ACCOUNT', 'SERVICE'] and not scope_value:
+            return jsonify({'error': f'scope_value is required for scope_type {data["scope_type"]}'}), 400
+        
+        # Criar novo alarme
+        new_alarm = Alarm(
+            organization_id=current_user.organization_id,
+            name=data['name'],
+            scope_type=data['scope_type'],
+            scope_value=scope_value,
+            time_period=data['time_period'],
+            severity_levels=data['severity_levels'],
+            is_enabled=data.get('is_enabled', True),
+            notification_email=data.get('notification_email')
+        )
+        
+        db.session.add(new_alarm)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Alarm created successfully',
+            'alarm_id': new_alarm.id
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/alarms', methods=['GET'])
+@token_required
+def list_alarms(current_user):
+    """
+    Endpoint para listar todas as regras de alarme da organização.
+    """
+    try:
+        organization_id = current_user.organization_id
+        
+        alarms = Alarm.query.filter_by(organization_id=organization_id).order_by(
+            Alarm.created_at.desc()
+        ).all()
+        
+        alarms_list = []
+        for alarm in alarms:
+            alarms_list.append({
+                'id': alarm.id,
+                'name': alarm.name,
+                'scope_type': alarm.scope_type,
+                'scope_value': alarm.scope_value,
+                'time_period': alarm.time_period,
+                'severity_levels': alarm.severity_levels,
+                'is_enabled': alarm.is_enabled,
+                'notification_email': alarm.notification_email,
+                'created_at': alarm.created_at.isoformat()
+            })
+        
+        return jsonify(alarms_list), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/alarms/<int:alarm_id>', methods=['PUT'])
+@token_required
+def update_alarm(current_user, alarm_id):
+    """
+    Endpoint para atualizar uma regra de alarme.
+    """
+    try:
+        # Buscar alarme e verificar se pertence à organização
+        alarm = Alarm.query.filter_by(
+            id=alarm_id, 
+            organization_id=current_user.organization_id
+        ).first_or_404()
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Request body cannot be empty'}), 400
+        
+        # Atualizar campos se fornecidos
+        if 'name' in data:
+            alarm.name = data['name']
+        
+        if 'scope_type' in data:
+            valid_scope_types = ['ORGANIZATION', 'AWS_ACCOUNT', 'SERVICE']
+            if data['scope_type'] not in valid_scope_types:
+                return jsonify({'error': f'Invalid scope_type. Must be one of: {valid_scope_types}'}), 400
+            alarm.scope_type = data['scope_type']
+        
+        if 'scope_value' in data:
+            alarm.scope_value = data['scope_value']
+        
+        if 'time_period' in data:
+            valid_time_periods = ['DAILY', 'MONTHLY']
+            if data['time_period'] not in valid_time_periods:
+                return jsonify({'error': f'Invalid time_period. Must be one of: {valid_time_periods}'}), 400
+            alarm.time_period = data['time_period']
+        
+        if 'severity_levels' in data:
+            if not isinstance(data['severity_levels'], list) or len(data['severity_levels']) == 0:
+                return jsonify({'error': 'severity_levels must be a non-empty array'}), 400
+            
+            if len(data['severity_levels']) > 4:
+                return jsonify({'error': 'Maximum 4 severity levels allowed'}), 400
+            
+            # Validar estrutura dos níveis
+            for level in data['severity_levels']:
+                if not isinstance(level, dict) or 'name' not in level or 'threshold' not in level:
+                    return jsonify({'error': 'Each severity level must have name and threshold'}), 400
+                try:
+                    float(level['threshold'])
+                except (ValueError, TypeError):
+                    return jsonify({'error': 'Threshold must be a valid number'}), 400
+            
+            alarm.severity_levels = data['severity_levels']
+        
+        if 'is_enabled' in data:
+            alarm.is_enabled = bool(data['is_enabled'])
+        
+        if 'notification_email' in data:
+            alarm.notification_email = data['notification_email']
+        
+        db.session.commit()
+        
+        return jsonify({'message': 'Alarm updated successfully'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/alarms/<int:alarm_id>', methods=['DELETE'])
+@token_required
+def delete_alarm(current_user, alarm_id):
+    """
+    Endpoint para deletar uma regra de alarme.
+    """
+    try:
+        # Buscar alarme e verificar se pertence à organização
+        alarm = Alarm.query.filter_by(
+            id=alarm_id, 
+            organization_id=current_user.organization_id
+        ).first_or_404()
+        
+        # Deletar eventos de alarme associados primeiro
+        AlarmEvent.query.filter_by(alarm_id=alarm.id).delete()
+        
+        # Deletar o alarme
+        db.session.delete(alarm)
+        db.session.commit()
+        
+        return jsonify({'message': 'Alarm deleted successfully'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/alarm-events', methods=['GET'])
+@token_required
+def list_alarm_events(current_user):
+    """
+    Endpoint para listar todos os eventos de alarme da organização.
+    Suporta paginação e filtros.
+    """
+    try:
+        organization_id = current_user.organization_id
+        
+        # Parâmetros de paginação
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        per_page = min(per_page, 100)  # Limitar a 100 itens por página
+        
+        # Parâmetros de filtro
+        status_filter = request.args.get('status')
+        severity_filter = request.args.get('severity')
+        
+        # Query base - juntar com tabela de alarmes para filtrar por organização
+        query = db.session.query(AlarmEvent).join(Alarm).filter(
+            Alarm.organization_id == organization_id
+        )
+        
+        # Aplicar filtros
+        if status_filter:
+            query = query.filter(AlarmEvent.status == status_filter)
+        
+        if severity_filter:
+            query = query.filter(AlarmEvent.breached_severity == severity_filter)
+        
+        # Ordenar por data mais recente
+        query = query.order_by(AlarmEvent.trigger_date.desc(), AlarmEvent.created_at.desc())
+        
+        # Aplicar paginação
+        paginated_events = query.paginate(
+            page=page, 
+            per_page=per_page, 
+            error_out=False
+        )
+        
+        events_list = []
+        for event in paginated_events.items:
+            events_list.append({
+                'id': event.id,
+                'alarm_id': event.alarm_id,
+                'alarm_name': event.alarm.name,
+                'trigger_date': event.trigger_date.isoformat(),
+                'cost_value': float(event.cost_value),
+                'threshold_value': float(event.threshold_value),
+                'breached_severity': event.breached_severity,
+                'status': event.status,
+                'created_at': event.created_at.isoformat(),
+                'scope_type': event.alarm.scope_type,
+                'scope_value': event.alarm.scope_value,
+                'time_period': event.alarm.time_period
+            })
+        
+        return jsonify({
+            'events': events_list,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': paginated_events.total,
+                'pages': paginated_events.pages,
+                'has_next': paginated_events.has_next,
+                'has_prev': paginated_events.has_prev
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ============================================================================
+# MÓDULO DE ALARMES - FASE 2: WORKFLOW E NOTIFICAÇÕES
+# ============================================================================
+
+@api_bp.route('/alarm-events/<int:event_id>/status', methods=['PUT'])
+@token_required
+def update_alarm_event_status(current_user, event_id):
+    """
+    Endpoint para atualizar o status de um evento de alarme.
+    """
+    try:
+        # Buscar evento e verificar se pertence à organização do usuário
+        event = db.session.query(AlarmEvent).join(Alarm).filter(
+            AlarmEvent.id == event_id,
+            Alarm.organization_id == current_user.organization_id
+        ).first()
+        
+        if not event:
+            return jsonify({'error': 'Evento de alarme não encontrado'}), 404
+        
+        data = request.get_json()
+        if not data or 'new_status' not in data:
+            return jsonify({'error': 'new_status é obrigatório'}), 400
+        
+        new_status = data['new_status']
+        comment = data.get('comment', '')
+        
+        # Validar transições permitidas
+        valid_transitions = {
+            'NEW': ['ANALYZING'],
+            'ANALYZING': ['RESOLVED']
+        }
+        
+        if new_status not in valid_transitions.get(event.status, []):
+            return jsonify({
+                'error': f'Transição de {event.status} para {new_status} não é permitida'
+            }), 400
+        
+        # Validar comentário obrigatório para resolução
+        if new_status == 'RESOLVED' and not comment.strip():
+            return jsonify({'error': 'Comentário é obrigatório ao marcar como resolvido'}), 400
+        
+        # Registrar ação no histórico
+        action = AlarmEventAction(
+            alarm_event_id=event.id,
+            user_id=current_user.id,
+            previous_status=event.status,
+            new_status=new_status,
+            comment=comment
+        )
+        
+        # Atualizar status do evento
+        event.status = new_status
+        
+        db.session.add(action)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Status atualizado com sucesso',
+            'new_status': new_status
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/alarm-events/<int:event_id>/history', methods=['GET'])
+@token_required
+def get_alarm_event_history(current_user, event_id):
+    """
+    Endpoint para obter o histórico de ações de um evento de alarme.
+    """
+    try:
+        # Verificar se o evento pertence à organização do usuário
+        event = db.session.query(AlarmEvent).join(Alarm).filter(
+            AlarmEvent.id == event_id,
+            Alarm.organization_id == current_user.organization_id
+        ).first()
+        
+        if not event:
+            return jsonify({'error': 'Evento de alarme não encontrado'}), 404
+        
+        # Buscar histórico de ações
+        actions = db.session.query(AlarmEventAction).join(User).filter(
+            AlarmEventAction.alarm_event_id == event_id
+        ).order_by(AlarmEventAction.action_timestamp.desc()).all()
+        
+        history = []
+        for action in actions:
+            history.append({
+                'id': action.id,
+                'user_name': action.user.email,  # Ou nome se disponível
+                'previous_status': action.previous_status,
+                'new_status': action.new_status,
+                'comment': action.comment,
+                'action_timestamp': action.action_timestamp.isoformat()
+            })
+        
+        return jsonify({
+            'event_id': event_id,
+            'history': history
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
