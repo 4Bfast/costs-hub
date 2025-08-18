@@ -505,29 +505,29 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="dashboard-strategic">
+  <div class="tw-p-6 tw-max-w-7xl tw-mx-auto">
     <!-- Header -->
-    <div class="dashboard-header">
-      <div class="header-content">
-        <h1>Dashboard Estratégico</h1>
-        <p class="header-subtitle">Insights avançados sobre seus custos de nuvem</p>
+    <div class="tw-mb-8">
+      <div class="tw-text-center tw-mb-8">
+        <h1 class="tw-text-4xl tw-font-bold tw-text-gray-900 tw-mb-3">Dashboard Estratégico</h1>
+        <p class="tw-text-xl tw-text-gray-600">Insights avançados sobre seus custos de nuvem</p>
       </div>
     </div>
 
     <!-- Seção de Controles -->
-    <Card class="controls-card mb-4">
+    <Card class="tw-mb-6">
       <template #content>
-        <div class="controls-section">
+        <div class="tw-grid tw-grid-cols-1 lg:tw-grid-cols-3 tw-gap-6 tw-items-end">
           <!-- Filtro de Conta-Membro -->
-          <div class="account-filter">
-            <label class="control-label">Filtrar por Conta:</label>
+          <div class="tw-space-y-2">
+            <label class="tw-block tw-text-sm tw-font-semibold tw-text-gray-700">Filtrar por Conta:</label>
             <Dropdown 
               v-model="selectedMemberAccount" 
               :options="memberAccounts" 
               optionLabel="name" 
               placeholder="Selecione uma conta"
               @change="onMemberAccountChange"
-              class="w-full md:w-14rem"
+              class="w-full"
             >
               <template #value="slotProps">
                 <div v-if="slotProps.value" class="flex align-items-center gap-2">
@@ -552,38 +552,41 @@ onMounted(async () => {
           </div>
           
           <!-- Botões de Período Pré-definido -->
-          <div class="period-buttons">
-            <label class="control-label">Períodos Rápidos:</label>
-            <ButtonGroup>
+          <div class="tw-space-y-2">
+            <label class="tw-block tw-text-sm tw-font-semibold tw-text-gray-700">Períodos Rápidos:</label>
+            <div class="tw-flex tw-flex-wrap tw-gap-2">
               <Button 
-                label="Últimos 7 dias" 
+                label="7 dias" 
                 @click="setLast7Days"
                 size="small"
                 outlined
+                class="tw-text-xs"
               />
               <Button 
                 label="Este Mês" 
                 @click="setThisMonth"
                 size="small"
                 outlined
+                class="tw-text-xs"
               />
               <Button 
                 label="Mês Passado" 
                 @click="setLastMonth"
                 size="small"
                 outlined
+                class="tw-text-xs"
               />
-            </ButtonGroup>
+            </div>
           </div>
 
           <!-- Seletor de Calendário Customizado -->
-          <div class="custom-date-picker">
-            <label for="date-picker" class="control-label">Período Customizado:</label>
+          <div class="tw-space-y-2">
+            <label for="date-picker" class="tw-block tw-text-sm tw-font-semibold tw-text-gray-700">Período Customizado:</label>
             <flat-pickr
               id="date-picker"
               v-model="dateRange"
               :config="datePickerConfig"
-              class="date-picker"
+              class="tw-w-full tw-px-3 tw-py-2 tw-border tw-border-gray-300 tw-rounded-md tw-text-sm"
               @on-change="onDateRangeChange"
             />
           </div>
@@ -592,9 +595,9 @@ onMounted(async () => {
     </Card>
 
     <!-- Estado de Loading -->
-    <div v-if="isLoading" class="loading-state">
+    <div v-if="isLoading" class="tw-flex tw-items-center tw-justify-center tw-py-12">
       <ProgressSpinner />
-      <p class="ml-3">Carregando dados estratégicos...</p>
+      <p class="tw-ml-3 tw-text-gray-600">Carregando dados estratégicos...</p>
     </div>
 
     <!-- Estado de Erro -->
@@ -605,88 +608,93 @@ onMounted(async () => {
     <!-- Conteúdo Principal -->
     <div v-else-if="dashboardData">
       <!-- Seção de KPIs -->
-      <div class="kpis-section mb-4">
+      <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 lg:tw-grid-cols-4 tw-gap-4 tw-mb-6">
         <!-- KPI 1 - Custo Total com Barra de Progresso -->
-        <Card class="kpi-card kpi-primary">
+        <Card class="tw-h-fit">
           <template #content>
-            <div class="kpi-content">
-              <div class="kpi-icon">💰</div>
-              <div class="kpi-info">
-                <h3>Custo Total no Período</h3>
-                <p class="kpi-value">${{ kpis.totalCost.toFixed(2) }}</p>
-                
-                <!-- Barra de Progresso do Orçamento -->
-                <div v-if="kpis.totalMonthlyBudget > 0" class="budget-progress-container">
-                  <div class="budget-status-header">
-                    <span class="budget-status-icon">{{ getBudgetStatusIcon() }}</span>
-                    <span class="budget-status-text">{{ getBudgetStatusText() }}</span>
+            <div class="tw-p-4">
+              <div class="tw-flex tw-items-start tw-space-x-3">
+                <div class="tw-text-2xl">💰</div>
+                <div class="tw-flex-1 tw-min-w-0">
+                  <h3 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-mb-1">Custo Total no Período</h3>
+                  <p class="tw-text-xl tw-font-bold tw-text-gray-900 tw-mb-2">${{ kpis.totalCost.toFixed(2) }}</p>
+                  
+                  <!-- Barra de Progresso do Orçamento -->
+                  <div v-if="kpis.totalMonthlyBudget > 0" class="tw-space-y-2">
+                    <div class="tw-flex tw-items-center tw-justify-between">
+                      <span class="tw-text-xs tw-font-medium tw-text-gray-600">{{ getBudgetStatusIcon() }} {{ getBudgetStatusText() }}</span>
+                    </div>
+                    
+                    <ProgressBar 
+                      :value="getBudgetConsumptionPercentage()" 
+                      :severity="getBudgetConsumptionSeverity()"
+                      class="tw-h-2"
+                      :showValue="false"
+                      :style="{ '--progress-color': getBudgetProgressColor() }"
+                    />
+                    
+                    <div class="tw-flex tw-justify-between tw-text-xs tw-text-gray-600">
+                      <span>${{ kpis.totalCost.toFixed(2) }} de ${{ kpis.totalMonthlyBudget.toFixed(2) }}</span>
+                      <span class="tw-font-semibold" :class="getBudgetConsumptionSeverity()">
+                        {{ getBudgetConsumptionPercentage().toFixed(1) }}%
+                      </span>
+                    </div>
                   </div>
                   
-                  <ProgressBar 
-                    :value="getBudgetConsumptionPercentage()" 
-                    :severity="getBudgetConsumptionSeverity()"
-                    class="budget-progress-kpi"
-                    :showValue="false"
-                    :style="{ '--progress-color': getBudgetProgressColor() }"
-                  />
-                  
-                  <div class="budget-details">
-                    <span class="budget-info">
-                      <strong>${{ kpis.totalCost.toFixed(2) }}</strong> de ${{ kpis.totalMonthlyBudget.toFixed(2) }} orçados
-                    </span>
-                    <span class="budget-percentage" :class="getBudgetConsumptionSeverity()">
-                      {{ getBudgetConsumptionPercentage().toFixed(1) }}%
-                    </span>
-                  </div>
+                  <span v-else class="tw-text-xs tw-text-gray-500">Período selecionado</span>
                 </div>
-                
-                <span v-else class="kpi-period">Período selecionado</span>
               </div>
             </div>
           </template>
         </Card>
 
-        <!-- KPI 2 - Orçamento Total (NOVO) -->
-        <Card class="kpi-card kpi-budget">
+        <!-- KPI 2 - Orçamento Total -->
+        <Card class="tw-h-fit">
           <template #content>
-            <div class="kpi-content">
-              <div class="kpi-icon">🎯</div>
-              <div class="kpi-info">
-                <h3>Orçamento Total no Mês</h3>
-                <p class="kpi-value">${{ kpis.totalMonthlyBudget.toFixed(2) }}</p>
-                <span class="kpi-period">Meta mensal</span>
+            <div class="tw-p-4">
+              <div class="tw-flex tw-items-start tw-space-x-3">
+                <div class="tw-text-2xl">🎯</div>
+                <div class="tw-flex-1 tw-min-w-0">
+                  <h3 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-mb-1">Orçamento Total no Mês</h3>
+                  <p class="tw-text-xl tw-font-bold tw-text-gray-900 tw-mb-1">${{ kpis.totalMonthlyBudget.toFixed(2) }}</p>
+                  <span class="tw-text-xs tw-text-gray-500">Meta mensal</span>
+                </div>
               </div>
             </div>
           </template>
         </Card>
 
         <!-- KPI 3 - Variação -->
-        <Card :class="['kpi-card', kpis.totalVariationPercentage >= 0 ? 'kpi-warning' : 'kpi-success']">
+        <Card class="tw-h-fit">
           <template #content>
-            <div class="kpi-content">
-              <div class="kpi-icon">📈</div>
-              <div class="kpi-info">
-                <h3>Variação</h3>
-                <p :class="['kpi-value', kpis.totalVariationPercentage >= 0 ? 'negative' : 'positive']">
-                  {{ kpis.totalVariationPercentage >= 0 ? '+' : '' }}{{ kpis.totalVariationPercentage.toFixed(1) }}%
-                </p>
-                <span class="kpi-detail">
-                  ${{ kpis.totalVariationValue >= 0 ? '+' : '' }}{{ kpis.totalVariationValue.toFixed(2) }}
-                </span>
+            <div class="tw-p-4">
+              <div class="tw-flex tw-items-start tw-space-x-3">
+                <div class="tw-text-2xl">📈</div>
+                <div class="tw-flex-1 tw-min-w-0">
+                  <h3 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-mb-1">Variação</h3>
+                  <p :class="['tw-text-xl tw-font-bold tw-mb-1', kpis.totalVariationPercentage >= 0 ? 'tw-text-red-600' : 'tw-text-green-600']">
+                    {{ kpis.totalVariationPercentage >= 0 ? '+' : '' }}{{ kpis.totalVariationPercentage.toFixed(1) }}%
+                  </p>
+                  <span class="tw-text-xs tw-text-gray-500">
+                    ${{ kpis.totalVariationValue >= 0 ? '+' : '' }}{{ kpis.totalVariationValue.toFixed(2) }}
+                  </span>
+                </div>
               </div>
             </div>
           </template>
         </Card>
 
         <!-- KPI 4 - Créditos -->
-        <Card class="kpi-card kpi-success">
+        <Card class="tw-h-fit">
           <template #content>
-            <div class="kpi-content">
-              <div class="kpi-icon">💳</div>
-              <div class="kpi-info">
-                <h3>Créditos Aplicados</h3>
-                <p class="kpi-value positive">${{ kpis.credits.toFixed(2) }}</p>
-                <span class="kpi-period">Credits</span>
+            <div class="tw-p-4">
+              <div class="tw-flex tw-items-start tw-space-x-3">
+                <div class="tw-text-2xl">💳</div>
+                <div class="tw-flex-1 tw-min-w-0">
+                  <h3 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-mb-1">Créditos Aplicados</h3>
+                  <p class="tw-text-xl tw-font-bold tw-text-green-600 tw-mb-1">${{ kpis.credits.toFixed(2) }}</p>
+                  <span class="tw-text-xs tw-text-gray-500">Credits</span>
+                </div>
               </div>
             </div>
           </template>
@@ -694,7 +702,7 @@ onMounted(async () => {
       </div>
 
       <!-- Gráfico Principal - Largura Total -->
-      <Card class="chart-card-full-width mb-4">
+      <Card class="tw-mb-6 tw-overflow-hidden">
         <template #title>
           <i class="pi pi-chart-line mr-2"></i>
           Evolução de Custos (Período Atual vs. Anterior)
@@ -794,14 +802,16 @@ onMounted(async () => {
         </Card>
 
         <!-- Tabela 2 - Custo por Conta com Orçamento e Previsão -->
-        <Card class="table-card">
+        <Card class="tw-mb-6 tw-overflow-hidden">
           <template #title>
-            <i class="pi pi-building mr-2"></i>
-            Governança Financeira por Conta
+            <div class="tw-flex tw-items-center">
+              <i class="pi pi-building tw-mr-2 tw-text-blue-600"></i>
+              <span class="tw-text-lg tw-font-semibold">Governança Financeira por Conta</span>
+            </div>
           </template>
           <template #content>
             <!-- Versão Desktop: Tabela Tradicional -->
-            <div class="desktop-table-view">
+            <div class="tw-overflow-x-auto">
               <DataTable 
                 :value="costByAccountData" 
                 :paginator="true" 
@@ -811,57 +821,57 @@ onMounted(async () => {
                 sortMode="single"
                 :sortField="'totalCost'"
                 :sortOrder="-1"
-                class="p-datatable-sm"
+                class="p-datatable-sm tw-min-w-full"
               >
-                <Column field="accountName" header="Conta" :sortable="true" style="width: 20%">
+                <Column field="accountName" header="Conta" :sortable="true" class="tw-min-w-48">
                   <template #body="slotProps">
-                    <strong>{{ slotProps.data.accountName }}</strong>
+                    <strong class="tw-text-gray-900">{{ slotProps.data.accountName }}</strong>
                   </template>
                 </Column>
                 
-                <Column field="totalCost" header="Custo Atual" :sortable="true" style="width: 15%">
+                <Column field="totalCost" header="Custo Atual" :sortable="true" class="tw-min-w-32">
                   <template #body="slotProps">
-                    <span class="cost-value">
+                    <span class="tw-font-semibold tw-text-gray-900">
                       ${{ formatCurrencyFull(slotProps.data.totalCost || 0) }}
                     </span>
                   </template>
                 </Column>
                 
-                <Column field="monthlyBudget" header="Orçamento" :sortable="true" style="width: 15%">
+                <Column field="monthlyBudget" header="Orçamento" :sortable="true" class="tw-min-w-32">
                   <template #body="slotProps">
-                    <span class="budget-value">
+                    <span class="tw-text-gray-700">
                       ${{ formatCurrencyFull(slotProps.data.monthlyBudget || 0) }}
                     </span>
                   </template>
                 </Column>
                 
-                <Column header="Consumo" style="width: 25%">
+                <Column header="Consumo" class="tw-min-w-64">
                   <template #body="slotProps">
-                    <div class="consumption-cell">
-                      <div class="consumption-info">
-                        <span class="consumption-percentage">{{ getBudgetPercentage(slotProps.data) }}%</span>
-                        <span class="consumption-status" :class="getBudgetStatusClass(slotProps.data)">
+                    <div class="tw-space-y-1">
+                      <div class="tw-flex tw-justify-between tw-items-center">
+                        <span class="tw-text-sm tw-font-medium tw-text-gray-700">{{ getBudgetPercentage(slotProps.data) }}%</span>
+                        <span class="tw-text-xs tw-px-2 tw-py-1 tw-rounded-full" :class="getBudgetStatusClass(slotProps.data)">
                           {{ getBudgetStatus(slotProps.data) }}
                         </span>
                       </div>
                       <ProgressBar 
                         :value="getBudgetPercentage(slotProps.data)" 
                         :severity="getBudgetSeverity(slotProps.data)"
-                        class="consumption-bar"
+                        class="tw-h-2"
                         :showValue="false"
                       />
                     </div>
                   </template>
                 </Column>
                 
-                <Column field="forecastedCost" header="Previsão" :sortable="true" style="width: 25%">
+                <Column field="forecastedCost" header="Previsão" :sortable="true" class="tw-min-w-48">
                   <template #body="slotProps">
-                    <div class="forecast-cell">
-                      <div class="forecast-amount">
+                    <div class="tw-space-y-1">
+                      <div class="tw-font-semibold tw-text-gray-900">
                         ${{ formatCurrencyFull(slotProps.data.forecastedCost || 0) }}
                       </div>
-                      <div class="forecast-variation" :class="getForecastVariationClass(slotProps.data)">
-                        <i :class="getForecastIcon(slotProps.data)"></i>
+                      <div class="tw-flex tw-items-center tw-text-xs" :class="getForecastVariationClass(slotProps.data)">
+                        <i :class="getForecastIcon(slotProps.data)" class="tw-mr-1"></i>
                         {{ getForecastVariationText(slotProps.data) }}
                       </div>
                     </div>
@@ -871,11 +881,11 @@ onMounted(async () => {
             </div>
 
             <!-- Versão Mobile: Cards -->
-            <div class="mobile-cards-view">
-              <div v-for="account in costByAccountData" :key="account.accountId" class="account-card">
-                <div class="account-header">
-                  <h4 class="account-name">{{ account.accountName }}</h4>
-                  <div class="account-status" :class="getBudgetStatusClass(account)">
+            <div class="tw-block md:tw-hidden tw-space-y-4">
+              <div v-for="account in costByAccountData" :key="account.accountId" class="tw-bg-gray-50 tw-rounded-lg tw-p-4 tw-border tw-border-gray-200">
+                <div class="tw-flex tw-justify-between tw-items-start tw-mb-3">
+                  <h4 class="tw-font-semibold tw-text-gray-900">{{ account.accountName }}</h4>
+                  <div class="tw-text-xs tw-px-2 tw-py-1 tw-rounded-full" :class="getBudgetStatusClass(account)">
                     {{ getBudgetStatus(account) }}
                   </div>
                 </div>
