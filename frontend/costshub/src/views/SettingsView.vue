@@ -1,34 +1,35 @@
 <template>
-  <div class="settings-page">
-    <div class="page-header">
-      <h1 class="page-title">
-        <i class="pi pi-cog mr-3"></i>
+  <div class="tw-p-6 tw-max-w-7xl tw-mx-auto">
+    <!-- Cabeçalho da Página -->
+    <div class="tw-mb-8">
+      <h1 class="tw-text-3xl tw-font-bold tw-text-gray-900 tw-mb-2 tw-flex tw-items-center">
+        <i class="pi pi-cog tw-mr-3 tw-text-blue-600"></i>
         Configurações da Organização
       </h1>
-      <p class="page-description">
+      <p class="tw-text-gray-600 tw-text-lg">
         Gerencie usuários, permissões e configurações da sua organização
       </p>
     </div>
 
     <!-- Mensagem de Erro/Sucesso -->
-    <Message v-if="message" :severity="message.type" :closable="true" class="mb-4" @close="message = null">
+    <Message v-if="message" :severity="message.type" :closable="true" class="tw-mb-6" @close="message = null">
       {{ message.text }}
     </Message>
 
     <!-- Card de Gestão de Usuários -->
-    <Card class="mb-4">
+    <Card class="tw-mb-8">
       <template #title>
         <i class="pi pi-users mr-2"></i>
         Membros da Organização
       </template>
       
       <template #content>
-        <p class="text-gray-600 mb-4">
+        <p class="tw-text-gray-600 tw-mb-6 tw-text-base">
           Gerencie os membros da sua organização. Convide novos usuários e controle o acesso aos dados de custos AWS.
         </p>
         
-        <div class="flex justify-content-between align-items-center mb-4">
-          <h3 class="m-0">Usuários Ativos</h3>
+        <div class="tw-flex tw-justify-between tw-items-center tw-mb-6">
+          <h3 class="tw-text-xl tw-font-semibold tw-text-gray-900 tw-m-0">Usuários Ativos</h3>
           <Button 
             label="Convidar Novo Membro" 
             icon="pi pi-user-plus" 
@@ -38,9 +39,9 @@
         </div>
         
         <!-- Loading -->
-        <div v-if="isLoadingUsers" class="text-center py-4">
+        <div v-if="isLoadingUsers" class="tw-text-center tw-py-8">
           <ProgressSpinner size="50" />
-          <p class="mt-2 text-gray-600">Carregando usuários...</p>
+          <p class="tw-mt-4 tw-text-gray-600">Carregando usuários...</p>
         </div>
         
         <!-- Tabela de Usuários -->
@@ -262,50 +263,50 @@
     </Dialog>
 
     <!-- Seção Zona de Perigo -->
-    <Card class="border-red-200">
+    <Card class="tw-border-red-200 tw-bg-red-50">
       <template #title>
-        <span class="text-red-600" style="display: flex; align-items: center;">
-          <i class="pi pi-exclamation-triangle text-xl" style="margin-right: 12px; display: inline-block;"></i>
-          <span style="display: inline-block;">Zona de Perigo</span>
+        <span class="tw-text-red-600 tw-flex tw-items-center">
+          <i class="pi pi-exclamation-triangle tw-text-xl tw-mr-3"></i>
+          <span>Zona de Perigo</span>
         </span>
       </template>
       
       <template #content>
-        <Message severity="warn" :closable="false" class="mb-4">
+        <Message severity="warn" :closable="false" class="tw-mb-6">
             <div>
-              <p class="font-semibold mb-1">Atenção: Ações irreversíveis</p>
-              <p class="text-sm">As ações nesta seção podem afetar permanentemente sua organização e dados.</p>
+              <p class="tw-font-semibold tw-mb-1">Atenção: Ações irreversíveis</p>
+              <p class="tw-text-sm">As ações nesta seção podem afetar permanentemente sua organização e dados.</p>
             </div>
           </Message>
           
-          <div class="border border-red-200 rounded-lg p-6 bg-red-50">
-            <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-              <div class="flex-1">
-                <h3 class="text-lg font-semibold text-red-800 mb-3 flex items-center">
-                  <i class="pi pi-trash mr-3"></i>
+          <div class="tw-border tw-border-red-200 tw-rounded-lg tw-p-6 tw-bg-red-50">
+            <div class="tw-flex tw-flex-col lg:tw-flex-row lg:tw-items-start lg:tw-justify-between tw-gap-6">
+              <div class="tw-flex-1">
+                <h3 class="tw-text-lg tw-font-semibold tw-text-red-800 tw-mb-3 tw-flex tw-items-center">
+                  <i class="pi pi-trash tw-mr-3"></i>
                   Deletar Organização
                 </h3>
-                <p class="text-sm text-red-700 mb-4">
+                <p class="tw-text-sm tw-text-red-700 tw-mb-4">
                   Remove permanentemente sua organização da plataforma. Esta ação irá:
                 </p>
-                <ul class="text-sm text-red-700 space-y-2 mb-6 list-disc list-inside">
+                <ul class="tw-text-sm tw-text-red-700 tw-space-y-2 tw-mb-6 tw-list-disc tw-list-inside">
                   <li>Desativar todos os usuários imediatamente</li>
                   <li>Parar o processamento de custos</li>
                   <li>Desabilitar conexões AWS</li>
                   <li>Suspender alarmes e notificações</li>
-                  <li class="flex items-center">
-                    <i class="pi pi-clock mr-2 text-orange-500"></i>
+                  <li class="tw-flex tw-items-center">
+                    <i class="pi pi-clock tw-mr-2 tw-text-orange-500"></i>
                     Manter dados por 30 dias para recuperação
                   </li>
                 </ul>
-                <div class="bg-red-100 border border-red-300 rounded-lg p-3">
-                  <p class="text-xs text-red-800 font-medium flex items-center">
-                    <i class="pi pi-info-circle mr-3"></i>
+                <div class="tw-bg-red-100 tw-border tw-border-red-300 tw-rounded-lg tw-p-3">
+                  <p class="tw-text-xs tw-text-red-800 tw-font-medium tw-flex tw-items-center">
+                    <i class="pi pi-info-circle tw-mr-3"></i>
                     Apenas o suporte pode recuperar a organização nos primeiros 30 dias
                   </p>
                 </div>
               </div>
-              <div class="flex-shrink-0">
+              <div class="tw-flex-shrink-0">
                 <Button 
                   label="Deletar Organização" 
                   icon="pi pi-trash"
