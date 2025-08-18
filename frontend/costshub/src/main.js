@@ -7,6 +7,9 @@ import router from './router'
 // CSS principal com fonte Inter
 import './assets/main.css'
 
+// CSS de espaçamentos padronizados
+import './assets/styles/spacing.css'
+
 // PrimeVue v4 com tema dark
 import PrimeVue from 'primevue/config'
 import Lara from '@primevue/themes/lara'

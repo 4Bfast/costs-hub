@@ -144,7 +144,7 @@ export const apiService = {
      * Verifica um token de convite
      */
     verifyInvitation(token) {
-        return fetch(`${API_BASE_URL}/invitations/verify?token=${token}`, {
+        return fetch(`${BASE_URL}/invitations/verify?token=${token}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -161,7 +161,7 @@ export const apiService = {
      * Aceita um convite e ativa a conta
      */
     acceptInvitation(token, password) {
-        return fetch(`${API_BASE_URL}/invitations/accept`, {
+        return fetch(`${BASE_URL}/invitations/accept`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -416,6 +416,30 @@ export const apiService = {
     delete(endpoint) {
         return authenticatedFetch(endpoint, {
             method: 'DELETE',
+        });
+    },
+
+    /**
+     * Alterar role de um usuário
+     */
+    updateUserRole(userId, role) {
+        return authenticatedFetch(`/users/${userId}/role`, {
+            method: 'PUT',
+            body: JSON.stringify({ role }),
+        });
+    },
+
+    /**
+     * Deletar organização (soft delete)
+     */
+    deleteOrganization(password, confirmationText, deletionReason = '') {
+        return authenticatedFetch('/organization/delete', {
+            method: 'DELETE',
+            body: JSON.stringify({ 
+                password, 
+                confirmation_text: confirmationText,
+                deletion_reason: deletionReason 
+            }),
         });
     },
 };

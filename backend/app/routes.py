@@ -28,15 +28,11 @@ def generate_verification_token():
 
 def send_verification_email(user_email, verification_token):
     """
-    Envia email de verificação usando AWS SES.
-    Fallback para simulação se SES não estiver configurado.
+    Envia email de verificação usando o EmailService configurado.
     """
-    verification_url = f"http://localhost:5173/verify-email?token={verification_token}"
+    from app.email_service import email_service
     
-    # Configurações do email a partir das variáveis de ambiente
-    import os
-    sender_email = os.getenv('SES_SENDER_EMAIL', 'noreply@costshub.com')
-    ses_region = os.getenv('SES_REGION', 'us-east-1')
+    verification_url = f"http://localhost:5173/verify-email?token={verification_token}"
     subject = "Verifique seu email - CostsHub"
     
     # Template HTML do email
@@ -51,7 +47,17 @@ def send_verification_email(user_email, verification_token):
             .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
             .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
             .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }}
-            .button {{ display: inline-block; background: #007BFF; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
+            .button {{ 
+                display: inline-block; 
+                background: #007BFF !important; 
+                color: #ffffff !important; 
+                padding: 12px 30px; 
+                text-decoration: none !important; 
+                border-radius: 5px; 
+                margin: 20px 0; 
+                font-weight: bold;
+                font-size: 16px;
+            }}
             .footer {{ text-align: center; margin-top: 20px; color: #666; font-size: 12px; }}
         </style>
     </head>
@@ -66,7 +72,11 @@ def send_verification_email(user_email, verification_token):
                 <p>Obrigado por se cadastrar no CostsHub. Para completar seu cadastro e começar a usar nossa plataforma, clique no botão abaixo para verificar seu email:</p>
                 
                 <div style="text-align: center;">
-                    <a href="{verification_url}" class="button">✅ Verificar Email</a>
+                    <a href="{verification_url}" 
+                       class="button"
+                       style="display: inline-block; background: #007BFF !important; color: #ffffff !important; padding: 12px 30px; text-decoration: none !important; border-radius: 5px; margin: 20px 0; font-weight: bold; font-size: 16px;">
+                       ✅ Verificar Email
+                    </a>
                 </div>
                 
                 <p>Ou copie e cole este link no seu navegador:</p>
@@ -102,57 +112,19 @@ def send_verification_email(user_email, verification_token):
     """
     
     try:
-        # Tentar enviar via AWS SES
-        ses_client = boto3.client('ses', region_name=ses_region)
+        # Usar o EmailService configurado
+        success = email_service.send_email(user_email, subject, html_body, text_body)
         
-        response = ses_client.send_email(
-            Source=sender_email,
-            Destination={{
-                'ToAddresses': [user_email]
-            }},
-            Message={{
-                'Subject': {{
-                    'Data': subject,
-                    'Charset': 'UTF-8'
-                }},
-                'Body': {{
-                    'Html': {{
-                        'Data': html_body,
-                        'Charset': 'UTF-8'
-                    }},
-                    'Text': {{
-                        'Data': text_body,
-                        'Charset': 'UTF-8'
-                    }}
-                }}
-            }}
-        )
-        
-        print(f"✅ Email enviado via AWS SES para {user_email}")
-        print(f"📧 Message ID: {response['MessageId']}")
-        return True
-        
+        if success:
+            print(f"✅ Email de verificação enviado para {user_email}")
+            return True
+        else:
+            print(f"❌ Falha ao enviar email de verificação para {user_email}")
+            return False
+            
     except Exception as e:
-        print(f"❌ Erro ao enviar via SES: {e}")
-        print(f"🔄 Usando simulação local...")
-        
-        # Fallback: Simulação local
-        print(f"\\n" + "="*60)
-        print(f"📧 EMAIL DE VERIFICAÇÃO SIMULADO")
-        print(f"="*60)
-        print(f"Para: {user_email}")
-        print(f"Assunto: {subject}")
-        print(f"")
-        print(f"Olá!")
-        print(f"")
-        print(f"Clique no link abaixo para verificar seu email:")
-        print(f"{verification_url}")
-        print(f"")
-        print(f"Se você não criou uma conta, ignore este email.")
-        print(f"="*60)
-        print(f"")
-        
-        return True
+        print(f"❌ Erro ao enviar email de verificação: {e}")
+        return False
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -186,6 +158,7 @@ def register():
         organization_id=new_organization.id,
         email=email,
         password_hash=hashed_password,
+        role='ADMIN',  # Primeiro usuário da organização é sempre ADMIN
         email_verification_token=verification_token,
         email_verification_sent_at=datetime.utcnow(),
         is_email_verified=False  # Usuário começa não verificado
@@ -196,10 +169,17 @@ def register():
     
     # Enviar email de verificação
     try:
-        send_verification_email(email, verification_token)
+        print(f"📧 Tentando enviar email de verificação para {email}...")
+        email_sent = send_verification_email(email, verification_token)
+        if email_sent:
+            print(f"✅ Email de verificação enviado com sucesso para {email}")
+        else:
+            print(f"❌ Falha ao enviar email de verificação para {email}")
     except Exception as e:
         # Se falhar o envio do email, ainda assim criamos a conta
-        print(f"Erro ao enviar email de verificação: {e}")
+        print(f"❌ Erro ao enviar email de verificação: {e}")
+        import traceback
+        traceback.print_exc()
 
     return jsonify({
         'message': 'Organization and user created successfully. Please check your email to verify your account.',
@@ -1937,6 +1917,8 @@ def invite_user(current_user):
         if not email:
             return jsonify({'error': 'Email é obrigatório'}), 400
         
+        logging.info(f"🔄 Iniciando processo de convite para {email} pela organização {current_user.organization_id}")
+        
         # Verificar se já existe um usuário com este email
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
@@ -1963,22 +1945,325 @@ def invite_user(current_user):
         db.session.add(new_user)
         db.session.commit()
         
-        # Enviar email de convite
-        try:
-            from .notifications import send_invitation_email
-            send_invitation_email(new_user, current_user.organization)
-        except Exception as email_error:
-            logging.error(f"Erro ao enviar email de convite: {str(email_error)}")
-            # Não falhar a operação por causa do email
+        logging.info(f"✅ Usuário {email} criado com status PENDING_INVITE (ID: {new_user.id})")
         
-        return jsonify({
-            'message': 'Convite enviado com sucesso',
+        # Enviar email de convite com logs detalhados
+        email_sent = False
+        email_error = None
+        
+        try:
+            logging.info(f"📧 Tentando enviar email de convite para {email}...")
+            from .notifications import send_invitation_email
+            email_sent = send_invitation_email(new_user, current_user.organization)
+            
+            if email_sent:
+                logging.info(f"✅ Email de convite enviado com sucesso para {email}")
+            else:
+                logging.error(f"❌ Falha ao enviar email de convite para {email}")
+                email_error = "Falha no envio do email"
+                
+        except Exception as e:
+            email_error = str(e)
+            logging.error(f"❌ Erro ao enviar email de convite para {email}: {email_error}")
+            import traceback
+            logging.error(f"Traceback: {traceback.format_exc()}")
+        
+        # Retornar resposta com status do email
+        response_data = {
+            'message': 'Usuário convidado com sucesso',
             'user_id': new_user.id,
-            'email': new_user.email
-        }), 201
+            'email': new_user.email,
+            'email_sent': email_sent
+        }
+        
+        if email_error:
+            response_data['email_error'] = email_error
+            response_data['message'] = 'Usuário criado, mas houve problema no envio do email'
+        
+        return jsonify(response_data), 201
         
     except Exception as e:
         db.session.rollback()
+        logging.error(f"❌ Erro geral no convite de usuário: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/users/<int:user_id>/resend-invite', methods=['POST'])
+@token_required
+def resend_invitation(current_user, user_id):
+    """Reenvia convite para um usuário pendente (apenas ADMIN)."""
+    try:
+        # Verificar se o usuário atual é ADMIN
+        if not current_user.is_admin():
+            return jsonify({'error': 'Acesso negado. Apenas administradores podem reenviar convites.'}), 403
+        
+        # Buscar o usuário
+        user = User.query.filter_by(
+            id=user_id,
+            organization_id=current_user.organization_id
+        ).first()
+        
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+        
+        # Verificar se o usuário está com convite pendente
+        if user.status != 'PENDING_INVITE':
+            return jsonify({'error': 'Este usuário não possui convite pendente'}), 400
+        
+        logging.info(f"🔄 Reenviando convite para {user.email} (ID: {user.id})")
+        
+        # Gerar novo token e estender prazo
+        user.invitation_token = generate_invitation_token()
+        user.invitation_expires_at = datetime.utcnow() + timedelta(hours=48)
+        db.session.commit()
+        
+        logging.info(f"🔄 Token de convite renovado para {user.email}")
+        
+        # Tentar reenviar email
+        email_sent = False
+        email_error = None
+        
+        try:
+            logging.info(f"📧 Reenviando email de convite para {user.email}...")
+            from .notifications import send_invitation_email
+            email_sent = send_invitation_email(user, current_user.organization)
+            
+            if email_sent:
+                logging.info(f"✅ Email de convite reenviado com sucesso para {user.email}")
+            else:
+                logging.error(f"❌ Falha ao reenviar email de convite para {user.email}")
+                email_error = "Falha no envio do email"
+                
+        except Exception as e:
+            email_error = str(e)
+            logging.error(f"❌ Erro ao reenviar email de convite para {user.email}: {email_error}")
+            import traceback
+            logging.error(f"Traceback: {traceback.format_exc()}")
+        
+        # Retornar resposta
+        response_data = {
+            'message': 'Convite reenviado com sucesso' if email_sent else 'Token renovado, mas houve problema no envio do email',
+            'user_id': user.id,
+            'email': user.email,
+            'email_sent': email_sent,
+            'new_expiration': user.invitation_expires_at.isoformat()
+        }
+        
+        if email_error:
+            response_data['email_error'] = email_error
+        
+        return jsonify(response_data), 200
+        
+    except Exception as e:
+        logging.error(f"❌ Erro ao reenviar convite: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/users/<int:user_id>/role', methods=['PUT'])
+@token_required
+def update_user_role(current_user, user_id):
+    """Atualiza a role de um usuário (apenas ADMIN)."""
+    try:
+        # Verificar se o usuário atual é ADMIN
+        if not current_user.is_admin():
+            return jsonify({'error': 'Acesso negado. Apenas administradores podem alterar roles'}), 403
+        
+        data = request.get_json()
+        new_role = data.get('role')
+        
+        if not new_role or new_role not in ['ADMIN', 'MEMBER']:
+            return jsonify({'error': 'Role deve ser ADMIN ou MEMBER'}), 400
+        
+        # Buscar usuário a ser alterado
+        user_to_update = User.query.filter_by(
+            id=user_id,
+            organization_id=current_user.organization_id
+        ).first()
+        
+        if not user_to_update:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+        
+        # Verificar se não está tentando alterar a própria role
+        if user_to_update.id == current_user.id:
+            return jsonify({'error': 'Não é possível alterar sua própria role'}), 400
+        
+        # Se está removendo ADMIN, verificar se não é o último
+        if user_to_update.role == 'ADMIN' and new_role == 'MEMBER':
+            admin_count = User.query.filter_by(
+                organization_id=current_user.organization_id,
+                role='ADMIN',
+                status='ACTIVE'
+            ).count()
+            
+            if admin_count <= 1:
+                return jsonify({'error': 'Não é possível remover o último administrador da organização'}), 400
+        
+        # Atualizar role
+        old_role = user_to_update.role
+        user_to_update.role = new_role
+        db.session.commit()
+        
+        print(f"✅ Role do usuário {user_to_update.email} alterada de {old_role} para {new_role} por {current_user.email}")
+        
+        return jsonify({
+            'message': f'Role do usuário alterada para {new_role}',
+            'user': {
+                'id': user_to_update.id,
+                'email': user_to_update.email,
+                'role': user_to_update.role,
+                'status': user_to_update.status
+            }
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Erro ao alterar role do usuário: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/organization/delete', methods=['DELETE'])
+@token_required
+def delete_organization(current_user):
+    """Marca organização para exclusão (soft delete) - apenas ADMIN."""
+    try:
+        # Verificar se o usuário atual é ADMIN
+        if not current_user.is_admin():
+            return jsonify({'error': 'Acesso negado. Apenas administradores podem deletar a organização'}), 403
+        
+        data = request.get_json()
+        password = data.get('password')
+        confirmation_text = data.get('confirmation_text')
+        deletion_reason = data.get('deletion_reason', '')
+        
+        # Validações obrigatórias
+        if not password:
+            return jsonify({'error': 'Senha é obrigatória para confirmar a exclusão'}), 400
+            
+        if confirmation_text != 'DELETAR':
+            return jsonify({'error': 'Digite "DELETAR" para confirmar a exclusão'}), 400
+        
+        # Verificar senha do usuário
+        from werkzeug.security import check_password_hash
+        if not check_password_hash(current_user.password_hash, password):
+            return jsonify({'error': 'Senha incorreta'}), 401
+        
+        # Buscar organização
+        organization = current_user.organization
+        if not organization:
+            return jsonify({'error': 'Organização não encontrada'}), 404
+            
+        # Verificar se já está marcada para exclusão
+        if organization.status != 'ACTIVE':
+            return jsonify({'error': 'Organização já foi marcada para exclusão'}), 400
+        
+        # Obter informações da requisição para auditoria
+        ip_address = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR'))
+        user_agent = request.headers.get('User-Agent')
+        
+        # Gerar token de recuperação
+        import secrets
+        recovery_token = secrets.token_urlsafe(32)
+        
+        # Marcar organização para exclusão
+        from datetime import datetime
+        organization.status = 'PENDING_DELETION'
+        organization.deleted_at = datetime.utcnow()
+        organization.deletion_reason = deletion_reason
+        organization.deleted_by_user_id = current_user.id
+        
+        # Desativar todos os usuários da organização
+        from app.models import User
+        users_to_deactivate = User.query.filter_by(organization_id=organization.id).all()
+        for user in users_to_deactivate:
+            if user.status == 'ACTIVE':
+                user.status = 'INACTIVE'
+        
+        # Desativar todas as conexões AWS
+        from app.models import AWSAccount
+        aws_accounts = AWSAccount.query.filter_by(organization_id=organization.id).all()
+        for account in aws_accounts:
+            account.is_connection_active = False
+        
+        # Criar log de auditoria
+        from app.models import OrganizationDeletionLog
+        deletion_log = OrganizationDeletionLog(
+            organization_id=organization.id,
+            organization_name=organization.org_name,
+            deleted_by_user_id=current_user.id,
+            deleted_by_email=current_user.email,
+            deletion_reason=deletion_reason,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            recovery_token=recovery_token
+        )
+        
+        db.session.add(deletion_log)
+        db.session.commit()
+        
+        print(f"🗑️ Organização '{organization.org_name}' marcada para exclusão por {current_user.email}")
+        print(f"📊 {len(users_to_deactivate)} usuários desativados")
+        print(f"🔌 {len(aws_accounts)} conexões AWS desabilitadas")
+        print(f"🔑 Token de recuperação: {recovery_token}")
+        
+        return jsonify({
+            'message': 'Organização marcada para exclusão com sucesso',
+            'organization': {
+                'id': organization.id,
+                'name': organization.org_name,
+                'status': organization.status,
+                'deleted_at': organization.deleted_at.isoformat(),
+                'recovery_deadline': (organization.deleted_at + timedelta(days=30)).isoformat()
+            },
+            'affected': {
+                'users_deactivated': len(users_to_deactivate),
+                'aws_connections_disabled': len(aws_accounts)
+            },
+            'recovery_info': {
+                'recovery_token': recovery_token,
+                'recovery_period_days': 30,
+                'contact_support': 'Para recuperar a organização, entre em contato com o suporte dentro de 30 dias'
+            }
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Erro ao deletar organização: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/admin/test-email', methods=['POST'])
+@token_required
+def test_email_config(current_user):
+    """Testa a configuração de email (apenas ADMIN)."""
+    try:
+        # Verificar se o usuário atual é ADMIN
+        if not current_user.is_admin():
+            return jsonify({'error': 'Acesso negado. Apenas administradores podem testar email.'}), 403
+        
+        data = request.get_json()
+        test_email = data.get('email', current_user.email)
+        
+        logging.info(f"🧪 Testando configuração de email para {test_email}")
+        
+        # Testar configuração
+        from .notifications import test_email_configuration, send_test_email
+        
+        config_result = test_email_configuration()
+        
+        # Tentar enviar email de teste
+        email_sent = False
+        if config_result['test_successful']:
+            try:
+                email_sent = send_test_email(test_email)
+            except Exception as e:
+                logging.error(f"Erro ao enviar email de teste: {str(e)}")
+        
+        return jsonify({
+            'configuration': config_result,
+            'test_email_sent': email_sent,
+            'test_email_address': test_email
+        }), 200
+        
+    except Exception as e:
+        logging.error(f"❌ Erro no teste de email: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @api_bp.route('/invitations/verify', methods=['GET'])
@@ -2005,12 +2290,48 @@ def verify_invitation():
         
         return jsonify({
             'email': user.email,
-            'organization_name': user.organization.name,
+            'organization_name': user.organization.org_name,
             'valid': True
         }), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# Endpoint adicional sem /api/v1 para compatibilidade com emails antigos
+from flask import Blueprint
+redirect_bp = Blueprint('redirect', __name__)
+
+@redirect_bp.route('/invitations/verify', methods=['GET'])
+def redirect_invitation_verify():
+    """Redireciona para o frontend com o token (compatibilidade)."""
+    token = request.args.get('token')
+    if token:
+        frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+        redirect_url = f"{frontend_url}/accept-invite?token={token}"
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Redirecionando...</title>
+            <meta http-equiv="refresh" content="0;url={redirect_url}">
+            <style>
+                body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; }}
+                .container {{ max-width: 500px; margin: 0 auto; }}
+                .loading {{ color: #007bff; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2>🔄 Redirecionando...</h2>
+                <p class="loading">Você está sendo redirecionado para o formulário de ativação da conta.</p>
+                <p>Se não for redirecionado automaticamente em 3 segundos:</p>
+                <p><a href="{redirect_url}" style="color: #007bff; text-decoration: none; font-weight: bold;">👉 Clique aqui para continuar</a></p>
+            </div>
+        </body>
+        </html>
+        """, 200, {'Content-Type': 'text/html'}
+    else:
+        return jsonify({'error': 'Token é obrigatório'}), 400
 
 @api_bp.route('/invitations/accept', methods=['POST'])
 def accept_invitation():
@@ -2327,3 +2648,70 @@ def get_cloudformation_template():
     except Exception as e:
         logging.error(f"Erro ao servir template CloudFormation: {str(e)}")
         return jsonify({'error': 'Erro interno do servidor'}), 500
+
+# --- ENDPOINTS DE TESTE DE EMAIL ---
+
+@api_bp.route('/test-email', methods=['POST'])
+@token_required
+def test_email_configuration(current_user):
+    """Testa a configuração de email e envia um email de teste."""
+    try:
+        # Verificar se o usuário é ADMIN
+        if not current_user.is_admin():
+            return jsonify({'error': 'Acesso negado. Apenas administradores podem testar emails.'}), 403
+        
+        data = request.get_json()
+        test_email = data.get('email', current_user.email)
+        
+        # Importar funções de teste
+        from app.notifications import test_email_configuration, send_test_email
+        
+        # Testar configuração
+        config_result = test_email_configuration()
+        
+        # Tentar enviar email de teste
+        email_sent = False
+        if config_result['test_successful']:
+            email_sent = send_test_email(test_email)
+        
+        return jsonify({
+            'configuration': config_result,
+            'test_email_sent': email_sent,
+            'test_email_address': test_email,
+            'message': 'Teste de email concluído' if email_sent else 'Falha no teste de email'
+        }), 200
+        
+    except Exception as e:
+        logging.error(f"Erro ao testar configuração de email: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/email-config', methods=['GET'])
+@token_required
+def get_email_configuration(current_user):
+    """Retorna informações sobre a configuração de email (sem credenciais)."""
+    try:
+        # Verificar se o usuário é ADMIN
+        if not current_user.is_admin():
+            return jsonify({'error': 'Acesso negado. Apenas administradores podem ver configurações.'}), 403
+        
+        from app.notifications import test_email_configuration
+        
+        config_result = test_email_configuration()
+        
+        # Informações seguras (sem credenciais)
+        safe_config = {
+            'sender_email': os.getenv('SES_SENDER_EMAIL', 'não configurado'),
+            'ses_region': os.getenv('SES_REGION', 'us-east-1'),
+            'smtp_server': os.getenv('SMTP_SERVER', 'não configurado'),
+            'smtp_port': os.getenv('SMTP_PORT', '587'),
+            'smtp_configured': bool(os.getenv('SMTP_USERNAME') and os.getenv('SMTP_PASSWORD')),
+            'aws_credentials_configured': bool(os.getenv('AWS_ACCESS_KEY_ID') and os.getenv('AWS_SECRET_ACCESS_KEY')),
+            'frontend_url': os.getenv('FRONTEND_URL', 'http://localhost:5173'),
+            'configuration_status': config_result
+        }
+        
+        return jsonify(safe_config), 200
+        
+    except Exception as e:
+        logging.error(f"Erro ao obter configuração de email: {str(e)}")
+        return jsonify({'error': str(e)}), 500

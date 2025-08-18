@@ -270,7 +270,7 @@ onMounted(() => {
   <div class="connections-page">
     <div class="page-header">
       <h1 class="page-title">
-        <i class="pi pi-cloud mr-3"></i>
+        <i class="pi pi-cloud mr-4"></i>
         Conexões AWS
       </h1>
       <p class="page-description">
@@ -285,7 +285,7 @@ onMounted(() => {
     <!-- Card das Contas AWS -->
     <Card class="mb-4">
       <template #title>
-        <i class="pi pi-aws mr-2"></i>
+        <i class="pi pi-aws mr-4"></i>
         Contas AWS Conectadas
       </template>
       
@@ -374,7 +374,7 @@ onMounted(() => {
     >
       <template #header>
         <div class="flex align-items-center gap-2">
-          <i class="pi pi-aws text-orange-500"></i>
+          <i class="pi pi-aws text-orange-500 mr-3"></i>
           <span>{{ onboardingStep === 1 ? 'Conectar Conta AWS - Etapa 1/2' : 'Conectar Conta AWS - Etapa 2/2' }}</span>
         </div>
       </template>
@@ -405,7 +405,7 @@ onMounted(() => {
           />
           <small v-if="onboardingForm.payerAccountIdError" class="p-error">{{ onboardingForm.payerAccountIdError }}</small>
           <small class="text-gray-600 mt-1 block">
-            <i class="pi pi-info-circle mr-1"></i>
+            <i class="pi pi-info-circle mr-3"></i>
             ID de 12 dígitos da conta AWS que recebe a fatura consolidada.
           </small>
         </div>
@@ -422,20 +422,20 @@ onMounted(() => {
           />
           <small v-if="onboardingForm.s3PrefixError" class="p-error">{{ onboardingForm.s3PrefixError }}</small>
           <small class="text-gray-600 mt-1 block">
-            <i class="pi pi-info-circle mr-1"></i>
+            <i class="pi pi-info-circle mr-3"></i>
             Nome único para o bucket S3 (apenas letras minúsculas, números e hífens).
           </small>
         </div>
 
         <div class="security-notice">
           <div class="security-header">
-            <i class="pi pi-shield text-green-500 mr-2"></i>
+            <i class="pi pi-shield text-green-500 mr-3"></i>
             <strong>Conexão Segura</strong>
           </div>
           <ul class="security-features">
-            <li><i class="pi pi-check text-green-500 mr-2"></i>External ID único para cada conexão</li>
-            <li><i class="pi pi-check text-green-500 mr-2"></i>Permissões mínimas necessárias</li>
-            <li><i class="pi pi-check text-green-500 mr-2"></i>Template CloudFormation validado</li>
+            <li><i class="pi pi-check text-green-500 mr-3"></i>External ID único para cada conexão</li>
+            <li><i class="pi pi-check text-green-500 mr-3"></i>Permissões mínimas necessárias</li>
+            <li><i class="pi pi-check text-green-500 mr-3"></i>Template CloudFormation validado</li>
           </ul>
         </div>
       </div>
@@ -509,7 +509,7 @@ onMounted(() => {
           />
           <small v-if="onboardingForm.roleArnError" class="p-error">{{ onboardingForm.roleArnError }}</small>
           <small class="text-gray-600 mt-1 block">
-            <i class="pi pi-info-circle mr-1"></i>
+            <i class="pi pi-info-circle mr-3"></i>
             Cole aqui o ARN da Role copiado da aba "Outputs" do CloudFormation.
           </small>
         </div>
@@ -594,7 +594,7 @@ onMounted(() => {
             placeholder="0.00"
           />
           <small class="text-gray-600 mt-1 block">
-            <i class="pi pi-info-circle mr-1"></i>
+            <i class="pi pi-info-circle mr-3"></i>
             Orçamento mensal para alertas de custo.
           </small>
         </div>
@@ -656,7 +656,7 @@ onMounted(() => {
           Você está prestes a excluir a conta <strong>{{ selectedAccount.account_name }}</strong>.
         </p>
         <div class="warning-box">
-          <i class="pi pi-exclamation-circle text-red-500 mr-2"></i>
+          <i class="pi pi-exclamation-circle text-red-500 mr-3"></i>
           <div>
             <strong>Esta ação não pode ser desfeita!</strong>
             <ul class="warning-list">

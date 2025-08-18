@@ -10,13 +10,56 @@ class Organization(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     org_name = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Campos para soft delete
+    status = db.Column(db.String(20), default='ACTIVE', nullable=False)  # ACTIVE, PENDING_DELETION, DELETED
+    deleted_at = db.Column(db.DateTime, nullable=True)
+    deletion_reason = db.Column(db.Text, nullable=True)
+    deleted_by_user_id = db.Column(db.Integer, nullable=True)
 
     # Relacionamento: Uma organização pode ter vários usuários
     users = db.relationship('User', back_populates='organization', lazy='dynamic')
     aws_accounts = db.relationship('AWSAccount', back_populates='organization', lazy='dynamic', cascade="all, delete-orphan")
 
     def __repr__(self):
-        return f'<Organization {self.org_name}>'
+        return f'<Organization {self.org_name} ({self.status})>'
+    
+    def is_active(self):
+        """Verifica se a organização está ativa."""
+        return self.status == 'ACTIVE'
+    
+    def is_deleted(self):
+        """Verifica se a organização foi deletada."""
+        return self.status in ['PENDING_DELETION', 'DELETED']
+    
+    def can_be_recovered(self):
+        """Verifica se a organização pode ser recuperada (dentro de 30 dias)."""
+        if self.status != 'PENDING_DELETION' or not self.deleted_at:
+            return False
+        
+        from datetime import timedelta
+        recovery_deadline = self.deleted_at + timedelta(days=30)
+        return datetime.utcnow() < recovery_deadline
+
+class OrganizationDeletionLog(db.Model):
+    """Modelo para auditoria de exclusão de organizações."""
+    __tablename__ = 'organization_deletion_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    organization_id = db.Column(db.Integer, nullable=False)
+    organization_name = db.Column(db.String(255), nullable=False)  # Backup do nome
+    deleted_by_user_id = db.Column(db.Integer, nullable=False)
+    deleted_by_email = db.Column(db.String(255), nullable=False)  # Backup do email
+    deletion_reason = db.Column(db.Text, nullable=True)
+    deleted_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    ip_address = db.Column(db.String(45), nullable=True)
+    user_agent = db.Column(db.Text, nullable=True)
+    recovery_token = db.Column(db.String(255), nullable=True)  # Para recuperação
+    recovered_at = db.Column(db.DateTime, nullable=True)
+    recovered_by_user_id = db.Column(db.Integer, nullable=True)
+    
+    def __repr__(self):
+        return f'<OrganizationDeletionLog {self.organization_name} deleted by {self.deleted_by_email}>'
 
 
 class User(db.Model):
