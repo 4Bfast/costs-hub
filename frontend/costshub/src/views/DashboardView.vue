@@ -610,91 +610,111 @@ onMounted(async () => {
       <!-- Seção de KPIs -->
       <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 lg:tw-grid-cols-4 tw-gap-4 tw-mb-6">
         <!-- KPI 1 - Custo Total com Barra de Progresso -->
-        <Card class="tw-h-fit">
+        <Card class="tw-h-36">
           <template #content>
-            <div class="tw-p-4">
-              <div class="tw-flex tw-items-start tw-space-x-3">
-                <div class="tw-text-2xl">💰</div>
-                <div class="tw-flex-1 tw-min-w-0">
-                  <h3 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-mb-1">Custo Total no Período</h3>
-                  <p class="tw-text-xl tw-font-bold tw-text-gray-900 tw-mb-2">${{ kpis.totalCost.toFixed(2) }}</p>
-                  
-                  <!-- Barra de Progresso do Orçamento -->
-                  <div v-if="kpis.totalMonthlyBudget > 0" class="tw-space-y-2">
-                    <div class="tw-flex tw-items-center tw-justify-between">
-                      <span class="tw-text-xs tw-font-medium tw-text-gray-600">{{ getBudgetStatusIcon() }} {{ getBudgetStatusText() }}</span>
-                    </div>
-                    
-                    <ProgressBar 
-                      :value="getBudgetConsumptionPercentage()" 
-                      :severity="getBudgetConsumptionSeverity()"
-                      class="tw-h-2"
-                      :showValue="false"
-                      :style="{ '--progress-color': getBudgetProgressColor() }"
-                    />
-                    
-                    <div class="tw-flex tw-justify-between tw-text-xs tw-text-gray-600">
-                      <span>${{ kpis.totalCost.toFixed(2) }} de ${{ kpis.totalMonthlyBudget.toFixed(2) }}</span>
-                      <span class="tw-font-semibold" :class="getBudgetConsumptionSeverity()">
-                        {{ getBudgetConsumptionPercentage().toFixed(1) }}%
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <span v-else class="tw-text-xs tw-text-gray-500">Período selecionado</span>
+            <div class="tw-p-2 tw-h-full tw-flex tw-flex-col tw-justify-center tw-text-center">
+              <!-- Seção Superior -->
+              <div class="tw-flex tw-items-center tw-justify-center tw-space-x-2 tw-mb-1">
+                <div class="tw-w-8 tw-h-8 tw-bg-blue-100 tw-rounded-full tw-flex tw-items-center tw-justify-center">
+                  <i class="pi pi-dollar tw-text-blue-600 tw-text-sm"></i>
                 </div>
+                <h3 class="tw-text-sm tw-font-semibold tw-text-gray-700">Custo Total</h3>
+              </div>
+              
+              <!-- Valor Principal -->
+              <p class="tw-text-2xl tw-font-bold tw-text-gray-900 tw-mb-1">
+                ${{ formatCurrency(kpis.totalCost || 0) }}
+              </p>
+              
+              <!-- Barra de Progresso do Orçamento -->
+              <div v-if="kpis.totalMonthlyBudget > 0" class="tw-w-full tw-px-4">
+                <div class="tw-text-xs tw-font-medium tw-text-gray-600 tw-mb-1 tw-text-center">
+                  {{ getBudgetConsumptionPercentage().toFixed(1) }}%
+                </div>
+                <ProgressBar 
+                  :value="getBudgetConsumptionPercentage()" 
+                  :severity="getBudgetConsumptionSeverity()"
+                  class="mini-progress-bar"
+                  :showValue="false"
+                />
               </div>
             </div>
           </template>
         </Card>
 
         <!-- KPI 2 - Orçamento Total -->
-        <Card class="tw-h-fit">
+        <Card class="tw-h-36">
           <template #content>
-            <div class="tw-p-4">
-              <div class="tw-flex tw-items-start tw-space-x-3">
-                <div class="tw-text-2xl">🎯</div>
-                <div class="tw-flex-1 tw-min-w-0">
-                  <h3 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-mb-1">Orçamento Total no Mês</h3>
-                  <p class="tw-text-xl tw-font-bold tw-text-gray-900 tw-mb-1">${{ kpis.totalMonthlyBudget.toFixed(2) }}</p>
-                  <span class="tw-text-xs tw-text-gray-500">Meta mensal</span>
+            <div class="tw-p-1 tw-h-full tw-flex tw-flex-col tw-justify-center tw-text-center">
+              <!-- Seção Superior -->
+              <div class="tw-flex tw-items-center tw-justify-center tw-space-x-2 tw-mb-2">
+                <div class="tw-w-8 tw-h-8 tw-bg-green-100 tw-rounded-full tw-flex tw-items-center tw-justify-center">
+                  <i class="pi pi-flag tw-text-green-600 tw-text-sm"></i>
                 </div>
+                <h3 class="tw-text-sm tw-font-semibold tw-text-gray-700">Orçamento</h3>
+              </div>
+              
+              <!-- Valor Principal -->
+              <p class="tw-text-2xl tw-font-bold tw-text-gray-900 tw-mb-2">
+                ${{ formatCurrency(kpis.totalMonthlyBudget || 0) }}
+              </p>
+              
+              <!-- Informação Adicional -->
+              <div class="tw-text-xs tw-text-gray-500">
+                Meta mensal
               </div>
             </div>
           </template>
         </Card>
 
         <!-- KPI 3 - Variação -->
-        <Card class="tw-h-fit">
+        <Card class="tw-h-36">
           <template #content>
-            <div class="tw-p-4">
-              <div class="tw-flex tw-items-start tw-space-x-3">
-                <div class="tw-text-2xl">📈</div>
-                <div class="tw-flex-1 tw-min-w-0">
-                  <h3 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-mb-1">Variação</h3>
-                  <p :class="['tw-text-xl tw-font-bold tw-mb-1', kpis.totalVariationPercentage >= 0 ? 'tw-text-red-600' : 'tw-text-green-600']">
-                    {{ kpis.totalVariationPercentage >= 0 ? '+' : '' }}{{ kpis.totalVariationPercentage.toFixed(1) }}%
-                  </p>
-                  <span class="tw-text-xs tw-text-gray-500">
-                    ${{ kpis.totalVariationValue >= 0 ? '+' : '' }}{{ kpis.totalVariationValue.toFixed(2) }}
-                  </span>
+            <div class="tw-p-1 tw-h-full tw-flex tw-flex-col tw-justify-center tw-text-center">
+              <!-- Seção Superior -->
+              <div class="tw-flex tw-items-center tw-justify-center tw-space-x-2 tw-mb-2">
+                <div :class="['tw-w-8 tw-h-8 tw-rounded-full tw-flex tw-items-center tw-justify-center', 
+                             kpis.totalVariationPercentage >= 0 ? 'tw-bg-red-100' : 'tw-bg-green-100']">
+                  <i :class="['tw-text-sm', 
+                             kpis.totalVariationPercentage >= 0 ? 'pi pi-arrow-up tw-text-red-600' : 'pi pi-arrow-down tw-text-green-600']"></i>
                 </div>
+                <h3 class="tw-text-sm tw-font-semibold tw-text-gray-700">Variação</h3>
+              </div>
+              
+              <!-- Valor Principal -->
+              <p :class="['tw-text-2xl tw-font-bold tw-mb-1', 
+                         kpis.totalVariationPercentage >= 0 ? 'tw-text-red-600' : 'tw-text-green-600']">
+                {{ kpis.totalVariationPercentage >= 0 ? '+' : '' }}{{ (kpis.totalVariationPercentage || 0).toFixed(1) }}%
+              </p>
+              
+              <!-- Informação Adicional -->
+              <div class="tw-text-xs tw-text-gray-500">
+                ${{ kpis.totalVariationValue >= 0 ? '+' : '' }}{{ (kpis.totalVariationValue || 0).toFixed(2) }}
               </div>
             </div>
           </template>
         </Card>
 
         <!-- KPI 4 - Créditos -->
-        <Card class="tw-h-fit">
+        <Card class="tw-h-36">
           <template #content>
-            <div class="tw-p-4">
-              <div class="tw-flex tw-items-start tw-space-x-3">
-                <div class="tw-text-2xl">💳</div>
-                <div class="tw-flex-1 tw-min-w-0">
-                  <h3 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-mb-1">Créditos Aplicados</h3>
-                  <p class="tw-text-xl tw-font-bold tw-text-green-600 tw-mb-1">${{ kpis.credits.toFixed(2) }}</p>
-                  <span class="tw-text-xs tw-text-gray-500">Credits</span>
+            <div class="tw-p-1 tw-h-full tw-flex tw-flex-col tw-justify-center tw-text-center">
+              <!-- Seção Superior -->
+              <div class="tw-flex tw-items-center tw-justify-center tw-space-x-2 tw-mb-2">
+                <div class="tw-w-8 tw-h-8 tw-bg-purple-100 tw-rounded-full tw-flex tw-items-center tw-justify-center">
+                  <i class="pi pi-credit-card tw-text-purple-600 tw-text-sm"></i>
                 </div>
+                <h3 class="tw-text-sm tw-font-semibold tw-text-gray-700">Créditos</h3>
+              </div>
+              
+              <!-- Valor Principal -->
+              <p class="tw-text-2xl tw-font-bold tw-text-green-600 tw-mb-2">
+                ${{ formatCurrency(kpis.credits || 0) }}
+              </p>
+              
+              <!-- Informação Adicional -->
+              <div class="tw-text-xs tw-text-gray-500">
+                Aplicados
               </div>
             </div>
           </template>
@@ -1202,10 +1222,10 @@ onMounted(async () => {
   height: 100% !important;
 }
 
-/* Tabelas de Insights */
+/* Tabelas de Insights - Layout 40%/60% */
 .insights-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 2fr 3fr; /* Governança 40%, Variações 60% */
   gap: 2rem;
 }
 
@@ -1494,6 +1514,19 @@ onMounted(async () => {
 }
 
 /* Melhorias gerais */
+/* Barra de progresso mini para KPI */
+.mini-progress-bar {
+  height: 3px !important;
+}
+
+.mini-progress-bar .p-progressbar {
+  height: 3px !important;
+}
+
+.mini-progress-bar .p-progressbar-value {
+  height: 3px !important;
+}
+
 .table-card .p-card-content {
   padding: 1.5rem;
 }
