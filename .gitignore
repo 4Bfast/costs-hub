@@ -4,4 +4,33 @@ node_modules
 __pycache__
 ai-bridge
 venv
-.vscodefrontend/costshub/src/debug_dados_analysisview.js
+.vscode
+
+# Arquivos de ambiente com credenciais
+backend/.env
+frontend/costshub/.env
+
+# Logs
+backend/backend.log
+frontend/costshub/frontend.log
+
+# Arquivos de teste e suporte
+backend/test_*.py
+backend/add_*.py
+backend/create_*.py
+backend/email_*.py
+backend/preview_*.py
+backend/verify_*.sh
+backend/configure_*.sh
+backend/dev_*.sh
+backend/*.html
+
+# Arquivos de contexto e documentação temporária
+executor-context.txt
+*_backup.vue
+FUNCIONALIDADES_*.md
+CORRECOES_*.md
+CORRECAO_*.md
+
+# Debug files
+frontend/costshub/src/debug_*.js
