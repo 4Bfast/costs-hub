@@ -22,7 +22,7 @@ if (app) {
 const token = localStorage.getItem('token');
 const testAccountId = 1; // Ajustar conforme necessário
 
-fetch(`http://localhost:5000/api/v1/costs/by-service?aws_account_id=${testAccountId}&start_date=2024-01-01&end_date=2024-01-31`, {
+fetch(`http://localhost:5001/api/v1/costs/by-service?aws_account_id=${testAccountId}&start_date=2024-01-01&end_date=2024-01-31`, {
   headers: { 'Authorization': `Bearer ${token}` }
 })
 .then(r => r.json())
