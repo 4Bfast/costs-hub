@@ -152,7 +152,7 @@ const chartOptions = computed(() => ({
 // Opções para o dropdown de contas
 const accountOptions = computed(() => {
   const options = accounts.value.map(account => ({
-    label: account.account_name,
+    label: account.name,
     value: account.id
   }));
   
@@ -298,7 +298,7 @@ const dailyAverage = computed(() => {
 // --- FUNÇÕES ---
 async function loadAccounts() {
   try {
-    accounts.value = await apiService.getAwsAccounts();
+    accounts.value = await apiService.getMemberAccounts();
   } catch (err) {
     error.value = 'Erro ao carregar contas: ' + err.message;
   }

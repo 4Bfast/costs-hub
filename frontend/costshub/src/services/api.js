@@ -430,6 +430,15 @@ export const apiService = {
     },
 
     /**
+     * Reenviar convite para um usuário
+     */
+    resendInvite(userId) {
+        return authenticatedFetch(`/users/${userId}/resend-invite`, {
+            method: 'POST'
+        });
+    },
+
+    /**
      * Deletar organização (soft delete)
      */
     deleteOrganization(password, confirmationText, deletionReason = '') {

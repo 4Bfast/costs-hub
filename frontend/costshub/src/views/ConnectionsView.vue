@@ -21,7 +21,9 @@ const toast = useToast();
 
 // Estado
 const accounts = ref([]);
+const memberAccounts = ref([]);
 const isLoadingList = ref(true);
+const isLoadingMembers = ref(true);
 const message = ref({ type: '', text: '' });
 
 // Estado para onboarding seguro
@@ -51,6 +53,18 @@ async function fetchAccounts() {
     message.value = { type: 'error', text: 'Erro ao carregar contas AWS' };
   } finally {
     isLoadingList.value = false;
+  }
+}
+
+async function fetchMemberAccounts() {
+  try {
+    isLoadingMembers.value = true;
+    const response = await apiService.getMemberAccounts();
+    memberAccounts.value = response;
+  } catch (error) {
+    console.error('Erro ao buscar contas descobertas:', error);
+  } finally {
+    isLoadingMembers.value = false;
   }
 }
 
@@ -165,6 +179,7 @@ async function handleFinalizeConnection() {
     
     closeOnboardingModal();
     await fetchAccounts();
+    await fetchMemberAccounts();
     
   } catch (error) {
     console.error('Erro ao finalizar conexão:', error);
@@ -189,6 +204,11 @@ const isDeleteModalVisible = ref(false);
 const selectedAccount = ref(null);
 
 function editAccount(account) {
+  selectedAccount.value = { ...account };
+  isEditModalVisible.value = true;
+}
+
+function editMemberAccount(account) {
   selectedAccount.value = { ...account };
   isEditModalVisible.value = true;
 }
@@ -232,10 +252,22 @@ async function handleUpdateAccount() {
   try {
     isSubmitting.value = true;
     
-    await apiService.updateAccount(selectedAccount.value.id, {
-      account_name: selectedAccount.value.account_name,
-      monthly_budget: selectedAccount.value.monthly_budget
-    });
+    // Verificar se é uma conta descoberta (member_account) ou conexão (aws_account)
+    if (selectedAccount.value.aws_account_id) {
+      // É uma conta descoberta - usar API de member-accounts
+      await apiService.updateMemberAccountBudget(
+        selectedAccount.value.id, 
+        selectedAccount.value.monthly_budget
+      );
+      await fetchMemberAccounts(); // Recarregar contas descobertas
+    } else {
+      // É uma conexão - usar API de aws-accounts
+      await apiService.updateAccount(selectedAccount.value.id, {
+        account_name: selectedAccount.value.account_name,
+        monthly_budget: selectedAccount.value.monthly_budget
+      });
+      await fetchAccounts(); // Recarregar conexões
+    }
     
     toast.add({
       severity: 'success',
@@ -246,7 +278,6 @@ async function handleUpdateAccount() {
     
     isEditModalVisible.value = false;
     selectedAccount.value = null;
-    await fetchAccounts();
     
   } catch (error) {
     console.error('Erro ao atualizar conta:', error);
@@ -263,6 +294,7 @@ async function handleUpdateAccount() {
 
 onMounted(() => {
   fetchAccounts();
+  fetchMemberAccounts();
 });
 </script>
 
@@ -348,6 +380,76 @@ onMounted(() => {
                     class="p-button-rounded p-button-text p-button-danger p-button-sm" 
                     @click="confirmDeleteAccount(slotProps.data)"
                     v-tooltip.top="'Excluir'"
+                  />
+                </div>
+              </template>
+            </Column>
+          </DataTable>
+        </div>
+      </template>
+    </Card>
+
+    <!-- Card das Contas Descobertas -->
+    <Card class="mb-4">
+      <template #title>
+        <i class="pi pi-users mr-4"></i>
+        Contas Descobertas
+      </template>
+      
+      <template #content>
+        <div v-if="isLoadingMembers" class="text-center py-4">
+          <i class="pi pi-spin pi-spinner text-2xl text-blue-500 mb-2"></i>
+          <p class="text-gray-600">Carregando contas descobertas...</p>
+        </div>
+        
+        <div v-else-if="memberAccounts.length === 0" class="empty-state">
+          <i class="pi pi-info-circle text-6xl text-gray-400 mb-4"></i>
+          <h3 class="text-xl font-semibold text-gray-700 mb-2">Nenhuma conta descoberta</h3>
+          <p class="text-gray-600 mb-4">As contas serão descobertas automaticamente após o processamento dos dados FOCUS</p>
+        </div>
+        
+        <div v-else>
+          <div class="flex justify-content-between align-items-center mb-4">
+            <p class="text-gray-600">{{ memberAccounts.length }} conta(s) descoberta(s)</p>
+          </div>
+          
+          <DataTable :value="memberAccounts" responsiveLayout="scroll" class="p-datatable-sm">
+            <Column field="name" header="Nome da Conta" :sortable="true">
+              <template #body="slotProps">
+                <div class="flex align-items-center gap-2">
+                  <strong>{{ slotProps.data.name }}</strong>
+                  <Tag 
+                    v-if="slotProps.data.is_payer" 
+                    value="PAYER" 
+                    severity="warning"
+                    class="text-xs"
+                  />
+                </div>
+              </template>
+            </Column>
+            
+            <Column field="aws_account_id" header="ID da Conta AWS" style="width: 150px">
+              <template #body="slotProps">
+                <code class="text-sm">{{ slotProps.data.aws_account_id }}</code>
+              </template>
+            </Column>
+            
+            <Column field="monthly_budget" header="Orçamento" style="width: 140px">
+              <template #body="slotProps">
+                <span class="text-sm">
+                  ${{ (slotProps.data.monthly_budget || 0).toFixed(2) }}
+                </span>
+              </template>
+            </Column>
+            
+            <Column header="Ações" style="width: 120px">
+              <template #body="slotProps">
+                <div class="flex gap-2">
+                  <Button 
+                    icon="pi pi-pencil" 
+                    class="p-button-rounded p-button-text p-button-sm" 
+                    @click="editMemberAccount(slotProps.data)"
+                    v-tooltip.top="'Editar Orçamento'"
                   />
                 </div>
               </template>
@@ -599,7 +701,8 @@ onMounted(() => {
           </small>
         </div>
 
-        <div class="field mb-4">
+        <!-- Informações da Conexão (apenas para conexões) -->
+        <div v-if="!selectedAccount.aws_account_id" class="field mb-4">
           <label class="font-semibold mb-2 block">Informações da Conexão</label>
           <div class="connection-info">
             <div class="info-item">
