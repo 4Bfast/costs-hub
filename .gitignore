@@ -1,5 +1,5 @@
 inputs/*
-*.md
+!README.md
 node_modules
 __pycache__
 ai-bridge
@@ -10,9 +10,14 @@ venv
 backend/.env
 frontend/costshub/.env
 
+*.md
 # Logs
 backend/backend.log
 frontend/costshub/frontend.log
+
+# Scripts de teste e debug - não commitados
+test-scripts/
+!test-scripts/.gitkeep
 
 # Arquivos de teste e suporte
 backend/test_*.py

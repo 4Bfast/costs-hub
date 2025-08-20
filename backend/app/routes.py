@@ -860,6 +860,49 @@ def import_history(current_user, account_id):
         if getattr(account, 'history_imported', False):
             return jsonify({'error': 'Histórico já foi importado para esta conta'}), 400
         
+        # VERIFICAR CREDENCIAIS AWS ANTES DE INICIAR A TAREFA
+        try:
+            # Tentar diferentes formas de obter credenciais AWS
+            session = None
+            credentials = None
+            
+            # Obter perfil AWS da variável de ambiente ou usar padrão
+            aws_profile = os.environ.get('AWS_PROFILE', '4bfast').strip()
+            
+            # Método 1: Tentar com perfil específico (se definido e não vazio)
+            if aws_profile:
+                try:
+                    session = boto3.Session(profile_name=aws_profile)
+                    credentials = session.get_credentials()
+                    if credentials:
+                        logging.info(f"Usando perfil AWS '{aws_profile}'")
+                except Exception as profile_error:
+                    logging.debug(f"Perfil '{aws_profile}' não disponível: {profile_error}")
+            
+            # Método 2: Tentar sessão padrão se perfil não funcionou
+            if not credentials:
+                session = boto3.Session()
+                credentials = session.get_credentials()
+                if credentials:
+                    logging.info("Usando credenciais AWS padrão")
+            
+            # Verificar se conseguiu obter credenciais
+            if credentials is None:
+                return jsonify({
+                    'error': 'Não foi possível conectar com a AWS. Verifique se a conexão com a AWS está configurada corretamente.'
+                }), 400
+            
+            # Testar se as credenciais funcionam
+            sts_client = session.client('sts', region_name='us-east-1')
+            identity = sts_client.get_caller_identity()
+            logging.info(f"Credenciais AWS válidas para: {identity.get('Arn', 'N/A')}")
+            
+        except Exception as cred_error:
+            logging.error(f"Erro de credenciais AWS: {str(cred_error)}")
+            return jsonify({
+                'error': 'Falha na conexão com a AWS. Verifique se a conta está configurada corretamente e tente novamente.'
+            }), 400
+        
         # Iniciar tarefa assíncrona (threading.Thread para MVP)
         thread = threading.Thread(
             target=import_cost_history_task,
@@ -870,7 +913,7 @@ def import_history(current_user, account_id):
         
         # Resposta 202 Accepted imediata (não bloqueia)
         return jsonify({
-            'message': 'A importação do histórico foi iniciada.'
+            'message': 'A importação do histórico foi iniciada com sucesso.'
         }), 202
         
     except Exception as e:
@@ -913,10 +956,30 @@ def import_cost_history_task(account_id, organization_id):
             
             try:
                 # IMPORTAÇÃO REAL: Usar credenciais do ambiente ou da conta
-                session = boto3.Session()
+                session = None
+                credentials = None
                 
-                # Verificar se há credenciais disponíveis
-                credentials = session.get_credentials()
+                # Obter perfil AWS da variável de ambiente ou usar padrão
+                aws_profile = os.environ.get('AWS_PROFILE', '4bfast').strip()
+                
+                # Método 1: Tentar com perfil específico (se definido e não vazio)
+                if aws_profile:
+                    try:
+                        session = boto3.Session(profile_name=aws_profile)
+                        credentials = session.get_credentials()
+                        if credentials:
+                            logging.info(f"Importação usando perfil AWS '{aws_profile}'")
+                    except Exception as profile_error:
+                        logging.debug(f"Perfil '{aws_profile}' não disponível na importação: {profile_error}")
+                
+                # Método 2: Tentar sessão padrão se perfil não funcionou
+                if not credentials:
+                    session = boto3.Session()
+                    credentials = session.get_credentials()
+                    if credentials:
+                        logging.info("Importação usando credenciais AWS padrão")
+                
+                # Verificar se conseguiu obter credenciais
                 if credentials is None:
                     logging.error("Nenhuma credencial AWS encontrada no ambiente")
                     return
@@ -1230,7 +1293,21 @@ def get_main_dashboard(current_user):
         # Métricas Comparativas
         previous_period_cost = sum(c['cost'] for c in previous_period_costs)
         total_variation_value = total_cost - previous_period_cost
-        total_variation_percentage = (total_variation_value / previous_period_cost * 100) if previous_period_cost > 0 else 0
+        
+        # DEBUG: Log dos valores para investigação
+        logging.info(f"VARIATION DEBUG - Periods: Current({start_date} to {end_date}) vs Previous({previous_start_date} to {previous_end_date})")
+        logging.info(f"VARIATION DEBUG - Current: ${total_cost:.2f}, Previous: ${previous_period_cost:.2f}")
+        logging.info(f"VARIATION DEBUG - Current records: {len(current_period_costs)}, Previous records: {len(previous_period_costs)}")
+        
+        # Cálculo da variação percentual
+        if previous_period_cost > 0:
+            # Caso normal: há dados no período anterior
+            total_variation_percentage = (total_variation_value / previous_period_cost * 100)
+            logging.info(f"VARIATION DEBUG - Calculated: {total_variation_percentage:.2f}%")
+        else:
+            # Caso especial: não há dados no período anterior
+            total_variation_percentage = 0.0
+            logging.info(f"VARIATION DEBUG - No previous data, forcing 0%")
         
         # Série Temporal para Gráfico
         from collections import defaultdict
@@ -1334,7 +1411,7 @@ def get_main_dashboard(current_user):
         total_monthly_budget = sum(float(member_account.monthly_budget) if member_account.monthly_budget else 0.00 for member_account in member_accounts)
         
         # 4. Estrutura da Resposta (JSON Payload)
-        response = {
+        response_data = {
             'kpis': {
                 'totalCost': round(total_cost, 2),
                 'totalMonthlyBudget': round(total_monthly_budget, 2),  # NOVO CAMPO: Orçamento total da organização
@@ -1342,7 +1419,8 @@ def get_main_dashboard(current_user):
                 'totalVariationValue': round(total_variation_value, 2),
                 'totalVariationPercentage': round(total_variation_percentage, 2),
                 'taxCost': round(tax_cost, 2),
-                'credits': round(credits, 2)
+                'credits': round(credits, 2),
+                'timestamp': datetime.now().isoformat()  # Evitar cache
             },
             'timeSeries': {
                 'currentPeriod': current_period_series,
@@ -1352,7 +1430,13 @@ def get_main_dashboard(current_user):
             'costByAccount': cost_by_account
         }
         
-        return jsonify(response), 200
+        response = jsonify(response_data)
+        # Headers para evitar cache
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        
+        return response, 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500

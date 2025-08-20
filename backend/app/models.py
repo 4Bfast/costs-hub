@@ -175,7 +175,8 @@ class MemberAccount(db.Model):
             'is_payer': self.is_payer,  # NOVO CAMPO
             'monthly_budget': float(self.monthly_budget) if self.monthly_budget else 0.0,
             'first_seen_at': self.first_seen_at.isoformat() if self.first_seen_at else None,
-            'last_seen_at': self.last_seen_at.isoformat() if self.last_seen_at else None
+            'last_seen_at': self.last_seen_at.isoformat() if self.last_seen_at else None,
+            'history_imported': self.payer_connection.history_imported if self.payer_connection else False  # NOVO CAMPO
         }
 
 

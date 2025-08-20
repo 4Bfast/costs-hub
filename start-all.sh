@@ -4,6 +4,10 @@
 
 echo "🚀 Iniciando CostsHub - Ambiente de Desenvolvimento"
 
+# Configurar perfil AWS
+export AWS_PROFILE=4bfast
+echo "🔑 Configurando perfil AWS: $AWS_PROFILE"
+
 # Função para cleanup em caso de interrupção
 cleanup() {
     echo ""
@@ -25,6 +29,8 @@ sleep 5
 echo "🔧 Iniciando Backend..."
 cd backend
 source venv/bin/activate
+# Exportar perfil AWS para o backend
+export AWS_PROFILE=4bfast
 flask run --host=0.0.0.0 --port=5001 &
 BACKEND_PID=$!
 cd ..
@@ -41,6 +47,7 @@ cd ..
 
 echo ""
 echo "✅ Todos os serviços iniciados!"
+echo "🔑 Perfil AWS: $AWS_PROFILE"
 echo "📱 Frontend: http://localhost:5173"
 echo "🔧 Backend: http://localhost:5001"
 echo "📊 PostgreSQL: localhost:5432"

@@ -23,10 +23,15 @@ const memberAccounts = ref([]);
 const selectedMemberAccount = ref(null);
 const isLoading = ref(true);
 const error = ref(null);
-const dateRange = ref([
-  new Date('2025-08-09'), // Data que sabemos que tem dados
-  new Date('2025-08-16')  // Data que sabemos que tem dados
-]);
+// Função para calcular os últimos 7 dias
+const getDefaultDateRange = () => {
+  const endDate = new Date();
+  const startDate = new Date(endDate);
+  startDate.setDate(endDate.getDate() - 6); // Últimos 7 dias (incluindo hoje)
+  return [startDate, endDate];
+};
+
+const dateRange = ref(getDefaultDateRange());
 
 // --- PROPRIEDADES COMPUTADAS ---
 const kpis = computed(() => dashboardData.value?.kpis || {
@@ -190,21 +195,18 @@ const chartOptions = computed(() => ({
   }
 }));
 
-const serviceVariationData = computed(() => {
-  const data = dashboardData.value?.serviceVariation || [];
-  return data.sort((a, b) => Math.abs(b.variationValue || 0) - Math.abs(a.variationValue || 0));
-});
+
 
 const costByAccountData = computed(() => dashboardData.value?.costByAccount || []);
 
 // --- CONFIGURAÇÃO DO DATE PICKER ---
-const datePickerConfig = {
+const datePickerConfig = computed(() => ({
   mode: 'range',
   dateFormat: 'd/m/Y',
   locale: Portuguese,
   maxDate: new Date(),
   defaultDate: dateRange.value
-};
+}));
 
 // --- FUNÇÕES ---
 async function fetchMemberAccounts() {
@@ -338,8 +340,8 @@ function getBudgetProgressColor() {
   }
 }
 
-// Obtém o ícone baseado na porcentagem do orçamento
-function getBudgetStatusIcon() {
+// Obtém o ícone baseado na porcentagem do orçamento total
+function getBudgetStatusIconKPI() {
   const percentage = getBudgetConsumptionPercentage();
   
   if (percentage <= 50) {
@@ -353,6 +355,59 @@ function getBudgetStatusIcon() {
   } else {
     return '🚨';
   }
+}
+
+// Funções específicas para os cards modernos
+function getBudgetStatusIcon(accountData) {
+  const percentage = getBudgetPercentage(accountData);
+  
+  if (percentage < 80) {
+    return 'pi pi-check-circle';
+  } else if (percentage <= 100) {
+    return 'pi pi-exclamation-triangle';
+  } else {
+    return 'pi pi-times-circle';
+  }
+}
+
+function getBudgetStatusCardClass(accountData) {
+  const percentage = getBudgetPercentage(accountData);
+  
+  if (percentage < 80) {
+    return 'card-status-ok';
+  } else if (percentage <= 100) {
+    return 'card-status-warning';
+  } else {
+    return 'card-status-danger';
+  }
+}
+
+function getBudgetPercentageClass(accountData) {
+  const percentage = getBudgetPercentage(accountData);
+  
+  if (percentage < 80) {
+    return 'percentage-ok';
+  } else if (percentage <= 100) {
+    return 'percentage-warning';
+  } else {
+    return 'percentage-danger';
+  }
+}
+
+function getRemainingBudgetClass(accountData) {
+  const remaining = (accountData.monthlyBudget || 0) - (accountData.totalCost || 0);
+  
+  if (remaining > 0) {
+    return 'remaining-positive';
+  } else {
+    return 'remaining-negative';
+  }
+}
+
+// Calcula o valor restante do orçamento
+function getRemainingBudget(accountData) {
+  const remaining = (accountData.monthlyBudget || 0) - (accountData.totalCost || 0);
+  return Math.max(0, remaining); // Não retorna valores negativos
 }
 
 // Obtém o texto de status baseado na porcentagem
@@ -739,222 +794,110 @@ onMounted(async () => {
         </template>
       </Card>
 
-      <!-- Tabelas de Insights -->
-      <div class="insights-grid">
-        <!-- Tabela 1 - Maiores Variações por Serviço -->
-        <Card class="table-card">
-          <template #title>
-            <i class="pi pi-sort-amount-down mr-2"></i>
-            Maiores Variações por Serviço
-          </template>
-          <template #content>
-            <DataTable 
-              :value="serviceVariationData" 
-              :paginator="true" 
-              :rows="10"
-              responsiveLayout="scroll"
-              size="small"
-              sortMode="single"
-              :sortField="'variationValue'"
-              :sortOrder="-1"
-              class="p-datatable-sm"
+      <!-- Grid de Governança Financeira - Cards Modernos -->
+      <Card class="tw-mb-6 tw-overflow-hidden">
+        <template #title>
+          <div class="tw-flex tw-items-center">
+            <i class="pi pi-building tw-mr-2 tw-text-blue-600"></i>
+            <span class="tw-text-lg tw-font-semibold">Governança Financeira por Conta</span>
+          </div>
+        </template>
+        <template #content>
+          <!-- Grid de Cards Responsivo -->
+          <div class="governance-grid">
+            <div 
+              v-for="account in costByAccountData" 
+              :key="account.accountId" 
+              class="governance-card"
+              :class="getBudgetStatusClass(account)"
             >
-              <Column 
-                field="service" 
-                header="Serviço" 
-                :sortable="true"
-                style="min-width: 200px"
-              >
-                <template #body="slotProps">
-                  <strong>{{ slotProps.data.service }}</strong>
-                </template>
-              </Column>
-              
-              <Column 
-                field="currentCost" 
-                header="Custo Atual ($)" 
-                :sortable="true"
-                style="min-width: 120px"
-              >
-                <template #body="slotProps">
-                  ${{ (slotProps.data.currentCost || 0).toFixed(2) }}
-                </template>
-              </Column>
-              
-              <Column 
-                field="previousCost" 
-                header="Custo Anterior ($)" 
-                :sortable="true"
-                style="min-width: 130px"
-              >
-                <template #body="slotProps">
-                  ${{ (slotProps.data.previousCost || 0).toFixed(2) }}
-                </template>
-              </Column>
-              
-              <Column 
-                field="variationValue" 
-                header="Variação ($)" 
-                :sortable="true"
-                style="min-width: 120px"
-              >
-                <template #body="slotProps">
-                  <span :class="[(slotProps.data.variationValue || 0) >= 0 ? 'negative' : 'positive']">
-                    {{ (slotProps.data.variationValue || 0) >= 0 ? '+' : '' }}${{ (slotProps.data.variationValue || 0).toFixed(2) }}
-                  </span>
-                </template>
-              </Column>
-              
-              <Column 
-                field="variationPercentage" 
-                header="Variação (%)" 
-                :sortable="true"
-                style="min-width: 120px"
-              >
-                <template #body="slotProps">
-                  <span :class="[(slotProps.data.variationPercentage || 0) >= 0 ? 'negative' : 'positive']">
-                    {{ (slotProps.data.variationPercentage || 0) >= 0 ? '+' : '' }}{{ (slotProps.data.variationPercentage || 0).toFixed(1) }}%
-                  </span>
-                </template>
-              </Column>
-            </DataTable>
-          </template>
-        </Card>
-
-        <!-- Tabela 2 - Custo por Conta com Orçamento e Previsão -->
-        <Card class="tw-mb-6 tw-overflow-hidden">
-          <template #title>
-            <div class="tw-flex tw-items-center">
-              <i class="pi pi-building tw-mr-2 tw-text-blue-600"></i>
-              <span class="tw-text-lg tw-font-semibold">Governança Financeira por Conta</span>
-            </div>
-          </template>
-          <template #content>
-            <!-- Versão Desktop: Tabela Tradicional -->
-            <div class="tw-overflow-x-auto">
-              <DataTable 
-                :value="costByAccountData" 
-                :paginator="true" 
-                :rows="10"
-                responsiveLayout="scroll"
-                size="small"
-                sortMode="single"
-                :sortField="'totalCost'"
-                :sortOrder="-1"
-                class="p-datatable-sm tw-min-w-full"
-              >
-                <Column field="accountName" header="Conta" :sortable="true" class="tw-min-w-48">
-                  <template #body="slotProps">
-                    <strong class="tw-text-gray-900">{{ slotProps.data.accountName }}</strong>
-                  </template>
-                </Column>
-                
-                <Column field="totalCost" header="Custo Atual" :sortable="true" class="tw-min-w-32">
-                  <template #body="slotProps">
-                    <span class="tw-font-semibold tw-text-gray-900">
-                      ${{ formatCurrencyFull(slotProps.data.totalCost || 0) }}
+              <!-- Header do Card -->
+              <div class="card-header">
+                <div class="account-info">
+                  <div class="account-icon">
+                    <i class="pi pi-building"></i>
+                  </div>
+                  <div class="account-details">
+                    <h4 class="account-name">{{ account.accountName }}</h4>
+                    <span class="account-status" :class="getBudgetStatusClass(account)">
+                      {{ getBudgetStatus(account) }}
                     </span>
-                  </template>
-                </Column>
-                
-                <Column field="monthlyBudget" header="Orçamento" :sortable="true" class="tw-min-w-32">
-                  <template #body="slotProps">
-                    <span class="tw-text-gray-700">
-                      ${{ formatCurrencyFull(slotProps.data.monthlyBudget || 0) }}
-                    </span>
-                  </template>
-                </Column>
-                
-                <Column header="Consumo" class="tw-min-w-64">
-                  <template #body="slotProps">
-                    <div class="tw-space-y-1">
-                      <div class="tw-flex tw-justify-between tw-items-center">
-                        <span class="tw-text-sm tw-font-medium tw-text-gray-700">{{ getBudgetPercentage(slotProps.data) }}%</span>
-                        <span class="tw-text-xs tw-px-2 tw-py-1 tw-rounded-full" :class="getBudgetStatusClass(slotProps.data)">
-                          {{ getBudgetStatus(slotProps.data) }}
-                        </span>
-                      </div>
-                      <ProgressBar 
-                        :value="getBudgetPercentage(slotProps.data)" 
-                        :severity="getBudgetSeverity(slotProps.data)"
-                        class="tw-h-2"
-                        :showValue="false"
-                      />
-                    </div>
-                  </template>
-                </Column>
-                
-                <Column field="forecastedCost" header="Previsão" :sortable="true" class="tw-min-w-48">
-                  <template #body="slotProps">
-                    <div class="tw-space-y-1">
-                      <div class="tw-font-semibold tw-text-gray-900">
-                        ${{ formatCurrencyFull(slotProps.data.forecastedCost || 0) }}
-                      </div>
-                      <div class="tw-flex tw-items-center tw-text-xs" :class="getForecastVariationClass(slotProps.data)">
-                        <i :class="getForecastIcon(slotProps.data)" class="tw-mr-1"></i>
-                        {{ getForecastVariationText(slotProps.data) }}
-                      </div>
-                    </div>
-                  </template>
-                </Column>
-              </DataTable>
-            </div>
-
-            <!-- Versão Mobile: Cards -->
-            <div class="tw-block md:tw-hidden tw-space-y-4">
-              <div v-for="account in costByAccountData" :key="account.accountId" class="tw-bg-gray-50 tw-rounded-lg tw-p-4 tw-border tw-border-gray-200">
-                <div class="tw-flex tw-justify-between tw-items-start tw-mb-3">
-                  <h4 class="tw-font-semibold tw-text-gray-900">{{ account.accountName }}</h4>
-                  <div class="tw-text-xs tw-px-2 tw-py-1 tw-rounded-full" :class="getBudgetStatusClass(account)">
-                    {{ getBudgetStatus(account) }}
                   </div>
                 </div>
-                
-                <div class="account-metrics">
-                  <div class="metric">
+                <div class="status-badge" :class="getBudgetStatusClass(account)">
+                  <i :class="getBudgetStatusIcon(account)" class="tw-mr-1"></i>
+                  {{ getBudgetPercentage(account) }}%
+                </div>
+              </div>
+
+              <!-- Métricas Principais -->
+              <div class="metrics-grid">
+                <div class="metric-item primary">
+                  <div class="metric-icon">
+                    <i class="pi pi-dollar"></i>
+                  </div>
+                  <div class="metric-content">
                     <span class="metric-label">Custo Atual</span>
-                    <span class="metric-value cost-value">
-                      ${{ formatCurrencyFull(account.totalCost || 0) }}
-                    </span>
-                  </div>
-                  
-                  <div class="metric">
-                    <span class="metric-label">Orçamento</span>
-                    <span class="metric-value budget-value">
-                      ${{ formatCurrencyFull(account.monthlyBudget || 0) }}
-                    </span>
-                  </div>
-                  
-                  <div class="metric">
-                    <span class="metric-label">Previsão</span>
-                    <span class="metric-value forecast-value">
-                      ${{ formatCurrencyFull(account.forecastedCost || 0) }}
-                    </span>
+                    <span class="metric-value">${{ formatCurrencyFull(account.totalCost || 0) }}</span>
                   </div>
                 </div>
-                
-                <div class="account-progress">
-                  <div class="progress-header">
-                    <span>Consumo do Orçamento</span>
-                    <span class="progress-percentage">{{ getBudgetPercentage(account) }}%</span>
+
+                <div class="metric-item">
+                  <div class="metric-icon">
+                    <i class="pi pi-calendar"></i>
                   </div>
+                  <div class="metric-content">
+                    <span class="metric-label">Orçamento</span>
+                    <span class="metric-value">${{ formatCurrencyFull(account.monthlyBudget || 0) }}</span>
+                  </div>
+                </div>
+
+                <div class="metric-item">
+                  <div class="metric-icon">
+                    <i class="pi pi-chart-line"></i>
+                  </div>
+                  <div class="metric-content">
+                    <span class="metric-label">Previsão</span>
+                    <span class="metric-value">${{ formatCurrencyFull(account.forecastedCost || 0) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Barra de Progresso -->
+              <div class="progress-section">
+                <div class="progress-header">
+                  <span class="progress-label">Consumo do Orçamento</span>
+                  <span class="progress-percentage">{{ getBudgetPercentage(account) }}%</span>
+                </div>
+                <div class="progress-bar-container">
                   <ProgressBar 
                     :value="getBudgetPercentage(account)" 
                     :severity="getBudgetSeverity(account)"
-                    class="progress-bar-mobile"
+                    class="custom-progress-bar"
                     :showValue="false"
                   />
                 </div>
-                
-                <div class="forecast-info" :class="getForecastVariationClass(account)">
-                  <i :class="getForecastIcon(account)"></i>
-                  <span>{{ getForecastVariationText(account) }}</span>
+              </div>
+
+              <!-- Footer com Valor Restante -->
+              <div class="card-footer">
+                <div class="remaining-budget">
+                  <span class="remaining-label">Restante:</span>
+                  <span class="remaining-value" :class="getRemainingBudgetClass(account)">
+                    ${{ formatCurrencyFull(getRemainingBudget(account)) }}
+                  </span>
                 </div>
               </div>
             </div>
-          </template>
-        </Card>
-      </div>
+          </div>
+
+          <!-- Estado Vazio -->
+          <div v-if="!costByAccountData || costByAccountData.length === 0" class="empty-state">
+            <i class="pi pi-inbox tw-text-4xl tw-text-gray-400 tw-mb-4"></i>
+            <p class="tw-text-gray-500">Nenhuma conta AWS configurada</p>
+          </div>
+        </template>
+      </Card>
     </div>
 
     <!-- Estado Vazio -->
@@ -1222,15 +1165,364 @@ onMounted(async () => {
   height: 100% !important;
 }
 
-/* Tabelas de Insights - Layout 40%/60% */
-.insights-grid {
+/* Grid de Cards Modernos - Governança Financeira */
+.governance-grid {
   display: grid;
-  grid-template-columns: 2fr 3fr; /* Governança 40%, Variações 60% */
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
 }
 
-.table-card {
-  height: fit-content;
+.governance-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.governance-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Status do Card */
+.governance-card.status-ok {
+  border-left: 4px solid #10b981;
+}
+
+.governance-card.status-warning {
+  border-left: 4px solid #f59e0b;
+}
+
+.governance-card.status-danger {
+  border-left: 4px solid #ef4444;
+}
+
+/* Header do Card */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.account-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.account-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.25rem;
+}
+
+.account-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.account-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.account-status {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.account-status.status-ok {
+  color: #065f46;
+}
+
+.account-status.status-warning {
+  color: #92400e;
+}
+
+.account-status.status-danger {
+  color: #991b1b;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.status-badge.status-ok {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.status-badge.status-warning {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.status-badge.status-danger {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+/* Grid de Métricas */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.metric-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.metric-item:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.metric-item.primary {
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  border-color: #bae6fd;
+}
+
+.metric-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1rem;
+}
+
+.metric-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.metric-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.metric-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* Seção de Progresso */
+.progress-section {
+  margin-bottom: 1.5rem;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.progress-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.progress-percentage {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.progress-bar-container {
+  margin-bottom: 0.5rem;
+}
+
+.custom-progress-bar {
+  height: 12px !important;
+  border-radius: 6px !important;
+}
+
+/* Indicador de Previsão */
+.forecast-indicator {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.forecast-indicator.forecast-positive {
+  background-color: #d1fae5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.forecast-indicator.forecast-negative {
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.forecast-indicator.forecast-neutral {
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  color: #374151;
+}
+
+.forecast-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.forecast-icon {
+  font-size: 1rem;
+}
+
+.forecast-text {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.forecast-value {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* Footer do Card */
+.card-footer {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1rem;
+}
+
+.remaining-budget {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.remaining-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.remaining-value {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.remaining-value.remaining-positive {
+  color: #059669;
+}
+
+.remaining-value.remaining-negative {
+  color: #dc2626;
+}
+
+/* Estado Vazio */
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #6b7280;
+}
+
+.empty-state i {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+/* Responsividade */
+@media (max-width: 1024px) {
+  .governance-grid {
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1rem;
+  }
+  
+  .metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .governance-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .governance-card {
+    padding: 1rem;
+  }
+  
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .status-badge {
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .governance-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .metric-item {
+    padding: 0.75rem;
+  }
 }
 
 /* Tabelas */
@@ -1257,10 +1549,6 @@ onMounted(async () => {
 @media (max-width: 1200px) {
   .kpis-section {
     grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .insights-grid {
-    grid-template-columns: 1fr;
   }
 }
 

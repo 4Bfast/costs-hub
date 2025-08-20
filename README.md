@@ -105,6 +105,9 @@ costs-hub/
 │   └── 📄 .env.example
 ├── 📁 docker/                # Configurações Docker
 │   └── 📄 docker-compose.yml
+├── 📁 test-scripts/          # Scripts de teste e debug (não commitados)
+│   ├── 📄 README.md          # Documentação dos scripts
+│   └── 📄 run-test.sh        # Utilitário para executar scripts
 ├── 📁 ai-bridge/             # Integração com IA
 ├── 📄 setup-dev.sh           # Script de setup automatizado
 ├── 📄 start-all.sh           # Script para iniciar todos os serviços

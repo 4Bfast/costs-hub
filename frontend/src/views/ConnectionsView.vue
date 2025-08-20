@@ -213,6 +213,65 @@ function editMemberAccount(account) {
   isEditModalVisible.value = true;
 }
 
+async function importHistory(account) {
+  try {
+    // Marcar como importando
+    account.importing = true;
+    
+    toast.add({
+      severity: 'info',
+      summary: 'Importação Iniciada',
+      detail: `Verificando credenciais e iniciando importação para ${account.name}...`,
+      life: 5000
+    });
+    
+    // Usar o payer_connection_id que é o ID da AWSAccount
+    const response = await apiService.importHistory(account.payer_connection_id);
+    
+    // Verificar se a resposta contém erro mesmo com status 202
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    
+    toast.add({
+      severity: 'success',
+      summary: 'Importação Iniciada',
+      detail: `Importação do histórico iniciada com sucesso para ${account.name}. O processo pode levar alguns minutos.`,
+      life: 8000
+    });
+    
+    // Atualizar status local
+    account.history_imported = true;
+    
+    // Recarregar dados
+    await fetchMemberAccounts();
+    
+  } catch (error) {
+    console.error('Erro ao importar histórico:', error);
+    
+    // Determinar o tipo de erro
+    let errorMessage = 'Erro na Importação';
+    let errorDetail = error.message || 'Erro desconhecido';
+    
+    if (errorDetail.includes('conexão com a AWS') || errorDetail.includes('Credenciais AWS')) {
+      errorMessage = 'Problema de Conexão com AWS';
+      errorDetail = 'Verifique se a conexão com a AWS está configurada corretamente e tente novamente.';
+    } else if (errorDetail.includes('já foi importado')) {
+      errorMessage = 'Histórico Já Importado';
+      errorDetail = 'O histórico desta conta já foi importado anteriormente.';
+    }
+    
+    toast.add({
+      severity: 'error',
+      summary: errorMessage,
+      detail: errorDetail,
+      life: 10000
+    });
+  } finally {
+    account.importing = false;
+  }
+}
+
 function confirmDeleteAccount(account) {
   selectedAccount.value = account;
   isDeleteModalVisible.value = true;
@@ -442,7 +501,7 @@ onMounted(() => {
               </template>
             </Column>
             
-            <Column header="Ações" style="width: 120px">
+            <Column header="Ações" style="width: 180px">
               <template #body="slotProps">
                 <div class="flex gap-2">
                   <Button 
@@ -450,6 +509,20 @@ onMounted(() => {
                     class="p-button-rounded p-button-text p-button-sm" 
                     @click="editMemberAccount(slotProps.data)"
                     v-tooltip.top="'Editar Orçamento'"
+                  />
+                  <Button 
+                    v-if="!slotProps.data.history_imported"
+                    icon="pi pi-download" 
+                    class="p-button-rounded p-button-text p-button-sm p-button-success" 
+                    @click="importHistory(slotProps.data)"
+                    v-tooltip.top="'Importar Histórico (12 meses)'"
+                    :loading="slotProps.data.importing"
+                  />
+                  <Tag 
+                    v-else
+                    value="Histórico Importado" 
+                    severity="success"
+                    class="text-xs"
                   />
                 </div>
               </template>
