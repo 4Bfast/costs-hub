@@ -184,6 +184,7 @@ class DailyFocusCosts(db.Model):
     Modelo para armazenar os dados de custo diários, já processados e agregados.
     Baseado na especificação FOCUS.
     ATUALIZADO: Agora referencia member_accounts em vez de aws_accounts.
+    NOVO: Suporte a dados FOCUS granulares (resource_id, usage_type)
     """
     __tablename__ = 'daily_focus_costs'
 
@@ -191,18 +192,24 @@ class DailyFocusCosts(db.Model):
     member_account_id = db.Column(db.Integer, db.ForeignKey('member_accounts.id'), nullable=False)
     usage_date = db.Column(db.Date, nullable=False, index=True)
     
-    # Exemplo de Dimensões Chave do FOCUS
+    # Dimensões Chave do FOCUS (existentes - compatibilidade)
     service_category = db.Column(db.String(255), nullable=False) # Ex: Compute, Storage, Database
     aws_service = db.Column(db.String(255), nullable=False)      # Ex: AmazonEC2, AmazonS3
     charge_category = db.Column(db.String(255), nullable=True)   # Ex: Usage, Tax, Credit
     
-    # Métrica Chave do FOCUS
-    cost = db.Column(db.Numeric(12, 6), nullable=False) # Numeric para precisão financeira
+    # Métrica Chave do FOCUS (existente - compatibilidade)
+    cost = db.Column(db.Numeric(12, 6), nullable=False) # Para dados Cost Explorer
+    
+    # NOVOS CAMPOS FOCUS GRANULARES
+    resource_id = db.Column(db.String(255), nullable=True, index=True)      # Ex: i-012345abcdef
+    usage_type = db.Column(db.String(255), nullable=True, index=True)       # Ex: BoxUsage:t3.large
+    effective_cost = db.Column(db.Numeric(12, 6), nullable=True)            # Para dados FOCUS reais
 
     # Relacionamento
     member_account = db.relationship('MemberAccount', backref='daily_costs')
 
     # Garante que não teremos dados duplicados para a mesma conta-membro, dia e serviço
+    # MANTIDO: Constraint existente para compatibilidade
     __table_args__ = (db.UniqueConstraint('member_account_id', 'usage_date', 'service_category', 'aws_service', name='_unique_daily_cost_uc'),)
 
     def __repr__(self):

@@ -294,6 +294,38 @@ export const apiService = {
         return authenticatedFetch(url);
     },
 
+    // Análise de Variação por Serviço
+    getVariationAnalysis(params) {
+        console.log('=== getVariationAnalysis DEBUG ===');
+        console.log('Input params:', params);
+        
+        const searchParams = new URLSearchParams();
+        
+        // Parâmetros obrigatórios
+        searchParams.append('start_date', params.start_date);
+        searchParams.append('end_date', params.end_date);
+        searchParams.append('service_name', params.service_name);
+        
+        // Parâmetros opcionais
+        if (params.aws_account_id && params.aws_account_id !== '') {
+            searchParams.append('aws_account_id', params.aws_account_id);
+        }
+        
+        if (params.min_variation) {
+            searchParams.append('min_variation', params.min_variation);
+        }
+        
+        if (params.limit) {
+            searchParams.append('limit', params.limit);
+        }
+        
+        const url = `/costs/variation-analysis?${searchParams.toString()}`;
+        console.log('Final Variation API URL:', `${BASE_URL}${url}`);
+        console.log('====================================');
+        
+        return authenticatedFetch(url);
+    },
+
     // --- Módulo de Alarmes ---
     
     /**

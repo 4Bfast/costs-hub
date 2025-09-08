@@ -1,6 +1,6 @@
 import click
 from flask.cli import with_appcontext
-from .services import process_focus_data_for_account
+from .services import process_focus_data_for_account, read_focus_files_from_s3
 import boto3
 import logging
 from datetime import datetime, timedelta
@@ -272,8 +272,63 @@ def check_ses_status():
     except Exception as e:
         print(f"❌ Erro: {str(e)}")
 
+@click.command(name='process-focus')
+@click.argument('account_id', type=int)
+@click.option('--start-date', help='Data início (YYYY-MM-DD)')
+@click.option('--end-date', help='Data fim (YYYY-MM-DD)')
+@with_appcontext
+def process_focus_command(account_id, start_date, end_date):
+    """
+    Processa arquivos FOCUS do S3 do cliente.
+    
+    Uso: flask process-focus <ACCOUNT_ID> [--start-date YYYY-MM-DD] [--end-date YYYY-MM-DD]
+    """
+    from app.models import AWSAccount
+    
+    try:
+        # Buscar configuração da conta
+        aws_account = AWSAccount.query.get(account_id)
+        if not aws_account:
+            click.echo(f"❌ Conta AWS {account_id} não encontrada")
+            return
+        
+        if not aws_account.focus_s3_bucket_path:
+            click.echo(f"❌ Conta {account_id} não tem configuração FOCUS S3")
+            return
+        
+        # Definir período padrão (ontem se não especificado)
+        if not start_date:
+            start_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        if not end_date:
+            end_date = start_date  # Processar apenas um dia por padrão
+        
+        click.echo(f"📊 Processando FOCUS para conta {account_id} ({aws_account.account_name})")
+        click.echo(f"📅 Período: {start_date} até {end_date}")
+        click.echo(f"📦 S3: {aws_account.focus_s3_bucket_path}")
+        
+        # Ler arquivos FOCUS do S3
+        focus_data = read_focus_files_from_s3(aws_account, start_date, end_date)
+        
+        if not focus_data:
+            click.echo("⚠️ Nenhum arquivo FOCUS encontrado no período especificado")
+            return
+        
+        click.echo(f"📄 Encontrados {len(focus_data)} registros FOCUS")
+        
+        # Processar dados FOCUS (reutilizar função existente)
+        process_focus_data_for_account(aws_account.id, focus_data)
+        
+        click.echo(f"✅ Processamento FOCUS concluído com sucesso!")
+        click.echo(f"📊 {len(focus_data)} registros processados")
+        
+    except Exception as e:
+        click.echo(f"❌ Erro ao processar FOCUS: {str(e)}")
+        logging.error(f"Erro no comando process-focus: {e}")
+
 def init_app(app):
     """Registra os comandos no app Flask."""
     app.cli.add_command(process_costs_command)
+    app.cli.add_command(process_focus_command)
+    app.cli.add_command(process_focus_command)  # NOVO COMANDO
     app.cli.add_command(test_email)
     app.cli.add_command(check_ses_status)

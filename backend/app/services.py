@@ -8,6 +8,10 @@ from app import db
 from app.models import Alarm, AlarmEvent, DailyFocusCosts, AWSAccount
 from app.notifications import send_alarm_email
 import logging
+import boto3
+import pandas as pd
+import io
+from botocore.exceptions import ClientError
 
 def run_alarm_engine(organization_id, processing_date):
     """
@@ -349,24 +353,58 @@ def process_focus_data_for_account(payer_account_id, focus_data):
                 
                 member_account_id = member_account_map[target_account_id]
                 
-                # Usar upsert do PostgreSQL para inserir ou atualizar
-                stmt = insert(DailyFocusCosts).values(
-                    member_account_id=member_account_id,
-                    usage_date=data['usage_date'],
-                    service_category=data.get('service_category', 'Other'),
-                    aws_service=data['aws_service'],
-                    charge_category=data.get('charge_category', 'Usage'),
-                    cost=data['cost']
-                )
-                
-                # Em caso de conflito, atualizar o custo
-                stmt = stmt.on_conflict_do_update(
-                    index_elements=['member_account_id', 'usage_date', 'service_category', 'aws_service'],
-                    set_=dict(
-                        cost=stmt.excluded.cost,
-                        charge_category=stmt.excluded.charge_category
+                # DETECTAR TIPO DE DADOS: FOCUS granular vs Cost Explorer agregado
+                if 'resourceid' in data and data['resourceid']:
+                    # DADOS FOCUS GRANULARES - usar novos campos
+                    stmt = insert(DailyFocusCosts).values(
+                        member_account_id=member_account_id,
+                        usage_date=data['usage_date'],
+                        # Campos FOCUS granulares
+                        resource_id=data.get('resourceid'),
+                        usage_type=data.get('usage_type'),
+                        effective_cost=data.get('effective_cost', 0),
+                        # Campos compatibilidade
+                        service_category=data.get('service_category', 'Other'),
+                        aws_service=data['aws_service'],
+                        charge_category=data.get('charge_category', 'Usage'),
+                        cost=data.get('cost', data.get('effective_cost', 0))  # Fallback
                     )
-                )
+                    
+                    # Conflict resolution para dados FOCUS (mais específico)
+                    stmt = stmt.on_conflict_do_update(
+                        index_elements=['member_account_id', 'usage_date', 'service_category', 'aws_service'],
+                        set_=dict(
+                            resource_id=stmt.excluded.resource_id,
+                            usage_type=stmt.excluded.usage_type,
+                            effective_cost=stmt.excluded.effective_cost,
+                            cost=stmt.excluded.cost,
+                            charge_category=stmt.excluded.charge_category
+                        )
+                    )
+                    
+                else:
+                    # DADOS COST EXPLORER AGREGADOS - usar campos existentes (compatibilidade)
+                    stmt = insert(DailyFocusCosts).values(
+                        member_account_id=member_account_id,
+                        usage_date=data['usage_date'],
+                        service_category=data.get('service_category', 'Other'),
+                        aws_service=data['aws_service'],
+                        charge_category=data.get('charge_category', 'Usage'),
+                        cost=data['cost'],
+                        # Campos FOCUS como NULL para dados agregados
+                        resource_id=None,
+                        usage_type=None,
+                        effective_cost=None
+                    )
+                    
+                    # Conflict resolution para dados Cost Explorer (existente)
+                    stmt = stmt.on_conflict_do_update(
+                        index_elements=['member_account_id', 'usage_date', 'service_category', 'aws_service'],
+                        set_=dict(
+                            cost=stmt.excluded.cost,
+                            charge_category=stmt.excluded.charge_category
+                        )
+                    )
                 
                 db.session.execute(stmt)
                 saved_records += 1
@@ -393,3 +431,321 @@ def process_focus_data_for_account(payer_account_id, focus_data):
         logging.error(f"Erro ao processar dados FOCUS para conta Payer {payer_account_id}: {str(e)}")
         db.session.rollback()
         raise
+
+def get_client_session(aws_account):
+    """
+    Cria sessão AWS usando assume role do cliente.
+    Reutiliza lógica existente de routes.py para compatibilidade.
+    """
+    try:
+        # Para conta 008195334540, usar perfil 4bfast diretamente
+        if aws_account.payer_account_id == '008195334540':
+            session = boto3.Session(profile_name='4bfast')
+        else:
+            # Para outras contas, usar assume role
+            session = boto3.Session(profile_name='4bfast')
+            if aws_account.iam_role_arn:
+                sts_client = session.client('sts')
+                assumed_role = sts_client.assume_role(
+                    RoleArn=aws_account.iam_role_arn,
+                    RoleSessionName='CostsHubFocusProcessing'
+                )
+                credentials = assumed_role['Credentials']
+                session = boto3.Session(
+                    aws_access_key_id=credentials['AccessKeyId'],
+                    aws_secret_access_key=credentials['SecretAccessKey'],
+                    aws_session_token=credentials['SessionToken']
+                )
+        
+        # Verificar se há credenciais disponíveis
+        credentials = session.get_credentials()
+        if credentials is None:
+            logging.error("Nenhuma credencial AWS encontrada no ambiente")
+            return None
+            
+        return session
+        
+    except Exception as e:
+        logging.error(f"Erro ao criar sessão AWS: {str(e)}")
+        return None
+
+def parse_s3_path(s3_path):
+    """
+    Parse do caminho S3 para extrair bucket e prefix.
+    Ex: s3://bucket-name/path/to/files/ -> (bucket-name, path/to/files/)
+    """
+    if not s3_path or not s3_path.startswith('s3://'):
+        raise ValueError(f"Caminho S3 inválido: {s3_path}")
+    
+    # Remove s3:// e divide bucket/prefix
+    path_without_protocol = s3_path[5:]  # Remove 's3://'
+    parts = path_without_protocol.split('/', 1)
+    
+    bucket_name = parts[0]
+    prefix = parts[1] if len(parts) > 1 else ''
+    
+    return bucket_name, prefix
+
+def read_focus_files_from_s3(aws_account, start_date, end_date):
+    """
+    Lê arquivos FOCUS do S3 do cliente para o período especificado.
+    
+    Args:
+        aws_account: Instância do modelo AWSAccount
+        start_date: Data início (string YYYY-MM-DD)
+        end_date: Data fim (string YYYY-MM-DD)
+    
+    Returns:
+        List de dados FOCUS processados
+    """
+    try:
+        # Criar sessão AWS
+        session = get_client_session(aws_account)
+        if not session:
+            return []
+        
+        s3_client = session.client('s3')
+        
+        # Parse do caminho S3
+        bucket_name, prefix = parse_s3_path(aws_account.focus_s3_bucket_path)
+        
+        logging.info(f"Buscando arquivos FOCUS em s3://{bucket_name}/{prefix}")
+        
+        # Listar arquivos no bucket
+        focus_files = list_focus_files(s3_client, bucket_name, prefix, start_date, end_date)
+        
+        if not focus_files:
+            logging.warning(f"Nenhum arquivo FOCUS encontrado no período {start_date} - {end_date}")
+            return []
+        
+        # Processar cada arquivo
+        all_focus_data = []
+        for file_key in focus_files:
+            try:
+                logging.info(f"Processando arquivo: {file_key}")
+                
+                if file_key.endswith('.parquet'):
+                    file_data = read_parquet_from_s3(s3_client, bucket_name, file_key)
+                elif file_key.endswith('.csv'):
+                    file_data = read_csv_from_s3(s3_client, bucket_name, file_key)
+                else:
+                    logging.warning(f"Formato de arquivo não suportado: {file_key}")
+                    continue
+                
+                processed_data = process_focus_file_data(file_data)
+                all_focus_data.extend(processed_data)
+                
+            except Exception as e:
+                logging.error(f"Erro ao processar arquivo {file_key}: {str(e)}")
+                continue
+        
+        logging.info(f"Processados {len(all_focus_data)} registros FOCUS de {len(focus_files)} arquivos")
+        return all_focus_data
+        
+    except Exception as e:
+        logging.error(f"Erro ao ler arquivos FOCUS do S3: {str(e)}")
+        return []
+
+def list_focus_files(s3_client, bucket_name, prefix, start_date, end_date):
+    """
+    Lista arquivos FOCUS no S3 para o período especificado.
+    """
+    try:
+        focus_files = []
+        
+        # Listar objetos no bucket
+        paginator = s3_client.get_paginator('list_objects_v2')
+        pages = paginator.paginate(Bucket=bucket_name, Prefix=prefix)
+        
+        for page in pages:
+            if 'Contents' not in page:
+                continue
+                
+            for obj in page['Contents']:
+                key = obj['Key']
+                
+                # Filtrar apenas arquivos FOCUS (parquet ou csv)
+                if key.endswith(('.parquet', '.csv')):
+                    # TODO: Implementar filtro por data baseado no nome do arquivo
+                    # Por enquanto, incluir todos os arquivos
+                    focus_files.append(key)
+        
+        return focus_files
+        
+    except ClientError as e:
+        logging.error(f"Erro ao listar arquivos S3: {str(e)}")
+        return []
+
+def read_parquet_from_s3(s3_client, bucket_name, file_key):
+    """
+    Lê arquivo Parquet do S3 usando pandas.
+    """
+    try:
+        # Baixar arquivo do S3
+        response = s3_client.get_object(Bucket=bucket_name, Key=file_key)
+        parquet_data = response['Body'].read()
+        
+        # Ler com pandas
+        df = pd.read_parquet(io.BytesIO(parquet_data))
+        
+        # Converter para lista de dicionários
+        return df.to_dict('records')
+        
+    except Exception as e:
+        logging.error(f"Erro ao ler Parquet {file_key}: {str(e)}")
+        return []
+
+def read_csv_from_s3(s3_client, bucket_name, file_key):
+    """
+    Lê arquivo CSV do S3 usando pandas.
+    """
+    try:
+        # Baixar arquivo do S3
+        response = s3_client.get_object(Bucket=bucket_name, Key=file_key)
+        csv_data = response['Body'].read().decode('utf-8')
+        
+        # Ler com pandas
+        df = pd.read_csv(io.StringIO(csv_data))
+        
+        # Converter para lista de dicionários
+        return df.to_dict('records')
+        
+    except Exception as e:
+        logging.error(f"Erro ao ler CSV {file_key}: {str(e)}")
+        return []
+
+def process_focus_file_data(raw_data):
+    """
+    Processa dados brutos FOCUS para estrutura padronizada.
+    Mapeia campos FOCUS para estrutura interna.
+    """
+    processed = []
+    
+    # Debug: Log available columns from first row
+    if raw_data and len(raw_data) > 0:
+        first_row = raw_data[0]
+        logging.info(f"🔍 FOCUS columns available: {list(first_row.keys())}")
+        
+        # Debug: Log specific field values for first row
+        logging.info(f"🔍 ResourceId value: {first_row.get('ResourceId', 'NOT_FOUND')}")
+        logging.info(f"🔍 UsageType value: {first_row.get('UsageType', 'NOT_FOUND')}")
+        logging.info(f"🔍 x_UsageType value: {first_row.get('x_UsageType', 'NOT_FOUND')}")
+        logging.info(f"🔍 ServiceName value: {first_row.get('ServiceName', 'NOT_FOUND')}")
+        
+        # Debug: Show all keys that contain 'usage' or 'resource'
+        usage_keys = [k for k in first_row.keys() if 'usage' in k.lower()]
+        resource_keys = [k for k in first_row.keys() if 'resource' in k.lower()]
+        logging.info(f"🔍 Keys with 'usage': {usage_keys}")
+        logging.info(f"🔍 Keys with 'resource': {resource_keys}")
+        
+        # Check for ResourceId variations
+        resource_fields = [k for k in first_row.keys() if 'resource' in k.lower()]
+        usage_fields = [k for k in first_row.keys() if 'usage' in k.lower()]
+        logging.info(f"🔍 Resource fields: {resource_fields}")
+        logging.info(f"🔍 Usage fields: {usage_fields}")
+    
+    for row in raw_data:
+        try:
+            # Mapear campos FOCUS para estrutura interna
+            processed_row = {
+                # Campos FOCUS granulares - CORRIGIDO com nomes reais
+                'resourceid': (row.get('ResourceId') or row.get('resourceid') or 
+                              row.get('resource_id') or row.get('ResourceID')),
+                'usage_type': (row.get('UsageType') or row.get('x_UsageType') or 
+                              row.get('usage_type') or row.get('UsageTypeCode')),
+                'effective_cost': float(row.get('EffectiveCost', 0) or row.get('effectivecost', 0)),
+                
+                # Campos compatibilidade (existentes)
+                'aws_service': row.get('ServiceName') or row.get('servicename', 'Unknown'),
+                'service_category': map_service_to_category(row.get('ServiceName') or row.get('servicename', '')),
+                'charge_category': row.get('ChargeCategory') or row.get('chargecategory', 'Usage'),
+                'cost': float(row.get('BilledCost', 0) or row.get('billedcost', 0)),
+                
+                # Data e conta
+                'usage_date': parse_focus_date(row.get('BillingPeriodStart') or row.get('billingperiodstart')),
+                'sub_account_id': row.get('SubAccountId') or row.get('subaccountid'),
+                'billing_account_id': row.get('BillingAccountId') or row.get('billingaccountid'),
+            }
+            
+            # Debug: Log first few processed rows
+            if len(processed) < 3:
+                logging.info(f"🔍 Processed row {len(processed)}: resourceid={processed_row['resourceid']}, usage_type={processed_row['usage_type']}, service={processed_row['aws_service']}")
+            
+            # Validar dados essenciais
+            if processed_row['usage_date'] and processed_row['aws_service']:
+                processed.append(processed_row)
+                
+        except Exception as e:
+            logging.warning(f"Erro ao processar linha FOCUS: {str(e)}")
+            continue
+    
+    return processed
+
+def parse_focus_date(date_str):
+    """
+    Parse de data FOCUS para formato Python date.
+    """
+    if not date_str:
+        return None
+        
+    try:
+        # Se já é um objeto datetime, extrair apenas a data
+        if hasattr(date_str, 'date'):
+            return date_str.date()
+        
+        # Se já é um objeto date
+        if hasattr(date_str, 'year') and hasattr(date_str, 'month') and hasattr(date_str, 'day'):
+            return date_str
+            
+        # Converter para string e tentar formatos comuns
+        date_string = str(date_str)
+        
+        # Tentar formatos com timezone
+        for fmt in [
+            '%Y-%m-%d %H:%M:%S%z',
+            '%Y-%m-%d %H:%M:%S+00:00',
+            '%Y-%m-%dT%H:%M:%S%z',
+            '%Y-%m-%dT%H:%M:%SZ',
+            '%Y-%m-%d',
+            '%Y-%m-%d %H:%M:%S',
+            '%Y-%m-%dT%H:%M:%S'
+        ]:
+            try:
+                return datetime.strptime(date_string, fmt).date()
+            except ValueError:
+                continue
+        
+        # Tentar remover timezone manualmente se presente
+        if '+00:00' in date_string:
+            clean_date = date_string.replace('+00:00', '')
+            try:
+                return datetime.strptime(clean_date, '%Y-%m-%d %H:%M:%S').date()
+            except ValueError:
+                pass
+        
+        return None
+        
+    except Exception as e:
+        logging.debug(f"Erro ao fazer parse da data {date_str}: {str(e)}")
+        return None
+
+def map_service_to_category(service_name):
+    """
+    Mapeia nome do serviço AWS para categoria.
+    Reutiliza lógica existente para compatibilidade.
+    """
+    if not service_name:
+        return 'Other'
+    
+    service_lower = service_name.lower()
+    
+    if any(keyword in service_lower for keyword in ['ec2', 'compute', 'lambda', 'fargate']):
+        return 'Compute'
+    elif any(keyword in service_lower for keyword in ['s3', 'storage', 'ebs', 'efs']):
+        return 'Storage'
+    elif any(keyword in service_lower for keyword in ['rds', 'database', 'dynamodb']):
+        return 'Database'
+    elif any(keyword in service_lower for keyword in ['vpc', 'cloudfront', 'route53']):
+        return 'Networking'
+    else:
+        return 'Other'
