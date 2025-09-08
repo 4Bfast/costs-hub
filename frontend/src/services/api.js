@@ -254,6 +254,22 @@ export const apiService = {
         return authenticatedFetch(`/costs/by-service?${params.toString()}`);
     },
 
+    /**
+     * Busca análise comparativa de custos por serviço (atual vs anterior).
+     */
+    getCostsByServiceComparative(accountId, startDate, endDate) {
+        const params = new URLSearchParams({
+            start_date: startDate,
+            end_date: endDate
+        });
+
+        if (accountId) {
+            params.append('aws_account_id', accountId);
+        }
+
+        return authenticatedFetch(`/costs/by-service-comparative?${params.toString()}`);
+    },
+
     // NOVO: Série Temporal por Serviço
     getTimeSeriesByService(params) {
         console.log('=== getTimeSeriesByService DEBUG ===');

@@ -589,6 +589,116 @@ def get_costs_by_service(current_user):
 
     return jsonify(result)
 
+@api_bp.route('/costs/by-service-comparative', methods=['GET'])
+@token_required
+def get_costs_by_service_comparative(current_user):
+    """
+    Endpoint que retorna análise comparativa de custos por serviço.
+    Compara período atual com período anterior de mesma duração.
+    """
+    # 1. Validação dos Parâmetros
+    aws_account_id = request.args.get('aws_account_id', type=int)
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+
+    if not start_date_str or not end_date_str:
+        return jsonify({'error': 'start_date e end_date são obrigatórios'}), 400
+
+    try:
+        current_start = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        current_end = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return jsonify({'error': 'Formato de data inválido. Use YYYY-MM-DD'}), 400
+
+    # 2. Calcular período anterior
+    period_days = (current_end - current_start).days + 1
+    previous_end = current_start - timedelta(days=1)
+    previous_start = previous_end - timedelta(days=period_days - 1)
+
+    # 3. Verificar permissões e obter member_account_ids
+    if aws_account_id:
+        # Verifica se o usuário pode acessar esta conta Payer específica
+        payer_account = AWSAccount.query.filter_by(
+            id=aws_account_id, 
+            organization_id=current_user.organization_id
+        ).first()
+        
+        if not payer_account:
+            return jsonify({'error': 'Conta não encontrada ou acesso negado'}), 403
+        
+        # Buscar contas-membro associadas a esta conta Payer
+        member_accounts = MemberAccount.query.filter_by(payer_connection_id=aws_account_id).all()
+        member_account_ids = [ma.id for ma in member_accounts]
+        
+        if not member_account_ids:
+            return jsonify([])
+    else:
+        # Busca todas as contas-membro da organização do usuário logado
+        org_member_accounts = MemberAccount.query.filter_by(organization_id=current_user.organization_id).all()
+        member_account_ids = [acc.id for acc in org_member_accounts]
+        if not member_account_ids:
+            return jsonify([])
+
+    # 4. Query para ambos os períodos
+    try:
+        # Período atual
+        current_costs = db.session.query(
+            DailyFocusCosts.aws_service,
+            func.sum(DailyFocusCosts.cost).label('total_cost')
+        ).filter(
+            DailyFocusCosts.member_account_id.in_(member_account_ids),
+            DailyFocusCosts.usage_date >= current_start,
+            DailyFocusCosts.usage_date <= current_end
+        ).group_by(DailyFocusCosts.aws_service).all()
+
+        # Período anterior
+        previous_costs = db.session.query(
+            DailyFocusCosts.aws_service,
+            func.sum(DailyFocusCosts.cost).label('total_cost')
+        ).filter(
+            DailyFocusCosts.member_account_id.in_(member_account_ids),
+            DailyFocusCosts.usage_date >= previous_start,
+            DailyFocusCosts.usage_date <= previous_end
+        ).group_by(DailyFocusCosts.aws_service).all()
+
+        # 5. Processar dados
+        current_dict = {row.aws_service: float(row.total_cost) for row in current_costs}
+        previous_dict = {row.aws_service: float(row.total_cost) for row in previous_costs}
+        
+        # Combinar todos os serviços
+        all_services = set(current_dict.keys()) | set(previous_dict.keys())
+        
+        result = []
+        for service in all_services:
+            current_cost = current_dict.get(service, 0.0)
+            previous_cost = previous_dict.get(service, 0.0)
+            variation_value = current_cost - previous_cost
+            
+            # Calcular percentual (evitar divisão por zero)
+            if previous_cost > 0:
+                variation_percentage = (variation_value / previous_cost) * 100
+            elif current_cost > 0:
+                variation_percentage = 100.0  # Serviço novo
+            else:
+                variation_percentage = 0.0
+            
+            result.append({
+                'service': service,
+                'currentCost': current_cost,
+                'previousCost': previous_cost,
+                'variationValue': variation_value,
+                'variationPercentage': round(variation_percentage, 2)
+            })
+        
+        # Ordenar por valor absoluto da variação (maiores mudanças primeiro)
+        result.sort(key=lambda x: abs(x['variationValue']), reverse=True)
+        
+        return jsonify(result)
+
+    except Exception as e:
+        print(f"Erro na consulta comparativa: {e}")
+        return jsonify({'error': 'Erro interno do servidor'}), 500
+
 @api_bp.route('/costs/time-series-by-service', methods=['GET'])
 @token_required
 def get_time_series_by_service(current_user):

@@ -16,6 +16,8 @@ import ProgressBar from 'primevue/progressbar';
 import TabView from 'primevue/tabview';
 import TabPanel from 'primevue/tabpanel';
 import Sidebar from 'primevue/sidebar';
+import Button from 'primevue/button';
+import ToggleButton from 'primevue/togglebutton';
 
 // Componente de gráfico
 import CostLineChart from '@/components/CostLineChart.vue';
@@ -43,6 +45,9 @@ const variationData = ref(null);
 const isLoadingVariation = ref(false);
 const variationError = ref(null);
 
+// Modo de análise
+const isComparativeMode = ref(false);
+
 const datePickerConfig = {
   mode: 'range',
   dateFormat: 'd/m/Y',
@@ -64,17 +69,20 @@ const accountOptions = computed(() => {
 });
 
 const totalCost = computed(() => {
-  return serviceCosts.value.reduce((sum, service) => sum + service.total_cost, 0);
+  return serviceCosts.value.reduce((sum, service) => sum + (service.currentCost || service.total_cost || 0), 0);
 });
 
 const servicesWithPercentage = computed(() => {
   const total = totalCost.value;
   if (total === 0) return serviceCosts.value;
   
-  return serviceCosts.value.map(service => ({
-    ...service,
-    percentage: ((service.total_cost / total) * 100).toFixed(2)
-  }));
+  return serviceCosts.value.map(service => {
+    const currentCost = service.currentCost || service.total_cost || 0;
+    return {
+      ...service,
+      percentage: ((currentCost / total) * 100).toFixed(2)
+    };
+  });
 });
 
 const filteredServices = computed(() => {
@@ -132,7 +140,22 @@ async function fetchData() {
   try {
     const startDate = new Date(dateRange.value[0]).toISOString().split('T')[0];
     const endDate = new Date(dateRange.value[1]).toISOString().split('T')[0];
-    serviceCosts.value = await apiService.getCostsByService(selectedAccount.value, startDate, endDate);
+    
+    if (isComparativeMode.value) {
+      serviceCosts.value = await apiService.getCostsByServiceComparative(selectedAccount.value, startDate, endDate);
+    } else {
+      const simpleData = await apiService.getCostsByService(selectedAccount.value, startDate, endDate);
+      // Converter para formato compatível
+      serviceCosts.value = simpleData.map(item => ({
+        service: item.service || item.aws_service,
+        currentCost: item.total_cost,
+        previousCost: 0,
+        variationValue: 0,
+        variationPercentage: 0,
+        // Manter compatibilidade com código existente
+        total_cost: item.total_cost
+      }));
+    }
   } catch (err) {
     error.value = 'Erro ao carregar dados: ' + err.message;
     serviceCosts.value = [];
@@ -149,6 +172,34 @@ function onDateRangeChange(selectedDates) {
 }
 
 function onAccountChange() {
+  fetchData();
+}
+
+// Funções para botões de período rápido
+function setQuickPeriod(days) {
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(endDate.getDate() - days + 1);
+  
+  dateRange.value = [startDate, endDate];
+  fetchData();
+}
+
+function setCurrentMonth() {
+  const now = new Date();
+  const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endDate = new Date();
+  
+  dateRange.value = [startDate, endDate];
+  fetchData();
+}
+
+function setLastMonth() {
+  const now = new Date();
+  const startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+  
+  dateRange.value = [startDate, endDate];
   fetchData();
 }
 
@@ -248,6 +299,19 @@ const getVariationIcon = (percentage) => {
   return percentage > 0 ? 'pi pi-arrow-up' : 'pi pi-arrow-down';
 };
 
+// Funções para formatação da tabela
+function getVariationClass(variationValue) {
+  if (variationValue > 0) return 'variation-positive';
+  if (variationValue < 0) return 'variation-negative';
+  return 'variation-neutral';
+}
+
+function formatVariation(value, percentage) {
+  const formattedValue = formatCurrency(value);
+  const formattedPercentage = percentage ? `(${percentage > 0 ? '+' : ''}${percentage.toFixed(1)}%)` : '';
+  return `${formattedValue} ${formattedPercentage}`;
+}
+
 onMounted(async () => {
   await loadAccounts();
   await fetchData();
@@ -275,11 +339,43 @@ onMounted(async () => {
           </div>
           <div class="control-group">
             <label>Período:</label>
-            <flat-pickr
-              v-model="dateRange"
-              :config="datePickerConfig"
-              @on-change="onDateRangeChange"
-            />
+            <div class="period-controls">
+              <!-- Botões de Período Rápido -->
+              <div class="quick-period-buttons">
+                <Button 
+                  label="7 dias" 
+                  size="small" 
+                  outlined 
+                  @click="setQuickPeriod(7)"
+                />
+                <Button 
+                  label="30 dias" 
+                  size="small" 
+                  outlined 
+                  @click="setQuickPeriod(30)"
+                />
+                <Button 
+                  label="Este mês" 
+                  size="small" 
+                  outlined 
+                  @click="setCurrentMonth"
+                />
+                <Button 
+                  label="Mês passado" 
+                  size="small" 
+                  outlined 
+                  @click="setLastMonth"
+                />
+              </div>
+              
+              <!-- Seletor de Data -->
+              <flat-pickr
+                v-model="dateRange"
+                :config="datePickerConfig"
+                @on-change="onDateRangeChange"
+                class="date-picker"
+              />
+            </div>
           </div>
         </div>
       </template>
@@ -362,7 +458,17 @@ onMounted(async () => {
       </TabView>
 
       <Card>
-        <template #title>Serviços</template>
+        <template #title>
+          <div class="table-header-controls">
+            <span>Análise por Serviço</span>
+            <ToggleButton 
+              v-model="isComparativeMode" 
+              onLabel="Modo Simples" 
+              offLabel="Modo Comparativo"
+              @change="fetchData"
+            />
+          </div>
+        </template>
         <template #content>
           <!-- Busca -->
           <div class="mb-3">
@@ -377,17 +483,51 @@ onMounted(async () => {
             :value="filteredServices"
             :paginator="true" 
             :rows="15"
-            :sortField="'total_cost'"
+            :sortField="isComparativeMode ? 'variationValue' : 'currentCost'"
             :sortOrder="-1"
             @row-click="onServiceClick"
             class="clickable-table"
           >
             <Column field="service" header="Serviço" :sortable="true"></Column>
-            <Column field="total_cost" header="Custo" :sortable="true">
+            
+            <Column 
+              :field="isComparativeMode ? 'currentCost' : 'total_cost'" 
+              :header="isComparativeMode ? 'Custo Atual ($)' : 'Custo ($)'" 
+              :sortable="true"
+            >
               <template #body="slotProps">
-                ${{ slotProps.data.total_cost.toFixed(2) }}
+                ${{ (slotProps.data.currentCost || slotProps.data.total_cost || 0).toFixed(2) }}
               </template>
             </Column>
+
+            <!-- Colunas do Modo Comparativo -->
+            <Column 
+              v-if="isComparativeMode" 
+              field="previousCost" 
+              header="Custo Anterior ($)" 
+              :sortable="true"
+            >
+              <template #body="slotProps">
+                ${{ (slotProps.data.previousCost || 0).toFixed(2) }}
+              </template>
+            </Column>
+
+            <Column 
+              v-if="isComparativeMode" 
+              field="variationValue" 
+              header="Variação" 
+              :sortable="true"
+            >
+              <template #body="slotProps">
+                <div class="variation-cell">
+                  <span :class="getVariationClass(slotProps.data.variationValue)">
+                    {{ formatVariation(slotProps.data.variationValue, slotProps.data.variationPercentage) }}
+                  </span>
+                </div>
+              </template>
+            </Column>
+
+            <!-- Coluna de Porcentagem (sempre visível) -->
             <Column field="percentage" header="% do Total" :sortable="true">
               <template #body="slotProps">
                 <div>
@@ -621,6 +761,45 @@ onMounted(async () => {
 
 .control-group label {
   font-weight: 600;
+}
+
+.period-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.quick-period-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.date-picker {
+  width: 100%;
+}
+
+.table-header-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.variation-cell {
+  font-weight: 600;
+}
+
+.variation-positive {
+  color: #dc3545;
+}
+
+.variation-negative {
+  color: #28a745;
+}
+
+.variation-neutral {
+  color: #6c757d;
 }
 
 .mb-3 {
