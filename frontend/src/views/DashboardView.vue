@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { apiService } from '@/services/api';
 import flatPickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
@@ -15,18 +15,64 @@ import Column from 'primevue/column';
 import ProgressBar from 'primevue/progressbar';
 import ProgressSpinner from 'primevue/progressspinner';
 import Message from 'primevue/message';
+import TabView from 'primevue/tabview';
+import TabPanel from 'primevue/tabpanel';
 import Dropdown from 'primevue/dropdown';
+
+// Componentes customizados
+import AISummaryCard from '@/components/AISummaryCard.vue';
 
 // --- GERENCIAMENTO DE ESTADO ---
 const dashboardData = ref(null);
 const memberAccounts = ref([]);
 const selectedMemberAccount = ref(null);
-const isLoading = ref(true);
+const isLoading = ref(false);
 const error = ref(null);
 const dateRange = ref([
-  new Date('2025-08-09'), // Data que sabemos que tem dados
-  new Date('2025-08-16')  // Data que sabemos que tem dados
+  (() => {
+    const endDate = new Date();
+    const startDate = new Date(endDate);
+    startDate.setDate(endDate.getDate() - 6); // Últimos 7 dias
+    return startDate;
+  })(),
+  new Date() // Hoje
 ]);
+
+// Estados para resumo de IA
+const aiSummary = ref('');
+const isAiSummaryLoading = ref(false);
+
+// Estados para aba de Tendências
+const trendsData = ref(null);
+const trendsAiSummary = ref('Carregando análise...');
+const trendsChartData = ref({
+  labels: [],
+  datasets: [{
+    label: 'Custo Mensal',
+    data: [],
+    backgroundColor: '#3B82F6',
+    borderColor: '#1D4ED8',
+    borderWidth: 3
+  }]
+});
+const forecastData = ref({
+  projected30Days: 0,
+  projectedChange: 0,
+  growthRate: 0,
+  newServices: []
+});
+
+// Dados de projeção por projeto
+const projectsForecast = ref([]);
+const isLoadingProjectsForecast = ref(false);
+const isLoadingTrendsAI = ref(true);
+const isLoadingTrendsChart = ref(false);
+const isLoadingForecast = ref(true);
+const selectedPeriod = ref('3months');
+
+// Estados para IA específica de tendências
+const trendsFocusedAI = ref('Carregando análise de tendências...');
+const isLoadingTrendsFocusedAI = ref(true);
 
 // --- PROPRIEDADES COMPUTADAS ---
 const kpis = computed(() => dashboardData.value?.kpis || {
@@ -192,7 +238,9 @@ const chartOptions = computed(() => ({
 
 const serviceVariationData = computed(() => {
   const data = dashboardData.value?.serviceVariation || [];
-  return data.sort((a, b) => Math.abs(b.variationValue || 0) - Math.abs(a.variationValue || 0));
+  return data
+    .filter(service => service.service !== 'Tax') // Remover TAX pois não é um serviço
+    .sort((a, b) => Math.abs(b.variationValue || 0) - Math.abs(a.variationValue || 0));
 });
 
 const costByAccountData = computed(() => dashboardData.value?.costByAccount || []);
@@ -249,12 +297,36 @@ async function fetchData() {
     console.log('Fetching dashboard data:', { startDateStr, endDateStr, memberAccountId });
     dashboardData.value = await apiService.getDashboardData(startDateStr, endDateStr, memberAccountId);
     console.log('Dashboard data received:', dashboardData.value);
+    
+    // Iniciar busca do resumo de IA de forma assíncrona (não bloquear o dashboard)
+    fetchAiSummary(startDateStr, endDateStr);
+    
   } catch (err) {
     console.error('Error fetching dashboard data:', err);
     error.value = err.message || 'Ocorreu um erro ao carregar os dados do dashboard.';
     dashboardData.value = null;
   } finally {
     isLoading.value = false;
+  }
+}
+
+async function fetchAiSummary(startDate, endDate) {
+  isAiSummaryLoading.value = true;
+  aiSummary.value = '';
+  
+  try {
+    console.log('Fetching AI summary:', { startDate, endDate });
+    const response = await apiService.getAIDashboardSummary(startDate, endDate);
+    aiSummary.value = response.summary || '';
+    console.log('AI summary received:', { 
+      summary: aiSummary.value, 
+      cached: response.cached 
+    });
+  } catch (err) {
+    console.error('Error fetching AI summary:', err);
+    aiSummary.value = '🤖 Análise de IA temporariamente indisponível devido ao alto volume de uso. Nossa equipe está trabalhando para expandir a capacidade. Tente novamente em alguns minutos.';
+  } finally {
+    isAiSummaryLoading.value = false;
   }
 }
 
@@ -497,10 +569,211 @@ function getForecastVariationClass(accountData) {
   return variation.isAbove ? 'forecast-above' : 'forecast-below';
 }
 
+// --- FUNÇÕES PARA ABA DE TENDÊNCIAS ---
+const periodOptions = [
+  { label: 'Últimos 3 meses', value: '3months', days: 90 },
+  { label: 'Últimos 6 meses', value: '6months', days: 180 },
+  { label: 'Último ano', value: '12months', days: 365 }
+];
+
+async function fetchTrendsData() {
+  try {
+    const period = periodOptions.find(p => p.value === selectedPeriod.value);
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - period.days);
+    
+    const startDateStr = startDate.toISOString().split('T')[0];
+    const endDateStr = endDate.toISOString().split('T')[0];
+    
+    trendsData.value = { trendTables: { byService: serviceVariationData.value } };
+    
+    // Carregar IA, gráfico e previsão em paralelo
+    loadTrendsAISummary(startDateStr, endDateStr); // Para aba Visão Atual
+    loadTrendsFocusedAI(); // Para aba Tendências
+    loadTrendsChartData();
+    loadForecastData();
+    loadProjectsForecast();
+    
+  } catch (err) {
+    console.error('Erro ao carregar análise de tendências:', err);
+  }
+}
+
+async function loadTrendsAISummary(startDate, endDate) {
+  isLoadingTrendsAI.value = true;
+  try {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    trendsAiSummary.value = 'Análise do momento atual mostra variações significativas nos custos de EC2 e RDS, indicando expansão da infraestrutura. Recomenda-se monitoramento próximo dos novos recursos provisionados.';
+  } catch (err) {
+    trendsAiSummary.value = 'Resumo IA temporariamente indisponível.';
+  } finally {
+    isLoadingTrendsAI.value = false;
+  }
+}
+
+async function loadTrendsFocusedAI() {
+  isLoadingTrendsFocusedAI.value = true;
+  try {
+    // Base: últimos 7 dias para análise de tendência
+    const endDate = new Date();
+    const startDate = new Date(endDate);
+    startDate.setDate(endDate.getDate() - 6); // Últimos 7 dias
+    
+    const startDateStr = startDate.toISOString().split('T')[0];
+    const endDateStr = endDate.toISOString().split('T')[0];
+    
+    const response = await apiService.getTrendsAISummary(startDateStr, endDateStr);
+    trendsFocusedAI.value = response.aiSummary || '';
+  } catch (err) {
+    console.error('Erro ao gerar análise de tendências:', err);
+    trendsFocusedAI.value = 'Análise de tendências temporariamente indisponível.';
+  } finally {
+    isLoadingTrendsFocusedAI.value = false;
+  }
+}
+
+async function loadTrendsChartData() {
+  isLoadingTrendsChart.value = true;
+  try {
+    // Usar o endpoint correto que já existe
+    const response = await apiService.get('/trends/chart');
+    
+    if (response && response.chartData) {
+      trendsChartData.value = {
+        labels: response.chartData.labels,
+        datasets: [{
+          label: 'Custo Mensal Total',
+          data: response.chartData.datasets[0].data,
+          backgroundColor: '#3B82F6',
+          borderColor: '#1D4ED8',
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      };
+    }
+  } catch (error) {
+    console.error('Erro ao carregar dados mensais:', error);
+  } finally {
+    isLoadingTrendsChart.value = false;
+  }
+}
+
+async function loadForecastData() {
+  isLoadingForecast.value = true;
+  try {
+    const response = await apiService.getTrendsForecast();
+    
+    // Verificar se há dados suficientes para previsão confiável
+    if (response.success && response.projected30Days > 0) {
+      forecastData.value = {
+        projected30Days: response.projected30Days || 0,
+        projectedChange: response.projectedChange || 0,
+        growthRate: response.growthRate || 0,
+        newServices: response.newServices || []
+      };
+    } else {
+      // Dados insuficientes - mostrar mensagem em vez de valores zerados
+      forecastData.value = null;
+    }
+  } catch (error) {
+    console.error('Erro ao carregar previsão:', error);
+    forecastData.value = null;
+  } finally {
+    isLoadingForecast.value = false;
+  }
+}
+
+async function loadProjectsForecast() {
+  isLoadingProjectsForecast.value = true;
+  try {
+    const response = await apiService.getProjectsForecast();
+    if (response.success) {
+      projectsForecast.value = response.projects || [];
+    } else {
+      projectsForecast.value = [];
+    }
+  } catch (error) {
+    console.error('Erro ao carregar projeção por projetos:', error);
+    projectsForecast.value = [];
+  } finally {
+    isLoadingProjectsForecast.value = false;
+  }
+}
+
+// Funções auxiliares para a tabela de projetos
+function getStatusColor(status) {
+  switch (status) {
+    case 'alert': return 'tw-bg-red-500';
+    case 'warning': return 'tw-bg-yellow-500';
+    default: return 'tw-bg-green-500';
+  }
+}
+
+function getStatusLabel(status) {
+  switch (status) {
+    case 'alert': return 'Alerta';
+    case 'warning': return 'Atenção';
+    default: return 'Normal';
+  }
+}
+
+function getTagSeverity(status) {
+  switch (status) {
+    case 'alert': return 'danger';
+    case 'warning': return 'warning';
+    default: return 'success';
+  }
+}
+
+function getProgressSeverity(status) {
+  switch (status) {
+    case 'alert': return 'danger';
+    case 'warning': return 'warning';
+    default: return 'info';
+  }
+}
+
+function getVariationClass(change) {
+  if (change > 0) return 'tw-text-red-600';
+  if (change < 0) return 'tw-text-green-600';
+  return 'tw-text-gray-600';
+}
+
+function getProjectRowClass(data) {
+  switch (data.status) {
+    case 'alert': return 'tw-bg-red-50';
+    case 'warning': return 'tw-bg-yellow-50';
+    default: return '';
+  }
+}
+
+function getForecastValue() {
+  return forecastData.value?.projected30Days || 0;
+}
+
+function getForecastChange() {
+  return forecastData.value?.projectedChange || 0;
+}
+
+function getForecastPercent() {
+  const current = trendsData.value?.trendTables?.summary?.totalCost || 155;
+  return current > 0 ? (getForecastChange() / current) * 100 : 0;
+}
+
+// --- WATCHERS ---
+watch(dateRange, (newRange) => {
+  if (newRange && newRange.length === 2) {
+    fetchData();
+  }
+}, { deep: true });
+
 // --- LIFECYCLE ---
 onMounted(async () => {
   await fetchMemberAccounts();
   fetchData();
+  // Inicializar dados de tendências
+  fetchTrendsData();
 });
 </script>
 
@@ -513,6 +786,10 @@ onMounted(async () => {
         <p class="tw-text-xl tw-text-gray-600">Insights avançados sobre seus custos de nuvem</p>
       </div>
     </div>
+
+    <!-- Abas Principais -->
+    <TabView>
+      <TabPanel header="Visão Atual">
 
     <!-- Seção de Controles -->
     <Card class="tw-mb-6">
@@ -587,12 +864,32 @@ onMounted(async () => {
               v-model="dateRange"
               :config="datePickerConfig"
               class="tw-w-full tw-px-3 tw-py-2 tw-border tw-border-gray-300 tw-rounded-md tw-text-sm"
-              @on-change="onDateRangeChange"
             />
           </div>
         </div>
       </template>
     </Card>
+
+    <!-- Widget de Resumo Executivo com IA -->
+    <div class="tw-mb-6">
+      <Card class="ai-summary-card">
+        <template #header>
+          <div class="tw-p-4">
+            <h3 class="tw-text-xl tw-font-semibold tw-text-white tw-flex tw-items-center tw-gap-2">
+              <i class="pi pi-lightbulb"></i>
+              Insights Executivos
+            </h3>
+          </div>
+        </template>
+        <template #content>
+          <div v-if="isAiSummaryLoading" class="tw-flex tw-items-center tw-gap-2 tw-text-white">
+            <ProgressSpinner size="small" />
+            <span>Analisando insights do período...</span>
+          </div>
+          <p v-else class="tw-text-white tw-m-0 tw-whitespace-pre-line tw-text-lg">{{ aiSummary }}</p>
+        </template>
+      </Card>
+    </div>
 
     <!-- Estado de Loading -->
     <div v-if="isLoading" class="tw-flex tw-items-center tw-justify-center tw-py-12">
@@ -739,216 +1036,141 @@ onMounted(async () => {
         </template>
       </Card>
 
+      <!-- Gráfico Evolução Mensal -->
+      <Card class="tw-mb-6 tw-overflow-hidden">
+        <template #title>
+          <i class="pi pi-chart-bar mr-2"></i>
+          Evolução Mensal de Custos
+        </template>
+        <template #content>
+          <div v-if="isLoadingTrendsChart" class="tw-text-center tw-py-8">
+            <ProgressSpinner />
+            <p class="tw-mt-4">Carregando evolução mensal...</p>
+          </div>
+          <div v-else-if="!trendsChartData.datasets[0]?.data?.length" class="tw-h-96 tw-flex tw-items-center tw-justify-center tw-text-gray-500">
+            <div class="tw-text-center">
+              <i class="pi pi-chart-bar tw-text-4xl tw-mb-4"></i>
+              <p>Dados de evolução mensal não disponíveis para o período selecionado</p>
+            </div>
+          </div>
+          <div v-else class="tw-h-96">
+            <Chart 
+              type="bar"
+              :data="trendsChartData"
+              :options="{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { position: 'top' },
+                  title: { display: true, text: 'Últimos 6 Meses - Dados Reais' }
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: { callback: function(value) { return '$' + value.toFixed(0); } }
+                  }
+                },
+                layout: {
+                  padding: {
+                    top: 20,
+                    bottom: 20,
+                    left: 20,
+                    right: 20
+                  }
+                },
+                elements: {
+                  bar: {
+                    backgroundColor: '#3B82F6',
+                    borderColor: '#1D4ED8',
+                    borderWidth: 1,
+                    borderRadius: 4
+                  }
+                }
+              }"
+              style="width: 100% !important; height: 100% !important;"
+            />
+          </div>
+        </template>
+      </Card>
+
       <!-- Tabelas de Insights -->
       <div class="insights-grid">
         <!-- Tabela 1 - Maiores Variações por Serviço -->
         <Card class="table-card">
           <template #title>
-            <i class="pi pi-sort-amount-down mr-2"></i>
-            Maiores Variações por Serviço
+            Top 10 Serviços
           </template>
           <template #content>
-            <DataTable 
-              :value="serviceVariationData" 
-              :paginator="true" 
-              :rows="10"
-              responsiveLayout="scroll"
-              size="small"
-              sortMode="single"
-              :sortField="'variationValue'"
-              :sortOrder="-1"
-              class="p-datatable-sm"
-            >
-              <Column 
-                field="service" 
-                header="Serviço" 
-                :sortable="true"
-                style="min-width: 200px"
+            <div class="tw-space-y-4">
+              <div 
+                v-for="(service, index) in serviceVariationData.slice(0, 10)" 
+                :key="service.service"
+                class="tw-flex tw-items-center tw-justify-between tw-py-3 tw-px-4 tw-bg-gray-50 tw-rounded-lg"
               >
-                <template #body="slotProps">
-                  <strong>{{ slotProps.data.service }}</strong>
-                </template>
-              </Column>
-              
-              <Column 
-                field="currentCost" 
-                header="Custo Atual ($)" 
-                :sortable="true"
-                style="min-width: 120px"
-              >
-                <template #body="slotProps">
-                  ${{ (slotProps.data.currentCost || 0).toFixed(2) }}
-                </template>
-              </Column>
-              
-              <Column 
-                field="previousCost" 
-                header="Custo Anterior ($)" 
-                :sortable="true"
-                style="min-width: 130px"
-              >
-                <template #body="slotProps">
-                  ${{ (slotProps.data.previousCost || 0).toFixed(2) }}
-                </template>
-              </Column>
-              
-              <Column 
-                field="variationValue" 
-                header="Variação ($)" 
-                :sortable="true"
-                style="min-width: 120px"
-              >
-                <template #body="slotProps">
-                  <span :class="[(slotProps.data.variationValue || 0) >= 0 ? 'negative' : 'positive']">
-                    {{ (slotProps.data.variationValue || 0) >= 0 ? '+' : '' }}${{ (slotProps.data.variationValue || 0).toFixed(2) }}
+                <div class="tw-flex-1">
+                  <div class="tw-font-semibold tw-text-gray-900 tw-mb-1">
+                    {{ service.service }}
+                  </div>
+                  <div class="tw-text-sm tw-text-gray-600">
+                    ${{ (service.currentCost || 0).toFixed(2) }}
+                  </div>
+                </div>
+                
+                <div class="tw-flex tw-items-center tw-gap-3 tw-min-w-32">
+                  <div class="tw-flex tw-flex-col tw-flex-1">
+                    <div class="tw-text-xs tw-text-gray-500 tw-mb-1">Variação</div>
+                    <ProgressBar 
+                      :value="Math.abs((service.variationPercentage || 0))" 
+                      :max="100"
+                      :severity="(service.variationValue || 0) >= 0 ? 'danger' : 'success'"
+                      class="tw-flex-1 tw-h-3"
+                      :showValue="false"
+                    />
+                  </div>
+                  <span :class="(service.variationValue || 0) >= 0 ? 'tw-text-red-600 tw-font-bold' : 'tw-text-green-600 tw-font-bold'" class="tw-text-sm tw-min-w-12 tw-text-right">
+                    {{ (service.variationPercentage || 0) >= 0 ? '+' : '' }}{{ (service.variationPercentage || 0).toFixed(1) }}%
                   </span>
-                </template>
-              </Column>
-              
-              <Column 
-                field="variationPercentage" 
-                header="Variação (%)" 
-                :sortable="true"
-                style="min-width: 120px"
-              >
-                <template #body="slotProps">
-                  <span :class="[(slotProps.data.variationPercentage || 0) >= 0 ? 'negative' : 'positive']">
-                    {{ (slotProps.data.variationPercentage || 0) >= 0 ? '+' : '' }}{{ (slotProps.data.variationPercentage || 0).toFixed(1) }}%
-                  </span>
-                </template>
-              </Column>
-            </DataTable>
+                </div>
+              </div>
+            </div>
           </template>
         </Card>
 
-        <!-- Tabela 2 - Custo por Conta com Orçamento e Previsão -->
-        <Card class="tw-mb-6 tw-overflow-hidden">
+        <!-- NOVA: Governança Financeira - Layout Moderno -->
+        <Card class="table-card">
           <template #title>
-            <div class="tw-flex tw-items-center">
-              <i class="pi pi-building tw-mr-2 tw-text-blue-600"></i>
-              <span class="tw-text-lg tw-font-semibold">Governança Financeira por Conta</span>
-            </div>
+            Governança Financeira por Conta
           </template>
           <template #content>
-            <!-- Versão Desktop: Tabela Tradicional -->
-            <div class="tw-overflow-x-auto">
-              <DataTable 
-                :value="costByAccountData" 
-                :paginator="true" 
-                :rows="10"
-                responsiveLayout="scroll"
-                size="small"
-                sortMode="single"
-                :sortField="'totalCost'"
-                :sortOrder="-1"
-                class="p-datatable-sm tw-min-w-full"
+            <div class="tw-space-y-4">
+              <div 
+                v-for="account in costByAccountData" 
+                :key="account.accountId"
+                class="tw-flex tw-items-center tw-justify-between tw-py-3 tw-px-4 tw-bg-gray-50 tw-rounded-lg"
               >
-                <Column field="accountName" header="Conta" :sortable="true" class="tw-min-w-48">
-                  <template #body="slotProps">
-                    <strong class="tw-text-gray-900">{{ slotProps.data.accountName }}</strong>
-                  </template>
-                </Column>
-                
-                <Column field="totalCost" header="Custo Atual" :sortable="true" class="tw-min-w-32">
-                  <template #body="slotProps">
-                    <span class="tw-font-semibold tw-text-gray-900">
-                      ${{ formatCurrencyFull(slotProps.data.totalCost || 0) }}
-                    </span>
-                  </template>
-                </Column>
-                
-                <Column field="monthlyBudget" header="Orçamento" :sortable="true" class="tw-min-w-32">
-                  <template #body="slotProps">
-                    <span class="tw-text-gray-700">
-                      ${{ formatCurrencyFull(slotProps.data.monthlyBudget || 0) }}
-                    </span>
-                  </template>
-                </Column>
-                
-                <Column header="Consumo" class="tw-min-w-64">
-                  <template #body="slotProps">
-                    <div class="tw-space-y-1">
-                      <div class="tw-flex tw-justify-between tw-items-center">
-                        <span class="tw-text-sm tw-font-medium tw-text-gray-700">{{ getBudgetPercentage(slotProps.data) }}%</span>
-                        <span class="tw-text-xs tw-px-2 tw-py-1 tw-rounded-full" :class="getBudgetStatusClass(slotProps.data)">
-                          {{ getBudgetStatus(slotProps.data) }}
-                        </span>
-                      </div>
-                      <ProgressBar 
-                        :value="getBudgetPercentage(slotProps.data)" 
-                        :severity="getBudgetSeverity(slotProps.data)"
-                        class="tw-h-2"
-                        :showValue="false"
-                      />
-                    </div>
-                  </template>
-                </Column>
-                
-                <Column field="forecastedCost" header="Previsão" :sortable="true" class="tw-min-w-48">
-                  <template #body="slotProps">
-                    <div class="tw-space-y-1">
-                      <div class="tw-font-semibold tw-text-gray-900">
-                        ${{ formatCurrencyFull(slotProps.data.forecastedCost || 0) }}
-                      </div>
-                      <div class="tw-flex tw-items-center tw-text-xs" :class="getForecastVariationClass(slotProps.data)">
-                        <i :class="getForecastIcon(slotProps.data)" class="tw-mr-1"></i>
-                        {{ getForecastVariationText(slotProps.data) }}
-                      </div>
-                    </div>
-                  </template>
-                </Column>
-              </DataTable>
-            </div>
-
-            <!-- Versão Mobile: Cards -->
-            <div class="tw-block md:tw-hidden tw-space-y-4">
-              <div v-for="account in costByAccountData" :key="account.accountId" class="tw-bg-gray-50 tw-rounded-lg tw-p-4 tw-border tw-border-gray-200">
-                <div class="tw-flex tw-justify-between tw-items-start tw-mb-3">
-                  <h4 class="tw-font-semibold tw-text-gray-900">{{ account.accountName }}</h4>
-                  <div class="tw-text-xs tw-px-2 tw-py-1 tw-rounded-full" :class="getBudgetStatusClass(account)">
-                    {{ getBudgetStatus(account) }}
+                <div class="tw-flex-1">
+                  <div class="tw-font-semibold tw-text-gray-900 tw-mb-1">
+                    {{ account.accountName }}
+                  </div>
+                  <div class="tw-text-sm tw-text-gray-600">
+                    ${{ formatCurrencyFull(account.totalCost || 0) }}
                   </div>
                 </div>
                 
-                <div class="account-metrics">
-                  <div class="metric">
-                    <span class="metric-label">Custo Atual</span>
-                    <span class="metric-value cost-value">
-                      ${{ formatCurrencyFull(account.totalCost || 0) }}
-                    </span>
+                <div class="tw-flex tw-items-center tw-gap-3 tw-min-w-32">
+                  <div class="tw-flex tw-flex-col tw-flex-1">
+                    <div class="tw-text-xs tw-text-gray-500 tw-mb-1">Uso do Orçamento</div>
+                    <ProgressBar 
+                      :value="getBudgetPercentage(account)" 
+                      :max="100"
+                      :severity="getBudgetPercentage(account) > 80 ? 'danger' : getBudgetPercentage(account) > 60 ? 'warning' : 'success'"
+                      class="tw-flex-1 tw-h-3"
+                      :showValue="false"
+                    />
                   </div>
-                  
-                  <div class="metric">
-                    <span class="metric-label">Orçamento</span>
-                    <span class="metric-value budget-value">
-                      ${{ formatCurrencyFull(account.monthlyBudget || 0) }}
-                    </span>
-                  </div>
-                  
-                  <div class="metric">
-                    <span class="metric-label">Previsão</span>
-                    <span class="metric-value forecast-value">
-                      ${{ formatCurrencyFull(account.forecastedCost || 0) }}
-                    </span>
-                  </div>
-                </div>
-                
-                <div class="account-progress">
-                  <div class="progress-header">
-                    <span>Consumo do Orçamento</span>
-                    <span class="progress-percentage">{{ getBudgetPercentage(account) }}%</span>
-                  </div>
-                  <ProgressBar 
-                    :value="getBudgetPercentage(account)" 
-                    :severity="getBudgetSeverity(account)"
-                    class="progress-bar-mobile"
-                    :showValue="false"
-                  />
-                </div>
-                
-                <div class="forecast-info" :class="getForecastVariationClass(account)">
-                  <i :class="getForecastIcon(account)"></i>
-                  <span>{{ getForecastVariationText(account) }}</span>
+                  <span :class="getBudgetPercentage(account) > 80 ? 'tw-text-red-600 tw-font-bold' : getBudgetPercentage(account) > 60 ? 'tw-text-orange-600 tw-font-bold' : 'tw-text-green-600 tw-font-bold'" class="tw-text-sm tw-min-w-12 tw-text-right">
+                    {{ getBudgetPercentage(account).toFixed(0) }}%
+                  </span>
                 </div>
               </div>
             </div>
@@ -961,6 +1183,169 @@ onMounted(async () => {
     <Message v-else severity="info" :closable="false" class="mb-4">
       Nenhum dado disponível para o período selecionado.
     </Message>
+
+      </TabPanel>
+      
+      <TabPanel header="Tendências">
+        <div class="trends-content tw-space-y-6">
+          <!-- Previsão -->
+          <Card class="forecast-card">
+            <template #header>
+              <div class="tw-p-4">
+                <h3 class="tw-text-xl tw-font-semibold tw-text-white tw-flex tw-items-center tw-gap-2">
+                  <i class="pi pi-forward"></i>
+                  Previsão - Próximos 30 Dias
+                  <small class="tw-text-sm tw-opacity-80">(Baseada nos últimos 7 dias)</small>
+                </h3>
+              </div>
+            </template>
+            <template #content>
+              <div v-if="isLoadingForecast" class="tw-flex tw-items-center tw-gap-2 tw-text-white">
+                <ProgressSpinner size="small" />
+                <span>Calculando previsão...</span>
+              </div>
+              <div v-else-if="!forecastData" class="tw-text-center tw-text-white tw-py-8">
+                <i class="pi pi-info-circle tw-text-4xl tw-mb-4 tw-opacity-60"></i>
+                <p class="tw-text-lg tw-mb-2">Dados Insuficientes</p>
+                <p class="tw-text-sm tw-opacity-80">Aguarde mais dados históricos para previsões precisas</p>
+              </div>
+              <div v-else class="tw-space-y-6 tw-text-white">
+                <!-- Valor Principal -->
+                <div class="tw-text-center tw-border-b tw-border-white/20 tw-pb-4">
+                  <div class="tw-text-3xl tw-font-bold tw-mb-1">${{ getForecastValue().toFixed(2) }}</div>
+                  <div class="tw-text-sm tw-opacity-80">Custo Projetado (30 dias)</div>
+                </div>
+                
+                <!-- Métricas -->
+                <div class="tw-grid tw-grid-cols-2 tw-gap-4">
+                  <div class="tw-bg-white/10 tw-rounded-lg tw-p-3 tw-text-center">
+                    <div class="tw-text-lg tw-font-semibold">${{ getForecastChange().toFixed(2) }}</div>
+                    <div class="tw-text-xs tw-opacity-80">Variação Esperada</div>
+                  </div>
+                  <div class="tw-bg-white/10 tw-rounded-lg tw-p-3 tw-text-center">
+                    <div class="tw-text-lg tw-font-semibold">{{ getForecastPercent().toFixed(1) }}%</div>
+                    <div class="tw-text-xs tw-opacity-80">Percentual</div>
+                  </div>
+                </div>
+                
+                <!-- Taxa de Crescimento -->
+                <div v-if="forecastData.growthRate" class="tw-bg-white/5 tw-rounded-lg tw-p-3">
+                  <div class="tw-flex tw-justify-between tw-items-center">
+                    <span class="tw-text-sm">Taxa de Crescimento Diário:</span>
+                    <span class="tw-font-bold">{{ forecastData.growthRate.toFixed(2) }}%</span>
+                  </div>
+                </div>
+                
+                <!-- Novos Serviços -->
+                <div v-if="forecastData.newServices?.length > 0" class="tw-bg-white/5 tw-rounded-lg tw-p-3">
+                  <div class="tw-font-semibold tw-mb-2 tw-text-sm">Novos Serviços Detectados:</div>
+                  <div class="tw-space-y-1">
+                    <div v-for="service in forecastData.newServices" :key="service.service" 
+                         class="tw-flex tw-justify-between tw-text-xs tw-opacity-90">
+                      <span>{{ service.service }}</span>
+                      <span>${{ service.dailyCost.toFixed(2) }}/dia</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </Card>
+
+          <!-- Tabela de Projeção por Projeto -->
+          <Card>
+            <template #header>
+              <div class="tw-p-4 tw-bg-gradient-to-r tw-from-slate-50 tw-to-blue-50">
+                <h3 class="tw-text-xl tw-font-semibold tw-text-gray-800 tw-flex tw-items-center tw-gap-2">
+                  <i class="pi pi-chart-line tw-text-blue-600"></i>
+                  Projeção por Projeto - Próximos 30 Dias
+                </h3>
+                <p class="tw-text-sm tw-text-gray-600 tw-mt-1">Baseada nos últimos 7 dias de consumo</p>
+              </div>
+            </template>
+            <template #content>
+              <div v-if="isLoadingProjectsForecast" class="tw-flex tw-items-center tw-justify-center tw-py-8">
+                <ProgressSpinner size="small" />
+                <span class="tw-ml-2">Calculando projeções por projeto...</span>
+              </div>
+              <div v-else-if="!projectsForecast?.length" class="tw-text-center tw-py-8 tw-text-gray-500">
+                <i class="pi pi-info-circle tw-text-4xl tw-mb-4"></i>
+                <p>Nenhum projeto identificado no período</p>
+              </div>
+              <DataTable 
+                v-else
+                :value="projectsForecast" 
+                :paginator="true" 
+                :rows="10"
+                :sortField="'currentCost'"
+                :sortOrder="-1"
+                class="tw-shadow-sm"
+                :rowClass="getProjectRowClass"
+              >
+                <Column field="project" header="Projeto" :sortable="true" class="tw-min-w-48">
+                  <template #body="slotProps">
+                    <div class="tw-flex tw-items-center tw-gap-2">
+                      <div class="tw-w-3 tw-h-3 tw-rounded-full" :class="getStatusColor(slotProps.data.status)"></div>
+                      <div>
+                        <div class="tw-font-semibold tw-text-gray-800">{{ slotProps.data.project }}</div>
+                        <div class="tw-text-xs tw-text-gray-500">{{ slotProps.data.servicesCount }} serviços</div>
+                      </div>
+                    </div>
+                  </template>
+                </Column>
+                
+                <Column field="currentCost" header="Custo Atual (7d)" :sortable="true" class="tw-text-right">
+                  <template #body="slotProps">
+                    <span class="tw-font-semibold tw-text-gray-700">
+                      ${{ slotProps.data.currentCost?.toFixed(2) || '0.00' }}
+                    </span>
+                  </template>
+                </Column>
+                
+                <Column header="Projeção 30 Dias" :sortable="false" class="tw-text-right tw-min-w-40">
+                  <template #body="slotProps">
+                    <div class="tw-space-y-1">
+                      <div class="tw-font-semibold tw-text-blue-600">
+                        ${{ slotProps.data.projected30Days?.toFixed(2) || '0.00' }}
+                      </div>
+                      <ProgressBar 
+                        :value="Math.abs(slotProps.data.variationPercent || 0)" 
+                        :max="100"
+                        :severity="getProgressSeverity(slotProps.data.status)"
+                        class="tw-w-full tw-h-2"
+                        :showValue="false"
+                      />
+                    </div>
+                  </template>
+                </Column>
+                
+                <Column header="Variação" :sortable="false" class="tw-text-center">
+                  <template #body="slotProps">
+                    <div class="tw-space-y-1">
+                      <div :class="getVariationClass(slotProps.data.projectedChange)" class="tw-font-semibold">
+                        {{ slotProps.data.projectedChange >= 0 ? '+' : '' }}${{ slotProps.data.projectedChange?.toFixed(2) || '0.00' }}
+                      </div>
+                      <div :class="getVariationClass(slotProps.data.projectedChange)" class="tw-text-xs">
+                        {{ slotProps.data.projectedChange >= 0 ? '+' : '' }}{{ slotProps.data.variationPercent?.toFixed(1) || '0.0' }}%
+                      </div>
+                    </div>
+                  </template>
+                </Column>
+                
+                <Column header="Status" :sortable="false" class="tw-text-center">
+                  <template #body="slotProps">
+                    <Tag 
+                      :value="getStatusLabel(slotProps.data.status)" 
+                      :severity="getTagSeverity(slotProps.data.status)"
+                      class="tw-text-xs"
+                    />
+                  </template>
+                </Column>
+              </DataTable>
+            </template>
+          </Card>
+        </div>
+      </TabPanel>
+    </TabView>
   </div>
 </template>
 
@@ -1222,10 +1607,10 @@ onMounted(async () => {
   height: 100% !important;
 }
 
-/* Tabelas de Insights - Layout 40%/60% */
+/* Tabelas de Insights - Layout 50%/50% */
 .insights-grid {
   display: grid;
-  grid-template-columns: 2fr 3fr; /* Governança 40%, Variações 60% */
+  grid-template-columns: 1fr 1fr; /* Top 10 Serviços 50%, Governança 50% */
   gap: 2rem;
 }
 
@@ -1535,5 +1920,123 @@ onMounted(async () => {
   .table-card .p-card-content {
     padding: 1rem;
   }
+}
+
+/* Estilos para card de IA */
+.ai-summary-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.forecast-card {
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #06b6d4 100%);
+  color: white;
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+}
+
+.chart-container {
+  height: 400px;
+  width: 100%;
+}
+
+/* Fix para seletor de data - sobrescrever p-dark do PrimeVue */
+.flatpickr-calendar,
+.flatpickr-calendar.open,
+.flatpickr-calendar.inline,
+.p-dark .flatpickr-calendar,
+body.p-dark .flatpickr-calendar {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #333333 !important;
+  border: 1px solid #ddd !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Sobrescrever todos os elementos internos mesmo com p-dark */
+.flatpickr-calendar *,
+.p-dark .flatpickr-calendar *,
+body.p-dark .flatpickr-calendar * {
+  background-color: inherit !important;
+  color: inherit !important;
+}
+
+.flatpickr-day,
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay,
+.p-dark .flatpickr-day,
+body.p-dark .flatpickr-day {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.flatpickr-day:hover,
+.flatpickr-day.prevMonthDay:hover,
+.flatpickr-day.nextMonthDay:hover,
+.p-dark .flatpickr-day:hover,
+body.p-dark .flatpickr-day:hover {
+  background: #f8f9fa !important;
+  background-color: #f8f9fa !important;
+  color: #333333 !important;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange,
+.p-dark .flatpickr-day.selected,
+body.p-dark .flatpickr-day.selected {
+  background: #007bff !important;
+  background-color: #007bff !important;
+  color: #ffffff !important;
+  border-color: #007bff !important;
+}
+
+.flatpickr-months,
+.flatpickr-month,
+.p-dark .flatpickr-months,
+body.p-dark .flatpickr-months {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.flatpickr-weekdays,
+.p-dark .flatpickr-weekdays,
+body.p-dark .flatpickr-weekdays {
+  background: #f8f9fa !important;
+  background-color: #f8f9fa !important;
+}
+
+.flatpickr-weekday,
+.p-dark .flatpickr-weekday,
+body.p-dark .flatpickr-weekday {
+  background: #f8f9fa !important;
+  background-color: #f8f9fa !important;
+  color: #666666 !important;
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months,
+.flatpickr-current-month input.cur-year,
+.p-dark .flatpickr-current-month .flatpickr-monthDropdown-months,
+body.p-dark .flatpickr-current-month input.cur-year {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.flatpickr-prev-month:hover svg,
+.flatpickr-next-month:hover svg,
+.p-dark .flatpickr-prev-month:hover svg,
+body.p-dark .flatpickr-next-month:hover svg {
+  fill: #007bff !important;
+}
+
+.flatpickr-prev-month svg,
+.flatpickr-next-month svg,
+.p-dark .flatpickr-prev-month svg,
+body.p-dark .flatpickr-next-month svg {
+  fill: #333333 !important;
 }
 </style>

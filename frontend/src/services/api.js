@@ -236,6 +236,98 @@ export const apiService = {
     },
 
     /**
+     * Busca dados de custos mensais para gráficos de tendência.
+     */
+    getMonthlyCosts(months = 6) {
+        const params = new URLSearchParams({
+            months: months.toString()
+        });
+        
+        return authenticatedFetch(`/dashboards/monthly-costs?${params.toString()}`);
+    },
+
+    /**
+     * Busca resumo executivo gerado por IA dos dados do dashboard.
+     */
+    getAIDashboardSummary(startDate, endDate) {
+        const params = new URLSearchParams({
+            start_date: startDate,
+            end_date: endDate
+        });
+
+        return authenticatedFetch(`/dashboards/ai-summary?${params.toString()}`);
+    },
+
+    /**
+     * Busca análise de tendências gerada por IA.
+     */
+    getTrendsAISummary(startDate, endDate) {
+        const params = new URLSearchParams({
+            start_date: startDate,
+            end_date: endDate
+        });
+
+        return authenticatedFetch(`/trends/ai-summary?${params.toString()}`);
+    },
+
+    /**
+     * Busca previsão de custos para próximos 30 dias.
+     */
+    getTrendsForecast() {
+        return authenticatedFetch('/trends/forecast');
+    },
+
+    /**
+     * Busca projeção de custos por projeto para próximos 30 dias.
+     */
+    getProjectsForecast() {
+        return authenticatedFetch('/trends/projects-forecast');
+    },
+
+    /**
+     * Busca tags descobertas durante processamento FOCUS.
+     */
+    getDiscoveredTags() {
+        return authenticatedFetch('/organizations/discovered-tags');
+    },
+
+    /**
+     * Busca configuração de tags da organização.
+     */
+    getTagConfig() {
+        return authenticatedFetch('/organizations/tag-config');
+    },
+
+    /**
+     * Salva configuração de tags da organização.
+     */
+    saveTagConfig(config) {
+        return authenticatedFetch('/organizations/tag-config', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(config)
+        });
+    },
+
+    /**
+     * Busca explicação de termos técnicos AWS gerada por IA.
+     */
+    getTermExplanation(term, context) {
+        return authenticatedFetch('/ai/explain', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                term: term,
+                context: context
+            })
+        });
+    },
+
+    /**
      * [VERSÃO CORRIGIDA E ÚNICA]
      * Busca os custos agregados por serviço.
      * O parâmetro accountId é opcional.
@@ -499,4 +591,30 @@ export const apiService = {
             }),
         });
     },
+
+    /**
+     * Busca análise de tendências com motor de justificativa.
+     */
+    getTrendsAnalysis(startDate, endDate) {
+        const params = new URLSearchParams({
+            start_date: startDate,
+            end_date: endDate
+        });
+
+        return authenticatedFetch(`/trends/analysis?${params.toString()}`);
+    },
+
+    /**
+     * Busca dados do gráfico de tendências (independente).
+     */
+    getTrendsChart() {
+        return authenticatedFetch('/trends/chart');
+    },
+
+    /**
+     * Busca previsão baseada nos últimos 7 dias.
+     */
+    getTrendsForecast() {
+        return authenticatedFetch('/trends/forecast');
+    }
 };

@@ -12,6 +12,7 @@ import DashboardView from '../views/DashboardView.vue'
 import ConnectionsView from '../views/ConnectionsView.vue'  // NOVO: Gerenciamento de contas AWS
 import SettingsView from '../views/SettingsView.vue'        // ATUALIZADO: Configurações da aplicação
 import AnalysisView from '../views/AnalysisView.vue'
+
 import AlarmsView from '../views/AlarmsView.vue'
 
 const routes = [
@@ -69,6 +70,7 @@ const routes = [
         name: 'analysis',
         component: AnalysisView,
       },
+
       {
         path: 'alarms',
         name: 'alarms',

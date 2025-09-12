@@ -179,6 +179,71 @@ class MemberAccount(db.Model):
         }
 
 
+class ProjectTagConfig(db.Model):
+    """
+    Configuração de tags para identificação de projetos por organização
+    """
+    __tablename__ = 'project_tag_configs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    organization_id = db.Column(db.Integer, db.ForeignKey('organizations.id'), nullable=False)
+    
+    # Tags selecionadas para agrupamento (JSON array)
+    selected_tags = db.Column(db.JSON, default=list)
+    
+    # Ordem de prioridade das tags (JSON array)
+    priority_order = db.Column(db.JSON, default=list)
+    
+    # Filtros de projeto (JSON object)
+    project_filters = db.Column(db.JSON, default=dict)
+    
+    # Configuração ativa
+    is_active = db.Column(db.Boolean, default=True)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relacionamentos
+    organization = db.relationship('Organization', backref='tag_config')
+
+class DiscoveredTag(db.Model):
+    """
+    Tags descobertas durante processamento dos arquivos FOCUS
+    """
+    __tablename__ = 'discovered_tags'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    organization_id = db.Column(db.Integer, db.ForeignKey('organizations.id'), nullable=False)
+    
+    # Chave da tag
+    tag_key = db.Column(db.String(100), nullable=False)
+    
+    # Valores únicos encontrados (JSON array)
+    tag_values = db.Column(db.JSON, default=list)
+    
+    # Frequência de uso (quantos recursos têm essa tag)
+    frequency = db.Column(db.Integer, default=0)
+    
+    # Percentual de cobertura
+    coverage_percent = db.Column(db.Float, default=0.0)
+    
+    # Última vez que foi vista
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Primeira vez que foi descoberta
+    first_discovered = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relacionamentos
+    organization = db.relationship('Organization', backref='discovered_tags')
+    
+    # Índices para performance
+    __table_args__ = (
+        db.Index('idx_discovered_tags_org_key', 'organization_id', 'tag_key'),
+    )
+
 class DailyFocusCosts(db.Model):
     """
     Modelo para armazenar os dados de custo diários, já processados e agregados.
@@ -204,6 +269,7 @@ class DailyFocusCosts(db.Model):
     resource_id = db.Column(db.String(255), nullable=True, index=True)      # Ex: i-012345abcdef
     usage_type = db.Column(db.String(255), nullable=True, index=True)       # Ex: BoxUsage:t3.large
     effective_cost = db.Column(db.Numeric(12, 6), nullable=True)            # Para dados FOCUS reais
+    tags = db.Column(db.JSON, nullable=True)                                # Tags dos recursos
 
     # Relacionamento
     member_account = db.relationship('MemberAccount', backref='daily_costs')

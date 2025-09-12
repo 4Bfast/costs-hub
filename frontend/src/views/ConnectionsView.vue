@@ -26,6 +26,16 @@ const isLoadingList = ref(true);
 const isLoadingMembers = ref(true);
 const message = ref({ type: '', text: '' });
 
+// Estado para configuração de tags
+const discoveredTags = ref([]);
+const tagConfig = ref({
+  selectedTags: [],
+  priorityOrder: [],
+  projectFilters: {}
+});
+const isLoadingTags = ref(false);
+const isLoadingTagConfig = ref(false);
+
 // Estado para onboarding seguro
 const isOnboardingModalVisible = ref(false);
 const onboardingStep = ref(1);
@@ -295,7 +305,94 @@ async function handleUpdateAccount() {
 onMounted(() => {
   fetchAccounts();
   fetchMemberAccounts();
+  fetchDiscoveredTags();
+  fetchTagConfig();
 });
+
+// Funções para configuração de tags
+async function fetchDiscoveredTags() {
+  try {
+    isLoadingTags.value = true;
+    const response = await apiService.getDiscoveredTags();
+    discoveredTags.value = response.tags || [];
+  } catch (error) {
+    console.error('Erro ao buscar tags descobertas:', error);
+    toast.add({
+      severity: 'error',
+      summary: 'Erro',
+      detail: 'Erro ao carregar tags descobertas',
+      life: 3000
+    });
+  } finally {
+    isLoadingTags.value = false;
+  }
+}
+
+async function fetchTagConfig() {
+  try {
+    isLoadingTagConfig.value = true;
+    const response = await apiService.getTagConfig();
+    if (response.config) {
+      tagConfig.value = response.config;
+    }
+  } catch (error) {
+    console.error('Erro ao buscar configuração de tags:', error);
+  } finally {
+    isLoadingTagConfig.value = false;
+  }
+}
+
+async function saveTagConfig() {
+  try {
+    const response = await apiService.saveTagConfig(tagConfig.value);
+    if (response.success) {
+      toast.add({
+        severity: 'success',
+        summary: 'Sucesso',
+        detail: 'Configuração de tags salva com sucesso',
+        life: 3000
+      });
+    }
+  } catch (error) {
+    console.error('Erro ao salvar configuração:', error);
+    toast.add({
+      severity: 'error',
+      summary: 'Erro',
+      detail: 'Erro ao salvar configuração de tags',
+      life: 3000
+    });
+  }
+}
+
+function toggleTagSelection(tagKey) {
+  const index = tagConfig.value.selectedTags.indexOf(tagKey);
+  if (index > -1) {
+    tagConfig.value.selectedTags.splice(index, 1);
+    const priorityIndex = tagConfig.value.priorityOrder.indexOf(tagKey);
+    if (priorityIndex > -1) {
+      tagConfig.value.priorityOrder.splice(priorityIndex, 1);
+    }
+  } else {
+    tagConfig.value.selectedTags.push(tagKey);
+    tagConfig.value.priorityOrder.push(tagKey);
+  }
+}
+
+function moveTagUp(tagKey) {
+  const index = tagConfig.value.priorityOrder.indexOf(tagKey);
+  if (index > 0) {
+    [tagConfig.value.priorityOrder[index], tagConfig.value.priorityOrder[index - 1]] = 
+    [tagConfig.value.priorityOrder[index - 1], tagConfig.value.priorityOrder[index]];
+  }
+}
+
+function moveTagDown(tagKey) {
+  const index = tagConfig.value.priorityOrder.indexOf(tagKey);
+  if (index < tagConfig.value.priorityOrder.length - 1) {
+    [tagConfig.value.priorityOrder[index], tagConfig.value.priorityOrder[index + 1]] = 
+    [tagConfig.value.priorityOrder[index + 1], tagConfig.value.priorityOrder[index]];
+  }
+}
 </script>
 
 <template>
@@ -455,6 +552,158 @@ onMounted(() => {
               </template>
             </Column>
           </DataTable>
+        </div>
+      </template>
+    </Card>
+
+    <!-- Card de Configuração de Tags para Projetos -->
+    <Card class="mb-4">
+      <template #title>
+        <i class="pi pi-tags mr-4"></i>
+        Configuração de Tags para Projetos
+      </template>
+      
+      <template #content>
+        <div class="mb-4">
+          <p class="text-gray-600 mb-3">
+            Configure quais tags serão usadas para identificar e agrupar projetos nos relatórios de custos.
+            As tags são descobertas automaticamente durante o processamento dos arquivos FOCUS.
+          </p>
+          
+          <div class="flex gap-2 mb-4">
+            <Button 
+              label="Extrair Tags dos Dados Existentes" 
+              icon="pi pi-search"
+              size="small"
+              severity="info"
+              @click="extractTagsFromExisting"
+              :loading="isLoadingTags"
+              v-if="discoveredTags.length === 0"
+            />
+            <Button 
+              label="Salvar Configuração" 
+              icon="pi pi-save"
+              size="small"
+              severity="success"
+              @click="saveTagConfig"
+              :disabled="tagConfig.selectedTags.length === 0"
+            />
+          </div>
+        </div>
+
+        <div v-if="isLoadingTags" class="text-center py-4">
+          <i class="pi pi-spin pi-spinner text-2xl text-blue-500 mb-2"></i>
+          <p class="text-gray-600">Carregando tags descobertas...</p>
+        </div>
+        
+        <div v-else-if="discoveredTags.length === 0" class="empty-state">
+          <i class="pi pi-tag text-6xl text-gray-400 mb-4"></i>
+          <h3 class="text-xl font-semibold text-gray-700 mb-2">Nenhuma tag descoberta</h3>
+          <p class="text-gray-500 mb-4">
+            As tags serão descobertas automaticamente quando os arquivos FOCUS forem processados.
+            Conecte uma conta AWS e processe dados para ver as tags disponíveis.
+          </p>
+        </div>
+        
+        <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Tags Descobertas -->
+          <div>
+            <h4 class="text-lg font-semibold mb-3 flex items-center gap-2">
+              <i class="pi pi-search text-blue-500"></i>
+              Tags Descobertas
+            </h4>
+            
+            <div class="space-y-3">
+              <div 
+                v-for="tag in discoveredTags" 
+                :key="tag.id"
+                class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                @click="toggleTagSelection(tag.tagKey)"
+              >
+                <div class="flex items-center gap-3">
+                  <input 
+                    type="checkbox" 
+                    :checked="tagConfig.selectedTags.includes(tag.tagKey)"
+                    class="w-4 h-4"
+                  />
+                  <div>
+                    <div class="font-medium">{{ tag.tagKey }}</div>
+                    <div class="text-sm text-gray-500">
+                      {{ tag.frequency }} recursos ({{ tag.coveragePercent.toFixed(1) }}% cobertura)
+                    </div>
+                    <div class="text-xs text-gray-400 mt-1">
+                      Valores: {{ tag.tagValues.slice(0, 3).join(', ') }}
+                      <span v-if="tag.tagValues.length > 3">...</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="text-right">
+                  <div class="w-16 bg-gray-200 rounded-full h-2">
+                    <div 
+                      class="bg-blue-500 h-2 rounded-full" 
+                      :style="{ width: tag.coveragePercent + '%' }"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Configuração de Prioridade -->
+          <div>
+            <h4 class="text-lg font-semibold mb-3 flex items-center gap-2">
+              <i class="pi pi-sort-alt text-green-500"></i>
+              Ordem de Prioridade
+            </h4>
+            
+            <div v-if="tagConfig.priorityOrder.length === 0" class="text-center py-8 text-gray-500">
+              <i class="pi pi-info-circle text-4xl mb-2"></i>
+              <p>Selecione tags à esquerda para definir a ordem de prioridade</p>
+            </div>
+            
+            <div v-else class="space-y-2">
+              <div 
+                v-for="(tagKey, index) in tagConfig.priorityOrder" 
+                :key="tagKey"
+                class="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                    {{ index + 1 }}
+                  </div>
+                  <span class="font-medium">{{ tagKey }}</span>
+                </div>
+                
+                <div class="flex gap-1">
+                  <Button 
+                    icon="pi pi-chevron-up"
+                    size="small"
+                    text
+                    :disabled="index === 0"
+                    @click="moveTagUp(tagKey)"
+                  />
+                  <Button 
+                    icon="pi pi-chevron-down"
+                    size="small"
+                    text
+                    :disabled="index === tagConfig.priorityOrder.length - 1"
+                    @click="moveTagDown(tagKey)"
+                  />
+                </div>
+              </div>
+              
+              <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div class="flex items-start gap-2">
+                  <i class="pi pi-info-circle text-yellow-600 mt-1"></i>
+                  <div class="text-sm text-yellow-800">
+                    <strong>Como funciona:</strong> O sistema tentará identificar projetos usando as tags na ordem definida. 
+                    Se a primeira tag não estiver presente, tentará a segunda, e assim por diante.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </template>
     </Card>

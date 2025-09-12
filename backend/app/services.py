@@ -5,7 +5,7 @@ Serviços de negócio da aplicação CostsHub
 from datetime import datetime, date
 from sqlalchemy import func
 from app import db
-from app.models import Alarm, AlarmEvent, DailyFocusCosts, AWSAccount
+from app.models import Alarm, AlarmEvent, AWSAccount, DiscoveredTag
 from app.notifications import send_alarm_email
 import logging
 import boto3
@@ -194,6 +194,46 @@ def _is_higher_severity(new_severity, existing_severity, severity_levels):
         # Se não encontrar, assumir que não é mais alta
         return False
 
+def extract_and_store_discovered_tags(organization_id, resource_tags_data):
+    """
+    Extrai tags de dados FOCUS e armazena como tags descobertas
+    """
+    if not resource_tags_data or not isinstance(resource_tags_data, dict):
+        return
+    
+    try:
+        for tag_key, tag_value in resource_tags_data.items():
+            if not tag_key or not tag_value:
+                continue
+                
+            # Buscar tag existente
+            existing_tag = DiscoveredTag.query.filter_by(
+                organization_id=organization_id,
+                tag_key=tag_key
+            ).first()
+            
+            if existing_tag:
+                # Atualizar tag existente
+                if tag_value not in existing_tag.tag_values:
+                    existing_tag.tag_values.append(tag_value)
+                existing_tag.frequency += 1
+                existing_tag.last_seen = datetime.utcnow()
+            else:
+                # Criar nova tag descoberta
+                new_tag = DiscoveredTag(
+                    organization_id=organization_id,
+                    tag_key=tag_key,
+                    tag_values=[tag_value],
+                    frequency=1,
+                    coverage_percent=0.0,  # Será calculado posteriormente
+                    first_discovered=datetime.utcnow(),
+                    last_seen=datetime.utcnow()
+                )
+                db.session.add(new_tag)
+                
+    except Exception as e:
+        logging.error(f"Erro ao extrair tags descobertas: {e}")
+
 def process_focus_data_for_account(payer_account_id, focus_data):
     """
     Processa dados FOCUS para uma conta Payer, implementando auto-discovery
@@ -356,6 +396,13 @@ def process_focus_data_for_account(payer_account_id, focus_data):
                 # DETECTAR TIPO DE DADOS: FOCUS granular vs Cost Explorer agregado
                 if 'resourceid' in data and data['resourceid']:
                     # DADOS FOCUS GRANULARES - usar novos campos
+                    
+                    # Extrair tags se disponíveis
+                    resource_tags = data.get('resource_tags') or data.get('ResourceTags')
+                    if resource_tags:
+                        # Extrair e armazenar tags descobertas
+                        extract_and_store_discovered_tags(payer_account.organization_id, resource_tags)
+                    
                     stmt = insert(DailyFocusCosts).values(
                         member_account_id=member_account_id,
                         usage_date=data['usage_date'],
@@ -363,6 +410,7 @@ def process_focus_data_for_account(payer_account_id, focus_data):
                         resource_id=data.get('resourceid'),
                         usage_type=data.get('usage_type'),
                         effective_cost=data.get('effective_cost', 0),
+                        tags=resource_tags,  # Usar campo tags correto
                         # Campos compatibilidade
                         service_category=data.get('service_category', 'Other'),
                         aws_service=data['aws_service'],

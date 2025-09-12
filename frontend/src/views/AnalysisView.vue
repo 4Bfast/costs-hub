@@ -18,6 +18,7 @@ import TabPanel from 'primevue/tabpanel';
 import Sidebar from 'primevue/sidebar';
 import Button from 'primevue/button';
 import ToggleButton from 'primevue/togglebutton';
+import OverlayPanel from 'primevue/overlaypanel';
 
 // Componente de gráfico
 import CostLineChart from '@/components/CostLineChart.vue';
@@ -47,6 +48,11 @@ const variationError = ref(null);
 
 // Modo de análise
 const isComparativeMode = ref(false);
+
+// Estados para explicações de termos
+const explanationText = ref('');
+const isExplanationLoading = ref(false);
+const explanationOverlay = ref();
 
 const datePickerConfig = {
   mode: 'range',
@@ -310,6 +316,25 @@ function formatVariation(value, percentage) {
   const formattedValue = formatCurrency(value);
   const formattedPercentage = percentage ? `(${percentage > 0 ? '+' : ''}${percentage.toFixed(1)}%)` : '';
   return `${formattedValue} ${formattedPercentage}`;
+}
+
+async function showExplanation(event, usageType) {
+  // Mostrar o overlay panel
+  explanationOverlay.value.show(event);
+  
+  // Carregar explicação
+  isExplanationLoading.value = true;
+  explanationText.value = '';
+  
+  try {
+    const response = await apiService.getTermExplanation(usageType, 'UsageType');
+    explanationText.value = response.explanation || 'Explicação não disponível.';
+  } catch (error) {
+    console.error('Erro ao buscar explicação:', error);
+    explanationText.value = 'Não foi possível obter a explicação no momento. Tente novamente mais tarde.';
+  } finally {
+    isExplanationLoading.value = false;
+  }
 }
 
 onMounted(async () => {
@@ -713,7 +738,15 @@ onMounted(async () => {
                       :key="usage.usageType"
                       class="variation-item"
                     >
-                      <span class="usage-type">{{ usage.usageType }}</span>
+                      <div class="usage-type-container">
+                        <span class="usage-type">{{ usage.usageType }}</span>
+                        <Button 
+                          icon="pi pi-info-circle" 
+                          class="p-button-text p-button-rounded p-button-sm explanation-btn"
+                          @click="showExplanation($event, usage.usageType)"
+                          v-tooltip.top="'Clique para explicação'"
+                        />
+                      </div>
                       <div class="variation-amount">
                         <i :class="getVariationIcon(usage.variationPercent)"></i>
                         <span :class="usage.variation > 0 ? 'text-red' : 'text-green'">
@@ -735,6 +768,19 @@ onMounted(async () => {
         </div>
       </div>
     </Sidebar>
+
+    <!-- Overlay Panel para Explicações -->
+    <OverlayPanel ref="explanationOverlay" class="explanation-overlay">
+      <div class="explanation-content">
+        <div v-if="isExplanationLoading" class="explanation-loading">
+          <ProgressSpinner size="small" />
+          <span>Gerando explicação...</span>
+        </div>
+        <div v-else class="explanation-text">
+          {{ explanationText }}
+        </div>
+      </div>
+    </OverlayPanel>
   </div>
 </template>
 
@@ -1036,5 +1082,41 @@ onMounted(async () => {
   padding: 1rem;
   background: #f8f9fa;
   border-radius: 8px;
+}
+
+/* Estilos para explicações de termos */
+.usage-type-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.explanation-btn {
+  padding: 0.25rem !important;
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+  color: #6c757d !important;
+}
+
+.explanation-btn:hover {
+  color: #007bff !important;
+}
+
+.explanation-content {
+  max-width: 300px;
+  padding: 1rem;
+}
+
+.explanation-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6c757d;
+}
+
+.explanation-text {
+  line-height: 1.5;
+  color: #333;
+  font-size: 0.9rem;
 }
 </style>
