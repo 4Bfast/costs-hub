@@ -12,9 +12,6 @@ import os
 import traceback
 from datetime import datetime
 from typing import Dict, Any, List, Optional
-from aws_lambda_powertools import Logger, Tracer, Metrics
-from aws_lambda_powertools.logging import correlation_paths
-from aws_lambda_powertools.metrics import MetricUnit
 
 from models import ClientConfig, ReportType, ClientStatus
 from services import (
@@ -31,10 +28,9 @@ from handlers.scheduler import SchedulingManager
 from handlers.error_handler import ErrorHandler, handle_component_error, retry_operation, with_error_handling
 
 
-# Initialize AWS Lambda Powertools
-logger = Logger()
-tracer = Tracer()
-metrics = Metrics()
+# Initialize logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 # Environment variables
 TABLE_NAME = os.environ.get('DYNAMODB_TABLE_NAME', 'cost-reporting-clients')
@@ -103,8 +99,6 @@ class LambdaCostReportHandler:
             'errors': []
         }
     
-    @tracer.capture_lambda_handler
-    @logger.inject_lambda_context(correlation_id_path=correlation_paths.EVENT_BRIDGE)
     def lambda_handler(self, event: Dict[str, Any], context) -> Dict[str, Any]:
         """
         Main Lambda handler entry point.
@@ -142,8 +136,8 @@ class LambdaCostReportHandler:
                 "remaining_time_ms": context.get_remaining_time_in_millis() if context else None
             })
             
-            # Add custom metrics
-            metrics.add_metric(name="ExecutionStarted", unit=MetricUnit.Count, value=1)
+            # Log execution start
+            logger.info("Execution started")
             
             self.structured_logger.info("Execution parameters determined", extra={
                 "execution_type": execution_type,
@@ -175,14 +169,8 @@ class LambdaCostReportHandler:
             # End monitoring with success
             final_metrics = self.monitoring.end_execution(success=True)
             
-            # Add success metrics (legacy powertools)
-            metrics.add_metric(name="ExecutionSucceeded", unit=MetricUnit.Count, value=1)
-            metrics.add_metric(name="ClientsProcessed", unit=MetricUnit.Count, 
-                             value=self.execution_stats['clients_processed'])
-            metrics.add_metric(name="ReportsGenerated", unit=MetricUnit.Count, 
-                             value=self.execution_stats['reports_generated'])
-            metrics.add_metric(name="EmailsSent", unit=MetricUnit.Count, 
-                             value=self.execution_stats['emails_sent'])
+            # Log success
+            logger.info(f"Execution succeeded - processed {self.execution_stats['clients_processed']} clients")
             
             # Structured logging for completion
             self.structured_logger.info("Lambda execution completed successfully", extra={
@@ -254,8 +242,8 @@ class LambdaCostReportHandler:
                 "error_handling": handling_result
             })
             
-            # Add failure metrics
-            metrics.add_metric(name="ExecutionFailed", unit=MetricUnit.Count, value=1)
+            # Log failure
+            logger.error(f"Execution failed: {str(e)}")
             
             return {
                 'statusCode': 500,
@@ -907,9 +895,6 @@ class LambdaCostReportHandler:
 handler = LambdaCostReportHandler()
 
 
-@tracer.capture_lambda_handler
-@logger.inject_lambda_context
-@metrics.log_metrics
 def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
     """
     AWS Lambda entry point.

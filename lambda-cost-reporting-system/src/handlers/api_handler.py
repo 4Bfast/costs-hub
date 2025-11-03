@@ -14,9 +14,6 @@ from typing import Dict, Any, List, Optional, Union
 from decimal import Decimal
 import asyncio
 import boto3
-from aws_lambda_powertools import Logger, Tracer, Metrics
-from aws_lambda_powertools.logging import correlation_paths
-from aws_lambda_powertools.metrics import MetricUnit
 
 from ..models.multi_cloud_models import CloudProvider, UnifiedCostRecord
 from ..models.multi_tenant_models import MultiCloudClient, ClientRole
@@ -31,10 +28,9 @@ from ..utils.api_response import APIResponse, APIError
 from ..utils.validation import validate_request_data, ValidationError
 
 
-# Initialize AWS Lambda Powertools
-logger = Logger()
-tracer = Tracer()
-metrics = Metrics()
+# Initialize logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 # Environment variables
 DYNAMODB_TABLE_NAME = os.environ.get('DYNAMODB_TABLE_NAME', 'multi-cloud-cost-analytics')
@@ -88,8 +84,6 @@ class MultiCloudAPIHandler:
         # API response helper
         self.response = APIResponse()
     
-    @tracer.capture_lambda_handler
-    @logger.inject_lambda_context(correlation_id_path=correlation_paths.API_GATEWAY)
     def lambda_handler(self, event: Dict[str, Any], context) -> Dict[str, Any]:
         """
         Main Lambda handler entry point for API Gateway requests.
@@ -128,18 +122,16 @@ class MultiCloudAPIHandler:
                 "user_agent": headers.get('User-Agent', 'Unknown')
             })
             
-            # Add metrics
-            metrics.add_metric(name="APIRequest", unit=MetricUnit.Count, value=1)
-            metrics.add_metadata(key="method", value=http_method)
-            metrics.add_metadata(key="path", value=path)
+            # Log request details
+            logger.info(f"Processing {http_method} request to {path}")
             
             # Route request to appropriate handler
             response = asyncio.run(self._route_request(
                 http_method, path, headers, query_params, request_data, context
             ))
             
-            # Add success metrics
-            metrics.add_metric(name="APIRequestSuccess", unit=MetricUnit.Count, value=1)
+            # Log success
+            logger.info(f"Request processed successfully")
             
             return response
             
@@ -152,8 +144,8 @@ class MultiCloudAPIHandler:
                 "path": event.get('path')
             })
             
-            # Add failure metrics
-            metrics.add_metric(name="APIRequestFailure", unit=MetricUnit.Count, value=1)
+            # Log failure
+            logger.error(f"Request failed: {str(e)}")
             
             return self.response.error(
                 message="Internal server error",
@@ -1065,9 +1057,6 @@ ync def _get_cost_trends(self, user_context: Dict[str, Any], query_params: Dict[
 api_handler = MultiCloudAPIHandler()
 
 
-@tracer.capture_lambda_handler
-@logger.inject_lambda_context
-@metrics.log_metrics
 def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
     """
     AWS Lambda entry point for API Gateway requests.

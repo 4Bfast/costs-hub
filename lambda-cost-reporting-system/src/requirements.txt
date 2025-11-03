@@ -12,9 +12,6 @@ jinja2>=3.1.0
 # Image processing for asset management
 Pillow>=10.0.0
 
-# AWS Lambda Powertools for monitoring
-aws-lambda-powertools>=2.25.0
-
 # Multi-cloud provider dependencies
 # Google Cloud Platform
 google-cloud-billing>=1.12.0

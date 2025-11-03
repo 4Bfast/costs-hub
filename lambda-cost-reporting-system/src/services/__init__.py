@@ -12,7 +12,10 @@ try:
     from .lambda_email_service import LambdaEmailService
     from .lambda_asset_manager import LambdaAssetManager
     from .threshold_evaluator import ThresholdEvaluator
-    from .alert_integration_service import AlertIntegrationService
+    try:
+        from .alert_integration_service import AlertIntegrationService
+    except ImportError:
+        AlertIntegrationService = None
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -29,11 +32,29 @@ except ImportError:
     except ImportError:
         LambdaCostAgent = None
     
-    from lambda_report_generator import LambdaReportGenerator
-    from lambda_email_service import LambdaEmailService
-    from lambda_asset_manager import LambdaAssetManager
-    from threshold_evaluator import ThresholdEvaluator
-    from alert_integration_service import AlertIntegrationService
+    try:
+        from lambda_report_generator import LambdaReportGenerator
+    except ImportError:
+        LambdaReportGenerator = None
+        
+    try:
+        from lambda_email_service import LambdaEmailService
+    except ImportError:
+        LambdaEmailService = None
+        
+    try:
+        from lambda_asset_manager import LambdaAssetManager
+    except ImportError:
+        LambdaAssetManager = None
+        
+    try:
+        from threshold_evaluator import ThresholdEvaluator
+    except ImportError:
+        ThresholdEvaluator = None
+    try:
+        from alert_integration_service import AlertIntegrationService
+    except ImportError:
+        AlertIntegrationService = None
 
 __all__ = [
     'ClientConfigManager',

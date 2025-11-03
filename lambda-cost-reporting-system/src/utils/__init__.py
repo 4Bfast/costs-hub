@@ -20,12 +20,13 @@ from .logging import (
     configure_lambda_logging,
     mask_sensitive_data,
     log_execution_time,
-    log_async_execution_time
+    log_async_execution_time,
+    log_execution_context
 )
 
 __all__ = [
     "EncryptionManager",
-    "SecureCredentialHandler",
+    "SecureCredentialHandler", 
     "EncryptionError",
     "KMSEncryptionError",
     "KMSDecryptionError",
@@ -35,5 +36,6 @@ __all__ = [
     "configure_lambda_logging",
     "mask_sensitive_data",
     "log_execution_time",
-    "log_async_execution_time"
+    "log_async_execution_time",
+    "log_execution_context"
 ]

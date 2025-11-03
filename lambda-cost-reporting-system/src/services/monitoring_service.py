@@ -197,8 +197,8 @@ class MonitoringService:
         self.flush_metrics()
         
         return self.execution_metrics    
-  
-  def put_metric(self, metric_name: str, value: Union[int, float], 
+
+    def put_metric(self, metric_name: str, value: Union[int, float], 
                    unit: MetricUnit, dimensions: Dict[str, str] = None) -> None:
         """
         Add metric to buffer for batch publishing.

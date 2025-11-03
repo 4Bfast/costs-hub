@@ -237,16 +237,9 @@ def validate_api_key(api_key: str) -> Dict[str, Any]:
         if not key_id or not key_secret:
             raise AuthorizerError("Invalid API key format")
         
-        # In a real implementation, you would validate the API key
-        # against a database or external service
-        # For now, we'll return a mock response
-        return {
-            'key_id': key_id,
-            'user_id': f'api_user_{key_id}',
-            'tenant_id': f'api_tenant_{key_id}',
-            'permissions': ['api_access'],
-            'roles': ['api_client']
-        }
+        # TODO: Implement real API key validation
+        logger.warning("API key validation not implemented")
+        raise AuthorizerError("API key validation not implemented")
         
     except Exception as e:
         raise AuthorizerError(f"API key validation failed: {str(e)}")
@@ -275,14 +268,5 @@ if __name__ == "__main__":
         }
     }
     
-    # Mock context
-    class MockContext:
-        def __init__(self):
-            self.function_name = "test-authorizer"
-            self.aws_request_id = "test-request-id"
-    
-    try:
-        result = lambda_handler(test_event, MockContext())
-        print(f"Authorization result: {json.dumps(result, indent=2)}")
-    except Exception as e:
-        print(f"Authorization failed: {str(e)}")
+    # Test with real context only
+    print("Authorizer ready - no mock testing")
