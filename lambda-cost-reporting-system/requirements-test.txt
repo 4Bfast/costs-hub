@@ -1,0 +1,48 @@
+# Testing dependencies for the multi-cloud cost analytics platform
+
+# Core testing framework
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.0
+pytest-timeout>=2.1.0
+
+# Mocking and fixtures
+moto[dynamodb]>=4.2.0
+responses>=0.23.0
+freezegun>=1.2.0
+
+# Database testing
+pytest-postgresql>=5.0.0
+psycopg2-binary>=2.9.0
+
+# AWS testing utilities
+boto3-stubs[dynamodb,bedrock]>=1.28.0
+botocore-stubs>=1.31.0
+
+# Data validation and testing
+hypothesis>=6.82.0
+factory-boy>=3.3.0
+faker>=19.3.0
+
+# Performance testing
+pytest-benchmark>=4.0.0
+memory-profiler>=0.61.0
+
+# Code quality
+flake8>=6.0.0
+black>=23.7.0
+isort>=5.12.0
+mypy>=1.5.0
+
+# Documentation testing
+pytest-doctestplus>=1.0.0
+
+# Parallel testing
+pytest-xdist>=3.3.0
+
+# HTML reporting
+pytest-html>=3.2.0
+
+# Test data generation
+mimesis>=11.1.0

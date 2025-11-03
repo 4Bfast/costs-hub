@@ -1,0 +1,1125 @@
+openapi: 3.0.3
+info:
+  title: Multi-Cloud Cost Analytics API
+  description: |
+    REST API for the Multi-Cloud Cost Analytics platform providing comprehensive
+    cost data retrieval, AI insights, client management, and webhook notifications.
+  version: 1.0.0
+  contact:
+    name: Multi-Cloud Cost Analytics Team
+    email: support@multicloudsanalytics.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.multicloudsanalytics.com/v1
+    description: Production server
+  - url: https://staging-api.multicloudsanalytics.com/v1
+    description: Staging server
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Check the health status of the API
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /cost-data:
+    get:
+      summary: Get cost data
+      description: Retrieve cost data for the authenticated tenant
+      parameters:
+        - name: start_date
+          in: query
+          description: Start date (ISO 8601 format)
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          description: End date (ISO 8601 format)
+          schema:
+            type: string
+            format: date-time
+        - name: provider
+          in: query
+          description: Cloud provider filter
+          schema:
+            $ref: '#/components/schemas/CloudProvider'
+        - name: granularity
+          in: query
+          description: Data granularity
+          schema:
+            type: string
+            enum: [daily, weekly, monthly]
+            default: daily
+        - name: page
+          in: query
+          description: Page number
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          description: Page size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 50
+      responses:
+        '200':
+          description: Cost data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostDataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /cost-data/summary:
+    get:
+      summary: Get cost summary
+      description: Get aggregated cost summary for the current month
+      responses:
+        '200':
+          description: Cost summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostSummaryResponse'
+
+  /cost-data/trends:
+    get:
+      summary: Get cost trends
+      description: Get cost trends and analysis
+      parameters:
+        - name: days
+          in: query
+          description: Number of days to analyze
+          schema:
+            type: integer
+            minimum: 7
+            maximum: 365
+            default: 90
+        - name: provider
+          in: query
+          description: Cloud provider filter
+          schema:
+            $ref: '#/components/schemas/CloudProvider'
+      responses:
+        '200':
+          description: Cost trends retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostTrendsResponse'
+
+  /insights:
+    get:
+      summary: Get AI insights
+      description: Get comprehensive AI-powered cost insights
+      parameters:
+        - name: days
+          in: query
+          description: Number of days to analyze
+          schema:
+            type: integer
+            minimum: 7
+            maximum: 365
+            default: 30
+        - name: provider
+          in: query
+          description: Cloud provider filter
+          schema:
+            $ref: '#/components/schemas/CloudProvider'
+      responses:
+        '200':
+          description: AI insights retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIInsightsResponse'
+
+  /insights/anomalies:
+    get:
+      summary: Get cost anomalies
+      description: Get detected cost anomalies
+      parameters:
+        - name: days
+          in: query
+          description: Number of days to analyze
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 90
+            default: 7
+        - name: severity
+          in: query
+          description: Filter by severity level
+          schema:
+            $ref: '#/components/schemas/Severity'
+      responses:
+        '200':
+          description: Anomalies retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnomaliesResponse'
+
+  /insights/recommendations:
+    get:
+      summary: Get cost optimization recommendations
+      description: Get AI-generated cost optimization recommendations
+      parameters:
+        - name: category
+          in: query
+          description: Filter by service category
+          schema:
+            $ref: '#/components/schemas/ServiceCategory'
+        - name: min_savings
+          in: query
+          description: Minimum estimated savings
+          schema:
+            type: number
+            minimum: 0
+      responses:
+        '200':
+          description: Recommendations retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationsResponse'
+
+  /clients/me:
+    get:
+      summary: Get current client information
+      description: Get information about the authenticated client
+      responses:
+        '200':
+          description: Client information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResponse'
+    
+    put:
+      summary: Update current client
+      description: Update client configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientUpdateRequest'
+      responses:
+        '200':
+          description: Client updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /clients/me/accounts:
+    get:
+      summary: Get client cloud accounts
+      description: Get all cloud accounts for the client
+      responses:
+        '200':
+          description: Cloud accounts retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloudAccountsResponse'
+    
+    post:
+      summary: Add cloud account
+      description: Add a new cloud account to the client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloudAccountRequest'
+      responses:
+        '201':
+          description: Cloud account added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /clients/me/accounts/{accountId}:
+    delete:
+      summary: Remove cloud account
+      description: Remove a cloud account from the client
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: Cloud account identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cloud account removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /webhooks:
+    get:
+      summary: List webhooks
+      description: Get all webhooks for the authenticated user
+      responses:
+        '200':
+          description: Webhooks retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhooksResponse'
+    
+    post:
+      summary: Create webhook
+      description: Create a new webhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookRequest'
+      responses:
+        '201':
+          description: Webhook created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookCreateResponse'
+
+  /webhooks/{webhookId}:
+    get:
+      summary: Get webhook
+      description: Get webhook details
+      parameters:
+        - name: webhookId
+          in: path
+          required: true
+          description: Webhook identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Webhook retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookResponse'
+    
+    put:
+      summary: Update webhook
+      description: Update webhook configuration
+      parameters:
+        - name: webhookId
+          in: path
+          required: true
+          description: Webhook identifier
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookUpdateRequest'
+      responses:
+        '200':
+          description: Webhook updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+    
+    delete:
+      summary: Delete webhook
+      description: Delete a webhook
+      parameters:
+        - name: webhookId
+          in: path
+          required: true
+          description: Webhook identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Webhook deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /notifications/send:
+    post:
+      summary: Send notification
+      description: Send a notification through configured channels
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+      responses:
+        '200':
+          description: Notification sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from authentication
+    
+    ApiKeyAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: ApiKey
+      description: API key in format "ApiKey {key_id}:{key_secret}"
+
+  schemas:
+    CloudProvider:
+      type: string
+      enum: [AWS, GCP, AZURE]
+      description: Supported cloud providers
+
+    ServiceCategory:
+      type: string
+      enum: [compute, storage, database, networking, analytics, security, management, ai_ml, containers, serverless, other]
+      description: Unified service categories
+
+    Severity:
+      type: string
+      enum: [low, medium, high, critical]
+      description: Severity levels
+
+    Currency:
+      type: string
+      enum: [USD, EUR, GBP, JPY, BRL]
+      description: Supported currencies
+
+    HealthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              example: healthy
+            timestamp:
+              type: string
+              format: date-time
+            version:
+              type: string
+              example: "1.0.0"
+            services:
+              type: object
+              additionalProperties:
+                type: string
+
+    CostDataResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            cost_data:
+              type: array
+              items:
+                $ref: '#/components/schemas/CostRecord'
+            summary:
+              type: object
+              properties:
+                total_records:
+                  type: integer
+                date_range:
+                  type: object
+                  properties:
+                    start:
+                      type: string
+                      format: date-time
+                    end:
+                      type: string
+                      format: date-time
+                providers:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CloudProvider'
+
+    CostRecord:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        provider:
+          $ref: '#/components/schemas/CloudProvider'
+        total_cost:
+          type: number
+          format: float
+        currency:
+          $ref: '#/components/schemas/Currency'
+        services:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              cost:
+                type: number
+                format: float
+              category:
+                $ref: '#/components/schemas/ServiceCategory'
+        data_quality:
+          $ref: '#/components/schemas/DataQuality'
+
+    DataQuality:
+      type: object
+      properties:
+        completeness_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        accuracy_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        confidence_level:
+          type: string
+          enum: [HIGH, MEDIUM, LOW, UNKNOWN]
+
+    AIInsightsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            insights:
+              type: object
+              properties:
+                anomalies:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Anomaly'
+                trends:
+                  $ref: '#/components/schemas/TrendAnalysis'
+                forecasts:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Forecast'
+                recommendations:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Recommendation'
+                narrative:
+                  type: string
+
+    Anomaly:
+      type: object
+      properties:
+        anomaly_id:
+          type: string
+        type:
+          type: string
+        severity:
+          $ref: '#/components/schemas/Severity'
+        description:
+          type: string
+        affected_services:
+          type: array
+          items:
+            type: string
+        cost_impact:
+          type: number
+          format: float
+        detection_method:
+          type: string
+        confidence_score:
+          type: number
+          format: float
+        recommended_actions:
+          type: array
+          items:
+            type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    TrendAnalysis:
+      type: object
+      properties:
+        overall_trend:
+          type: string
+          enum: [increasing, decreasing, stable]
+        trend_percentage:
+          type: number
+          format: float
+        seasonal_patterns:
+          type: object
+        growth_rates:
+          type: object
+
+    Forecast:
+      type: object
+      properties:
+        forecast_id:
+          type: string
+        period:
+          type: string
+        predicted_cost:
+          type: number
+          format: float
+        confidence_level:
+          type: string
+        model_used:
+          type: string
+
+    Recommendation:
+      type: object
+      properties:
+        recommendation_id:
+          type: string
+        category:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        estimated_savings:
+          type: number
+          format: float
+        implementation_effort:
+          type: string
+        priority:
+          type: string
+
+    WebhookRequest:
+      type: object
+      required:
+        - name
+        - url
+        - events
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        url:
+          type: string
+          format: uri
+          pattern: '^https?://.*'
+        events:
+          type: array
+          items:
+            type: string
+            enum: [anomaly_detected, budget_exceeded, forecast_updated, cost_spike, threshold_breach, recommendation_generated]
+        secret:
+          type: string
+          minLength: 8
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        timeout_seconds:
+          type: integer
+          minimum: 5
+          maximum: 300
+          default: 30
+        retry_count:
+          type: integer
+          minimum: 0
+          maximum: 10
+          default: 3
+
+    WebhookResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            webhook_id:
+              type: string
+            name:
+              type: string
+            url:
+              type: string
+            events:
+              type: array
+              items:
+                type: string
+            status:
+              type: string
+              enum: [active, inactive, failed, suspended]
+            created_at:
+              type: string
+              format: date-time
+            success_count:
+              type: integer
+            failure_count:
+              type: integer
+
+    NotificationRequest:
+      type: object
+      required:
+        - template_id
+        - variables
+        - recipients
+      properties:
+        template_id:
+          type: string
+        variables:
+          type: object
+        recipients:
+          type: array
+          items:
+            type: string
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+          default: medium
+        channels:
+          type: array
+          items:
+            type: string
+            enum: [email, slack, webhook, sms, teams]
+
+    NotificationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            notification_ids:
+              type: array
+              items:
+                type: string
+            message:
+              type: string
+
+    CostSummaryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            current_month:
+              type: object
+              properties:
+                total_cost:
+                  type: number
+                  format: float
+                currency:
+                  $ref: '#/components/schemas/Currency'
+                period:
+                  type: object
+                  properties:
+                    start:
+                      type: string
+                      format: date-time
+                    end:
+                      type: string
+                      format: date-time
+            breakdown:
+              type: object
+              properties:
+                by_provider:
+                  type: object
+                  additionalProperties:
+                    type: number
+                    format: float
+                by_category:
+                  type: object
+                  additionalProperties:
+                    type: number
+                    format: float
+
+    CostTrendsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            trends:
+              $ref: '#/components/schemas/TrendAnalysis'
+            forecasts:
+              type: array
+              items:
+                $ref: '#/components/schemas/Forecast'
+
+    AnomaliesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            anomalies:
+              type: array
+              items:
+                $ref: '#/components/schemas/Anomaly'
+            summary:
+              type: object
+              properties:
+                total_anomalies:
+                  type: integer
+                severity_breakdown:
+                  type: object
+                  properties:
+                    critical:
+                      type: integer
+                    high:
+                      type: integer
+                    medium:
+                      type: integer
+                    low:
+                      type: integer
+
+    RecommendationsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            recommendations:
+              type: array
+              items:
+                $ref: '#/components/schemas/Recommendation'
+            summary:
+              type: object
+              properties:
+                total_recommendations:
+                  type: integer
+                total_potential_savings:
+                  type: number
+                  format: float
+
+    WebhooksResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            webhooks:
+              type: array
+              items:
+                $ref: '#/components/schemas/WebhookResponse'
+
+    WebhookCreateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            webhook_id:
+              type: string
+            message:
+              type: string
+
+    WebhookUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+        secret:
+          type: string
+        headers:
+          type: object
+        timeout_seconds:
+          type: integer
+        retry_count:
+          type: integer
+
+    ClientResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            client:
+              type: object
+              properties:
+                client_id:
+                  type: string
+                organization_name:
+                  type: string
+                subscription_tier:
+                  type: string
+                status:
+                  type: string
+                cloud_providers:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CloudProvider'
+                total_accounts:
+                  type: integer
+                active_accounts:
+                  type: integer
+
+    CloudAccountsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            accounts:
+              type: array
+              items:
+                type: object
+                properties:
+                  account_id:
+                    type: string
+                  account_name:
+                    type: string
+                  provider:
+                    $ref: '#/components/schemas/CloudProvider'
+                  regions:
+                    type: array
+                    items:
+                      type: string
+                  is_active:
+                    type: boolean
+
+    ClientUpdateRequest:
+      type: object
+      properties:
+        organization_name:
+          type: string
+          maxLength: 255
+        billing_preferences:
+          type: object
+        ai_preferences:
+          type: object
+        notification_preferences:
+          type: object
+
+    CloudAccountRequest:
+      type: object
+      required:
+        - account_id
+        - account_name
+        - provider
+      properties:
+        account_id:
+          type: string
+        account_name:
+          type: string
+        provider:
+          $ref: '#/components/schemas/CloudProvider'
+        regions:
+          type: array
+          items:
+            type: string
+        cost_allocation_tags:
+          type: object
+          additionalProperties:
+            type: string
+        monthly_budget:
+          type: number
+          format: float
+          minimum: 0
+        currency:
+          $ref: '#/components/schemas/Currency'
+        credentials:
+          type: object
+          description: Provider-specific credentials (encrypted)
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+            code:
+              type: integer
+            details:
+              type: object
+            field_errors:
+              type: object
+              additionalProperties:
+                type: string
+        timestamp:
+          type: string
+          format: date-time
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              message: "Invalid request parameters"
+              code: 400
+            timestamp: "2024-10-30T10:00:00Z"
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              message: "Authentication required"
+              code: 401
+            timestamp: "2024-10-30T10:00:00Z"
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              message: "Access denied"
+              code: 403
+            timestamp: "2024-10-30T10:00:00Z"
+
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              message: "Resource not found"
+              code: 404
+            timestamp: "2024-10-30T10:00:00Z"
+
+    TooManyRequests:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          description: Number of seconds to wait before retrying
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              message: "Rate limit exceeded"
+              code: 429
+            timestamp: "2024-10-30T10:00:00Z"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              message: "Internal server error"
+              code: 500
+            timestamp: "2024-10-30T10:00:00Z"
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Cost Data
+    description: Cost data retrieval and analysis
+  - name: AI Insights
+    description: AI-powered cost insights and recommendations
+  - name: Client Management
+    description: Client configuration and account management
+  - name: Webhooks
+    description: Webhook management for real-time notifications
+  - name: Notifications
+    description: Notification management and delivery

@@ -1,0 +1,33 @@
+services:
+  localstack:
+    container_name: cost-reporting-localstack
+    image: localstack/localstack:3.0
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=lambda,dynamodb,s3,ses,events,sns,cloudwatch,kms
+      - DEBUG=1
+      - LAMBDA_EXECUTOR=docker
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - HOST_TMP_FOLDER=${TMPDIR:-/tmp}/localstack
+    volumes:
+      - "${TMPDIR:-/tmp}/localstack:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - cost-reporting-network
+
+  dynamodb-admin:
+    container_name: cost-reporting-dynamodb-admin
+    image: aaronshaf/dynamodb-admin:latest
+    ports:
+      - "8001:8001"
+    environment:
+      - DYNAMO_ENDPOINT=http://localstack:4566
+    depends_on:
+      - localstack
+    networks:
+      - cost-reporting-network
+
+networks:
+  cost-reporting-network:
+    driver: bridge

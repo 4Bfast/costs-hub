@@ -1,0 +1,14 @@
+# Development dependencies
+-r requirements.txt
+
+# Local development
+localstack>=3.0.0
+pytest-localstack>=0.1.0
+
+# Code quality
+pre-commit>=3.4.0
+coverage>=7.3.0
+
+# Documentation
+mkdocs>=1.5.0
+mkdocs-material>=9.4.0

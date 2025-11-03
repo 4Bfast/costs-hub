@@ -5,10 +5,14 @@ __pycache__
 ai-bridge
 venv
 .vscode
-
+.venv
+**.venv**
 # Arquivos de ambiente com credenciais
 backend/.env
 frontend/costshub/.env
+test-scripts/
+test_*
+debug_*
 
 # Logs
 backend/backend.log
@@ -24,6 +28,7 @@ backend/verify_*.sh
 backend/configure_*.sh
 backend/dev_*.sh
 backend/*.html
+backups/**
 
 # Arquivos de contexto e documentação temporária
 executor-context.txt
@@ -34,3 +39,8 @@ CORRECAO_*.md
 
 # Debug files
 frontend/costshub/src/debug_*.js
+
+old/*
+aws-cost-agent*
+
+.kiro/*

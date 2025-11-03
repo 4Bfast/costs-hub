@@ -1,0 +1,24 @@
+# Development Environment Configuration
+environment: dev
+lambda:
+  memory: 512
+  timeout_minutes: 5
+  log_retention_days: 7
+database:
+  point_in_time_recovery: false
+storage:
+  lifecycle_days: 7
+monitoring:
+  detailed_monitoring: false
+scheduling:
+  # For dev, run reports less frequently for testing
+  weekly_cron: "0 10 ? * MON *"  # Monday 10 AM UTC
+  monthly_cron: "0 9 2 * ? *"    # 2nd day of month 9 AM UTC
+resources:
+  removal_policy: "DESTROY"
+  auto_delete_objects: true
+alerts:
+  # More lenient thresholds for dev
+  error_threshold: 3
+  duration_threshold_minutes: 8
+  success_rate_threshold: 70
