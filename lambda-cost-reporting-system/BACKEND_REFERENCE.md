@@ -92,15 +92,18 @@ GET /reports       - Reports (placeholder)
 ## 🔧 **HANDLER FILES**
 
 ### **Main Handler:**
-- `src/simple_handlers/api_gateway_handler_simple.py` - Main routing
+- `src/handlers/api_gateway_handler_simple.py` - Main routing
 
 ### **Feature Handlers:**
-- `src/simple_handlers/costs_handler_simple.py` - AWS Cost Explorer integration
-- `src/simple_handlers/accounts_handler_simple.py` - DynamoDB CRUD for accounts
-- `src/simple_handlers/alarms_handler_simple.py` - DynamoDB CRUD for alarms
-- `src/simple_handlers/users_handler_simple.py` - Cognito user management
-- `src/simple_handlers/dashboard_handler_simple.py` - Real-time analytics
-- `src/simple_handlers/insights_handler_simple.py` - AI recommendations
+- `src/handlers/costs_handler_simple.py` - AWS Cost Explorer integration
+- `src/handlers/accounts_handler_simple.py` - DynamoDB CRUD for accounts
+- `src/handlers/alarms_handler_simple.py` - DynamoDB CRUD for alarms
+- `src/handlers/users_handler_simple.py` - Cognito user management
+- `src/handlers/dashboard_handler_simple.py` - Real-time analytics
+- `src/handlers/insights_handler_simple.py` - AI recommendations
+
+### **Legacy Handlers (Not Used):**
+- `src/handlers_legacy_backup/` - Complex multi-tenant handlers (archived)
 
 ---
 
@@ -168,8 +171,8 @@ aws logs get-log-events \
 ```
 lambda-cost-reporting-system/
 ├── src/
-│   ├── simple_handlers/          # Main handlers
-│   ├── handlers/                 # Legacy handlers
+│   ├── handlers/                 # Active handlers (simple implementation)
+│   ├── handlers_legacy_backup/   # Legacy handlers (archived)
 │   ├── services/                 # Business logic
 │   ├── models/                   # Data models
 │   └── utils/                    # Utilities
@@ -185,7 +188,7 @@ lambda-cost-reporting-system/
 ## ⚡ **QUICK FIXES**
 
 ### **Add Missing Endpoint:**
-1. Edit `src/simple_handlers/api_gateway_handler_simple.py`
+1. Edit `src/handlers/api_gateway_handler_simple.py`
 2. Add route in main handler
 3. Implement logic in appropriate handler file
 4. Deploy with commands above
