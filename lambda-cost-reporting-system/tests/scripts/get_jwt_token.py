@@ -12,8 +12,8 @@ def get_jwt_token():
     login_url = "https://api-costhub.4bfast.com.br/api/v1/auth/login"
     
     credentials = {
-        "email": "admin@4bfast.com.br",
-        "password": "4BFast2025!"
+        "email": "test@4bfast.com.br",
+        "password": "TestPassword123!"
     }
     
     headers = {
