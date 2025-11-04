@@ -40,7 +40,89 @@ def handle_costs_request(event, cors_headers):
     
     try:
         if method == 'GET':
-            if path.endswith('/costs'):
+            if path.endswith('/costs/records'):
+                # GET /costs/records - Paginated cost records
+                query_params = event.get('queryStringParameters') or {}
+                
+                # Pagination parameters
+                page = int(query_params.get('page', 1))
+                limit = int(query_params.get('limit', 20))
+                sort = query_params.get('sort', 'date')
+                order = query_params.get('order', 'desc')
+                
+                # Filter parameters
+                search = query_params.get('search', '')
+                providers = query_params.get('providers', '').split(',') if query_params.get('providers') else []
+                services = query_params.get('services', '').split(',') if query_params.get('services') else []
+                accounts = query_params.get('accounts', '').split(',') if query_params.get('accounts') else []
+                
+                # Date range
+                filter_start = query_params.get('start_date', start_date)
+                filter_end = query_params.get('end_date', end_date)
+                
+                # Get cost data with service grouping for records
+                cost_data = get_cost_data(filter_start, filter_end, group_by='SERVICE')
+                
+                # Build records list
+                records = []
+                for result in cost_data['ResultsByTime']:
+                    date = result['TimePeriod']['Start']
+                    
+                    for group in result['Groups']:
+                        service_name = group['Keys'][0]
+                        cost = float(group['Metrics']['UnblendedCost']['Amount'])
+                        
+                        # Apply filters
+                        if search and search.lower() not in service_name.lower():
+                            continue
+                        if services and service_name not in services:
+                            continue
+                        
+                        record = {
+                            'id': f"{date}_{service_name}",
+                            'date': date,
+                            'service': service_name,
+                            'cost': cost,
+                            'provider': 'AWS',
+                            'account': 'default',
+                            'region': 'us-east-1',
+                            'usage_type': 'Standard',
+                            'currency': 'USD'
+                        }
+                        records.append(record)
+                
+                # Sort records
+                reverse = order == 'desc'
+                if sort == 'date':
+                    records.sort(key=lambda x: x['date'], reverse=reverse)
+                elif sort == 'cost':
+                    records.sort(key=lambda x: x['cost'], reverse=reverse)
+                elif sort == 'service':
+                    records.sort(key=lambda x: x['service'], reverse=reverse)
+                
+                # Pagination
+                total = len(records)
+                start_idx = (page - 1) * limit
+                end_idx = start_idx + limit
+                paginated_records = records[start_idx:end_idx]
+                
+                return {
+                    'statusCode': 200,
+                    'headers': cors_headers,
+                    'body': json.dumps({
+                        'data': paginated_records,
+                        'pagination': {
+                            'page': page,
+                            'limit': limit,
+                            'total': total,
+                            'pages': (total + limit - 1) // limit,
+                            'has_next': end_idx < total,
+                            'has_prev': page > 1
+                        }
+                    })
+                }
+                
+            elif path.endswith('/costs'):
                 # GET /costs - Overall cost data
                 cost_data = get_cost_data(start_date, end_date)
                 
