@@ -1,0 +1,1590 @@
+<script setup>
+import { ref, onMounted, computed, watch } from 'vue';
+import { apiService } from '@/services/api';
+import flatPickr from 'vue-flatpickr-component';
+import 'flatpickr/dist/flatpickr.css';
+import { Portuguese } from 'flatpickr/dist/l10n/pt.js';
+
+// PrimeVue Components
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
+import Dropdown from 'primevue/dropdown';
+
+import Card from 'primevue/card';
+import ProgressSpinner from 'primevue/progressspinner';
+import Message from 'primevue/message';
+import InputText from 'primevue/inputtext';
+import ProgressBar from 'primevue/progressbar';
+import Sidebar from 'primevue/sidebar';
+import TabView from 'primevue/tabview';
+import TabPanel from 'primevue/tabpanel';
+
+// Componentes de gráfico
+import CostLineChart from '@/components/CostLineChart.vue';
+
+// --- ESTADO REATIVO ---
+const accounts = ref([]);
+const selectedAccount = ref(null);
+const dateRange = ref([
+  new Date(Date.now() - 29 * 24 * 60 * 60 * 1000), // 29 dias atrás
+  new Date() // hoje
+]);
+const serviceCosts = ref([]);
+const isLoading = ref(true);
+const error = ref(null);
+const searchTerm = ref('');
+
+// Estado do painel lateral
+const isDrawerVisible = ref(false);
+const selectedService = ref(null);
+const serviceTimeSeriesData = ref([]);
+const isLoadingTimeSeries = ref(false);
+const timeSeriesError = ref(null);
+
+// Estado da aba (removida aba de variação)
+const activeTab = ref(0); // 0: Visão Geral, 1: Detalhamento
+const variationData = ref(null);
+const isLoadingVariation = ref(false);
+const variationError = ref(null);
+
+// Cache para variação (removido - não mais necessário)
+
+// --- CONFIGURAÇÕES ---
+const datePickerConfig = {
+  mode: 'range',
+  dateFormat: 'd/m/Y',
+  locale: Portuguese,
+  maxDate: new Date(),
+  defaultDate: dateRange.value
+};
+
+// --- PROPRIEDADES COMPUTADAS ---
+const totalCost = computed(() => {
+  return serviceCosts.value.reduce((sum, service) => sum + service.total_cost, 0);
+});
+
+const highestCost = computed(() => {
+  if (serviceCosts.value.length === 0) return 0;
+  return Math.max(...serviceCosts.value.map(s => s.total_cost));
+});
+
+const highestCostService = computed(() => {
+  if (serviceCosts.value.length === 0) return '';
+  const highest = serviceCosts.value.find(s => s.total_cost === highestCost.value);
+  return highest ? (highest.service || highest.aws_service) : '';
+});
+
+const top3Percentage = computed(() => {
+  if (serviceCosts.value.length === 0) return 0;
+  const sorted = [...serviceCosts.value].sort((a, b) => b.total_cost - a.total_cost);
+  const top3Cost = sorted.slice(0, 3).reduce((sum, s) => sum + s.total_cost, 0);
+  return (top3Cost / totalCost.value) * 100;
+});
+
+const servicesWithPercentage = computed(() => {
+  const total = totalCost.value;
+  if (total === 0) return [];
+  
+  return serviceCosts.value.map(service => ({
+    ...service,
+    percentage: ((service.total_cost / total) * 100).toFixed(2)
+  })).sort((a, b) => b.total_cost - a.total_cost);
+});
+
+// Propriedades computadas para variação (simplificadas para sidebar)
+const hasVariationData = computed(() => {
+  return variationData.value && (
+    (variationData.value.byResource && variationData.value.byResource.length > 0) ||
+    (variationData.value.byUsageType && variationData.value.byUsageType.length > 0)
+  );
+});
+
+
+
+// Opções para o dropdown de contas
+const accountOptions = computed(() => {
+  const options = accounts.value.map(account => ({
+    label: account.name,
+    value: account.id
+  }));
+  
+  // Adicionar opção "Todas as Contas"
+  options.unshift({
+    label: 'Todas as Contas',
+    value: null
+  });
+  
+  return options;
+});
+
+
+
+// Filtro de serviços
+const filteredServices = computed(() => {
+  if (!searchTerm.value) return servicesWithPercentage.value;
+  
+  return servicesWithPercentage.value.filter(service => {
+    const serviceName = (service.service || service.aws_service || '').toLowerCase();
+    return serviceName.includes(searchTerm.value.toLowerCase());
+  });
+});
+
+// Insights complementares adicionais
+const biggestServicePercentage = computed(() => {
+  return servicesWithPercentage.value.length > 0 ? parseFloat(servicesWithPercentage.value[0].percentage) : 0;
+});
+
+const biggestServiceName = computed(() => {
+  return servicesWithPercentage.value.length > 0 ? 
+    (servicesWithPercentage.value[0].service || servicesWithPercentage.value[0].aws_service) : '';
+});
+
+const diversificationLevel = computed(() => {
+  const biggest = biggestServicePercentage.value;
+  if (biggest > 60) return 'Baixa';
+  if (biggest > 40) return 'Média';
+  return 'Alta';
+});
+
+const diversificationDesc = computed(() => {
+  const level = diversificationLevel.value;
+  if (level === 'Baixa') return 'Concentrado em poucos serviços';
+  if (level === 'Média') return 'Distribuição equilibrada';
+  return 'Bem diversificado';
+});
+
+const recommendations = computed(() => {
+  const recs = [];
+  const biggest = biggestServicePercentage.value;
+  const biggestName = biggestServiceName.value;
+  
+  if (biggest > 50) {
+    recs.push({
+      icon: 'pi pi-exclamation-triangle',
+      color: '#ff9800',
+      title: 'Alta Concentração',
+      description: `${biggestName} representa ${biggest.toFixed(1)}% dos custos. Considere otimizações específicas.`
+    });
+  }
+  
+  if (servicesWithPercentage.value.length > 10) {
+    recs.push({
+      icon: 'pi pi-eye',
+      color: '#2196f3',
+      title: 'Muitos Serviços Ativos',
+      description: `${servicesWithPercentage.value.length} serviços em uso. Revise serviços com baixo uso.`
+    });
+  }
+  
+  if (totalCost.value > 1000) {
+    recs.push({
+      icon: 'pi pi-dollar',
+      color: '#4caf50',
+      title: 'Oportunidade de Economia',
+      description: 'Custos elevados. Considere Reserved Instances ou Savings Plans.'
+    });
+  }
+  
+  if (recs.length === 0) {
+    recs.push({
+      icon: 'pi pi-check-circle',
+      color: '#4caf50',
+      title: 'Distribuição Saudável',
+      description: 'Custos bem distribuídos entre os serviços AWS.'
+    });
+  }
+  
+  return recs;
+});
+
+const formatPeriod = computed(() => {
+  if (!dateRange.value || dateRange.value.length !== 2) return '';
+  const start = new Date(dateRange.value[0]).toLocaleDateString('pt-BR');
+  const end = new Date(dateRange.value[1]).toLocaleDateString('pt-BR');
+  return `${start} - ${end}`;
+});
+
+const periodDays = computed(() => {
+  if (!dateRange.value || dateRange.value.length !== 2) return 0;
+  const start = new Date(dateRange.value[0]);
+  const end = new Date(dateRange.value[1]);
+  return Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+});
+
+const dailyAverage = computed(() => {
+  return periodDays.value > 0 ? totalCost.value / periodDays.value : 0;
+});
+
+// --- FUNÇÕES ---
+async function loadAccounts() {
+  try {
+    accounts.value = await apiService.getMemberAccounts();
+  } catch (err) {
+    error.value = 'Erro ao carregar contas: ' + err.message;
+  }
+}
+
+async function fetchData() {
+  if (!dateRange.value || dateRange.value.length !== 2) {
+    return;
+  }
+  
+  isLoading.value = true;
+  error.value = null;
+  
+  try {
+    const startDate = new Date(dateRange.value[0]);
+    const endDate = new Date(dateRange.value[1]);
+    
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      throw new Error('Datas inválidas selecionadas');
+    }
+    
+    // --- CORREÇÃO PRINCIPAL AQUI ---
+    // Preparamos as variáveis separadamente
+    const accountId = selectedAccount.value; // Pode ser nulo para "Todas as Contas"
+    const startDateStr = startDate.toISOString().split('T')[0];
+    const endDateStr = endDate.toISOString().split('T')[0];
+
+    // E passamos como TRÊS ARGUMENTOS SEPARADOS, como a api.js espera
+    serviceCosts.value = await apiService.getCostsByService(accountId, startDateStr, endDateStr);
+    
+  } catch (err) {
+    error.value = 'Erro ao carregar dados de custos: ' + err.message;
+    serviceCosts.value = [];
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+function onDateRangeChange(selectedDates) {
+  if (selectedDates.length === 2) {
+    dateRange.value = selectedDates;
+    fetchData();
+  }
+}
+
+function onAccountChange() {
+  fetchData();
+}
+
+function getRanking(service) {
+  const index = filteredServices.value.findIndex(s => 
+    (s.service || s.aws_service) === (service.service || service.aws_service)
+  );
+  return index + 1;
+}
+
+function getRankingClass(index) {
+  const ranking = index + 1;
+  if (ranking === 1) return 'rank-1';
+  if (ranking === 2) return 'rank-2';
+  if (ranking === 3) return 'rank-3';
+  return 'rank-other';
+}
+
+// Funções do painel lateral
+function onServiceClick(event) {
+  const service = event.data;
+  
+  console.log('=== SERVICE CLICKED ===');
+  console.log('Service data:', service);
+  console.log('Service name:', service.service || service.aws_service);
+  console.log('Date range:', dateRange.value);
+  console.log('======================');
+  
+  if (!service || (!service.service && !service.aws_service)) {
+    console.error('Invalid service data');
+    return;
+  }
+  
+  selectedService.value = service;
+  isDrawerVisible.value = true;
+  fetchServiceTimeSeries();
+}
+
+async function fetchServiceTimeSeries() {
+  if (!selectedService.value || !dateRange.value || dateRange.value.length !== 2) return;
+  
+  isLoadingTimeSeries.value = true;
+  timeSeriesError.value = null;
+  serviceTimeSeriesData.value = [];
+  
+  try {
+    const startDate = new Date(dateRange.value[0]).toISOString().split('T')[0];
+    const endDate = new Date(dateRange.value[1]).toISOString().split('T')[0];
+    const serviceName = selectedService.value.service || selectedService.value.aws_service;
+    
+    console.log('=== DEBUG SIDEBAR API CALL ===');
+    console.log('startDate:', startDate);
+    console.log('endDate:', endDate);
+    console.log('serviceName:', serviceName);
+    console.log('selectedAccount:', selectedAccount.value);
+    console.log('==============================');
+    
+    const params = {
+      start_date: startDate,
+      end_date: endDate,
+      service_name: serviceName
+    };
+    
+    // Adicionar aws_account_id se uma conta específica foi selecionada
+    if (selectedAccount.value !== null && selectedAccount.value !== undefined && selectedAccount.value !== '') {
+      params.aws_account_id = selectedAccount.value;
+    }
+    
+    console.log('Final params:', params);
+    serviceTimeSeriesData.value = await apiService.getTimeSeriesByService(params);
+    console.log('Time series data received:', serviceTimeSeriesData.value);
+    
+    // Carregar análise de variação para este serviço
+    await loadServiceVariationAnalysis();
+    
+  } catch (err) {
+    console.error('Error fetching time series:', err);
+    timeSeriesError.value = 'Erro ao carregar dados históricos: ' + err.message;
+    serviceTimeSeriesData.value = [];
+  } finally {
+    isLoadingTimeSeries.value = false;
+  }
+}
+
+function closeSidebar() {
+  isDrawerVisible.value = false;
+  selectedService.value = null;
+  serviceTimeSeriesData.value = [];
+  timeSeriesError.value = null;
+  // Limpar dados de variação
+  variationData.value = null;
+  variationError.value = null;
+}
+
+// --- MÉTODOS DE VARIAÇÃO (movidos para sidebar) ---
+const loadServiceVariationAnalysis = async () => {
+  if (!selectedService.value || !dateRange.value || dateRange.value.length !== 2) {
+    return;
+  }
+
+  isLoadingVariation.value = true;
+  variationError.value = null;
+
+  try {
+    const startDate = dateRange.value[0].toISOString().split('T')[0];
+    const endDate = dateRange.value[1].toISOString().split('T')[0];
+    const serviceName = selectedService.value.service || selectedService.value.aws_service;
+    
+    const params = {
+      start_date: startDate,
+      end_date: endDate,
+      service_name: serviceName,
+      min_variation: 1.0,
+      limit: 20
+    };
+
+    // Adicionar aws_account_id se uma conta específica foi selecionada
+    if (selectedAccount.value !== null && selectedAccount.value !== undefined && selectedAccount.value !== '') {
+      params.aws_account_id = selectedAccount.value;
+    }
+
+    const response = await apiService.getVariationAnalysis(params);
+    variationData.value = response;
+
+  } catch (err) {
+    console.error('Erro ao carregar análise de variação:', err);
+    variationError.value = err.response?.data?.error || err.message || 'Erro ao carregar análise de variação';
+  } finally {
+    isLoadingVariation.value = false;
+  }
+};
+
+const formatCurrency = (value) => {
+  if (value === null || value === undefined) return '$0.00';
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD'
+  }).format(value);
+};
+
+const getVariationSeverity = (percentage) => {
+  if (percentage > 50) return 'danger';
+  if (percentage > 20) return 'warning';
+  if (percentage > 0) return 'info';
+  return 'success';
+};
+
+const getVariationIcon = (percentage) => {
+  return percentage > 0 ? 'pi pi-arrow-up' : 'pi pi-arrow-down';
+};
+
+// --- LIFECYCLE ---
+onMounted(async () => {
+  await loadAccounts();
+  await fetchData();
+});
+</script>
+
+<template>
+  <div class="analysis-page">
+    <!-- Título da Página -->
+    <div class="header-section">
+      <h1>Análise por Serviço</h1>
+      <p class="page-subtitle">Distribuição detalhada dos custos por serviço AWS</p>
+    </div>
+
+    <!-- Área de Controles -->
+    <Card class="controls-card mb-4">
+      <template #content>
+        <div class="controls-grid">
+          <!-- Filtro de Contas -->
+          <div class="control-group">
+            <label for="account-dropdown" class="font-semibold mb-2 block">Conta AWS:</label>
+            <Dropdown
+              id="account-dropdown"
+              v-model="selectedAccount"
+              :options="accountOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Selecione uma conta"
+              class="w-full"
+              @change="onAccountChange"
+            />
+          </div>
+
+          <!-- Seletor de Datas -->
+          <div class="control-group">
+            <label for="date-picker" class="font-semibold mb-2 block">Período:</label>
+            <flat-pickr
+              id="date-picker"
+              v-model="dateRange"
+              :config="datePickerConfig"
+              class="date-picker w-full"
+              @on-change="onDateRangeChange"
+            />
+          </div>
+        </div>
+      </template>
+    </Card>
+
+    <!-- Estado de Loading -->
+    <div v-if="isLoading" class="loading-state">
+      <ProgressSpinner />
+      <p class="ml-3">Carregando análise de custos...</p>
+    </div>
+
+    <!-- Estado de Erro -->
+    <Message v-else-if="error" severity="error" :closable="false" class="mb-4">
+      {{ error }}
+    </Message>
+
+    <!-- Estado Vazio -->
+    <Message v-else-if="serviceCosts.length === 0" severity="info" :closable="false" class="mb-4">
+      Nenhum dado encontrado para o período e conta selecionados.
+    </Message>
+
+    <!-- Conteúdo Principal -->
+    <div v-else>
+      <!-- Tabela Principal de Serviços -->
+      <Card class="table-card mb-4">
+        <template #title>
+          <i class="pi pi-table mr-2"></i>
+          Análise Detalhada por Serviço
+        </template>
+        <template #content>
+          <!-- Campo de Busca -->
+          <div class="table-header mb-3">
+            <div class="search-container">
+              <span class="p-input-icon-left">
+                <i class="pi pi-search" />
+                <InputText 
+                  v-model="searchTerm" 
+                  placeholder="Buscar serviço..." 
+                  class="search-input"
+                />
+              </span>
+            </div>
+          </div>
+
+          <!-- DataTable Aprimorada -->
+          <DataTable 
+            :value="filteredServices" 
+            :paginator="true" 
+            :rows="15"
+            :rowsPerPageOptions="[10, 15, 25, 50]"
+            responsiveLayout="scroll"
+            size="small"
+            sortMode="multiple"
+            :sortField="'total_cost'"
+            :sortOrder="-1"
+            class="p-datatable-sm service-table"
+            @row-click="onServiceClick"
+          >
+            <!-- Coluna Serviço -->
+            <Column 
+              field="service" 
+              header="Serviço" 
+              :sortable="true"
+              style="min-width: 250px"
+            >
+              <template #body="slotProps">
+                <div class="service-cell clickable">
+                  <span class="service-name">{{ slotProps.data.service || slotProps.data.aws_service }}</span>
+                </div>
+              </template>
+            </Column>
+
+            <!-- Coluna Custo Total -->
+            <Column 
+              field="total_cost" 
+              header="Custo Total ($)" 
+              :sortable="true"
+              style="min-width: 150px; text-align: right"
+              headerStyle="text-align: right"
+            >
+              <template #body="slotProps">
+                <div class="cost-cell">
+                  <span class="cost-value">${{ slotProps.data.total_cost.toFixed(2) }}</span>
+                </div>
+              </template>
+            </Column>
+
+            <!-- Coluna % do Total com ProgressBar -->
+            <Column 
+              field="percentage" 
+              header="% do Total" 
+              :sortable="true"
+              style="min-width: 200px; text-align: right"
+              headerStyle="text-align: right"
+            >
+              <template #body="slotProps">
+                <div class="percentage-cell">
+                  <div class="percentage-content">
+                    <span class="percentage-text">{{ slotProps.data.percentage }}%</span>
+                    <ProgressBar 
+                      :value="parseFloat(slotProps.data.percentage)" 
+                      class="percentage-bar"
+                      :showValue="false"
+                    />
+                  </div>
+                </div>
+              </template>
+          </DataTable>
+        </template>
+      </Card>
+    </div>
+
+    </div>
+
+    <!-- Painel Lateral - Detalhes do Serviço -->
+    <Sidebar 
+      v-model:visible="isDrawerVisible" 
+      position="right" 
+      class="service-details-sidebar"
+      :style="{ width: '50vw' }"
+      @hide="closeSidebar"
+    >
+      <template #header>
+        <div class="sidebar-header">
+          <h3>
+            <i class="pi pi-chart-line mr-2"></i>
+            {{ selectedService?.service || selectedService?.aws_service }}
+          </h3>
+          <p class="sidebar-subtitle">Evolução histórica de custos</p>
+        </div>
+      </template>
+
+      <div class="sidebar-content">
+        <!-- Loading -->
+        <div v-if="isLoadingTimeSeries" class="sidebar-loading">
+          <ProgressSpinner />
+          <p class="ml-3">Carregando dados históricos...</p>
+        </div>
+
+        <!-- Erro -->
+        <Message v-else-if="timeSeriesError" severity="error" :closable="false" class="mb-3">
+          {{ timeSeriesError }}
+        </Message>
+
+        <!-- Dados Vazios -->
+        <Message v-else-if="serviceTimeSeriesData.length === 0" severity="info" :closable="false" class="mb-3">
+          Nenhum dado histórico encontrado para este serviço no período selecionado.
+        </Message>
+
+        <!-- Gráfico -->
+        <div v-else class="sidebar-chart">
+          <Card>
+            <template #title>
+              Evolução de Custos - {{ selectedService?.service || selectedService?.aws_service }}
+            </template>
+            <template #content>
+              <div class="chart-container-sidebar">
+                <CostLineChart 
+                  :chartData="{
+                    labels: serviceTimeSeriesData.map(d => new Date(d.date).toLocaleDateString('pt-BR')),
+                    datasets: [{
+                      label: selectedService?.service || selectedService?.aws_service,
+                      data: serviceTimeSeriesData.map(d => d.cost),
+                      borderColor: '#007BFF',
+                      backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                      tension: 0.4,
+                      fill: true
+                    }]
+                  }"
+                  :chartOptions="{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        display: false
+                      }
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        ticks: {
+                          callback: function(value) {
+                            return '$' + value.toFixed(2);
+                          }
+                        }
+                      }
+                    }
+                  }"
+                />
+              </div>
+            </template>
+          </Card>
+
+          <!-- Estatísticas do Serviço -->
+          <Card class="mt-3">
+            <template #title>Estatísticas do Período</template>
+            <template #content>
+              <div class="service-stats">
+                <div class="stat-item">
+                  <span class="stat-label">Custo Total:</span>
+                  <span class="stat-value">
+                    ${{ serviceTimeSeriesData.reduce((sum, d) => sum + d.cost, 0).toFixed(2) }}
+                  </span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Custo Médio Diário:</span>
+                  <span class="stat-value">
+                    ${{ (serviceTimeSeriesData.reduce((sum, d) => sum + d.cost, 0) / serviceTimeSeriesData.length).toFixed(2) }}
+                  </span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Maior Custo:</span>
+                  <span class="stat-value">
+                    ${{ Math.max(...serviceTimeSeriesData.map(d => d.cost)).toFixed(2) }}
+                  </span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Menor Custo:</span>
+                  <span class="stat-value">
+                    ${{ Math.min(...serviceTimeSeriesData.map(d => d.cost)).toFixed(2) }}
+                  </span>
+                </div>
+              </div>
+            </template>
+          </Card>
+
+          <!-- Análise de Variação do Serviço -->
+          <Card class="mt-3">
+            <template #title>
+              <div class="flex items-center justify-between">
+                <span>Análise de Variação</span>
+                <i v-if="isLoadingVariation" class="pi pi-spin pi-spinner"></i>
+              </div>
+            </template>
+            <template #content>
+              <!-- Loading -->
+              <div v-if="isLoadingVariation" class="flex justify-center items-center py-8">
+                <ProgressSpinner />
+                <span class="ml-3 text-gray-600">Analisando variações...</span>
+              </div>
+
+              <!-- Error -->
+              <Message v-else-if="variationError" severity="error" class="mb-4">
+                {{ variationError }}
+              </Message>
+
+              <!-- Dados de Variação -->
+              <div v-else-if="hasVariationData" class="space-y-4">
+                <!-- Resumo -->
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="text-center p-3 bg-blue-50 rounded-lg">
+                    <div class="text-lg font-bold text-blue-600">
+                      {{ variationData?.byResource?.length || 0 }}
+                    </div>
+                    <div class="text-xs text-gray-600">Recursos</div>
+                  </div>
+                  <div class="text-center p-3 bg-green-50 rounded-lg">
+                    <div class="text-lg font-bold text-green-600">
+                      {{ variationData?.byUsageType?.length || 0 }}
+                    </div>
+                    <div class="text-xs text-gray-600">Tipos de Uso</div>
+                  </div>
+                </div>
+
+                <!-- Top Variações por Recurso -->
+                <div v-if="variationData?.byResource?.length > 0">
+                  <h4 class="font-semibold mb-2 text-sm">Top Variações por Recurso</h4>
+                  <div class="space-y-2">
+                    <div 
+                      v-for="resource in variationData.byResource.slice(0, 5)" 
+                      :key="resource.resourceId"
+                      class="flex justify-between items-center p-2 bg-gray-50 rounded text-sm"
+                    >
+                      <span class="font-mono text-xs truncate flex-1 mr-2">
+                        {{ resource.resourceId }}
+                      </span>
+                      <div class="flex items-center gap-1">
+                        <i :class="getVariationIcon(resource.variationPercent)" class="text-xs"></i>
+                        <span :class="resource.variation > 0 ? 'text-red-600' : 'text-green-600'" class="font-semibold">
+                          {{ formatCurrency(resource.variation) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Top Variações por Tipo de Uso -->
+                <div v-if="variationData?.byUsageType?.length > 0">
+                  <h4 class="font-semibold mb-2 text-sm">Top Variações por Tipo de Uso</h4>
+                  <div class="space-y-2">
+                    <div 
+                      v-for="usage in variationData.byUsageType.slice(0, 5)" 
+                      :key="usage.usageType"
+                      class="flex justify-between items-center p-2 bg-gray-50 rounded text-sm"
+                    >
+                      <span class="truncate flex-1 mr-2">
+                        {{ usage.usageType }}
+                      </span>
+                      <div class="flex items-center gap-1">
+                        <i :class="getVariationIcon(usage.variationPercent)" class="text-xs"></i>
+                        <span :class="usage.variation > 0 ? 'text-red-600' : 'text-green-600'" class="font-semibold">
+                          {{ formatCurrency(usage.variation) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Estado Vazio -->
+              <div v-else class="text-center py-8 text-gray-500">
+                <i class="pi pi-chart-line text-3xl mb-2"></i>
+                <p class="text-sm">Nenhuma variação significativa encontrada</p>
+              </div>
+            </template>
+          </Card>
+        </div>
+      </div>
+    </Sidebar>
+  </div>
+</template>
+
+<style scoped>
+.analysis-page {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Header */
+.header-section {
+  margin-bottom: 2rem;
+}
+
+.header-section h1 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.page-subtitle {
+  color: #666;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.mb-4 {
+  margin-bottom: 2rem;
+}
+
+/* Controles */
+.controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.date-picker {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+/* Estados */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #666;
+}
+
+/* KPIs */
+.kpis-section {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.kpi-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.kpi-card:nth-child(2) {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.kpi-card:nth-child(3) {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.kpi-card:nth-child(4) {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.kpi-content {
+  display: flex;
+  align-items: center;
+  padding: 1.5rem;
+  color: white;
+}
+
+.kpi-icon {
+  font-size: 2.5rem;
+  margin-right: 1rem;
+}
+
+.kpi-info h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.kpi-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1;
+}
+
+.kpi-subtitle {
+  font-size: 0.8rem;
+  margin: 0.25rem 0 0 0;
+  opacity: 0.8;
+}
+
+
+
+/* Campo de Busca */
+.table-header {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.search-container {
+  max-width: 350px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  border-color: #007BFF;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.p-input-icon-left > i {
+  left: 1rem;
+  color: #6c757d;
+}
+
+/* Tabela Principal */
+.service-table {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.service-table :deep(.p-datatable-thead > tr > th) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+  padding: 1rem;
+  border: none;
+}
+
+.service-table :deep(.p-datatable-tbody > tr) {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.service-table :deep(.p-datatable-tbody > tr:hover) {
+  background-color: #f8f9fa !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.service-table :deep(.p-datatable-tbody > tr > td) {
+  padding: 1rem;
+  vertical-align: middle;
+}
+
+/* Células da Tabela */
+.service-cell.clickable {
+  cursor: pointer;
+}
+
+.service-name {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.service-cell.clickable:hover .service-name {
+  color: #007BFF;
+  text-decoration: underline;
+}
+
+.cost-cell {
+  text-align: right;
+}
+
+.cost-value {
+  font-weight: 700;
+  color: #333;
+  font-size: 1rem;
+}
+
+.percentage-cell {
+  text-align: right;
+}
+
+.percentage-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.percentage-text {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+  min-width: 50px;
+}
+
+.percentage-bar {
+  width: 100px;
+  height: 8px;
+}
+
+.percentage-bar :deep(.p-progressbar) {
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.percentage-bar :deep(.p-progressbar-value) {
+  background: linear-gradient(90deg, #007BFF, #0056b3);
+  transition: width 0.3s ease;
+}
+
+/* Ranking */
+.ranking-container {
+  display: flex;
+  justify-content: center;
+}
+
+.ranking-badge {
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: white;
+  text-align: center;
+  min-width: 40px;
+}
+
+.rank-1 {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+}
+
+.rank-2 {
+  background: linear-gradient(135deg, #C0C0C0, #A0A0A0);
+  box-shadow: 0 2px 8px rgba(192, 192, 192, 0.3);
+}
+
+.rank-3 {
+  background: linear-gradient(135deg, #CD7F32, #B8860B);
+  box-shadow: 0 2px 8px rgba(205, 127, 50, 0.3);
+}
+
+.rank-other {
+  background: linear-gradient(135deg, #6c757d, #495057);
+}
+
+/* Variação */
+.variation-container {
+  display: flex;
+  justify-content: center;
+}
+
+.variation-badge {
+  padding: 0.3rem 0.6rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.variation-up {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+}
+
+.variation-down {
+  background: linear-gradient(135deg, #28a745, #1e7e34);
+}
+
+.variation-neutral {
+  background: linear-gradient(135deg, #6c757d, #495057);
+}
+
+/* Responsividade */
+@media (max-width: 1200px) {
+  .kpis-section {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .insights-complementares {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .controls-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .kpis-section {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .search-container {
+    max-width: 100%;
+  }
+  
+  .service-table :deep(.p-datatable-thead > tr > th),
+  .service-table :deep(.p-datatable-tbody > tr > td) {
+    padding: 0.75rem 0.5rem;
+  }
+  
+  .percentage-content {
+    align-items: center;
+  }
+  
+  .percentage-bar {
+    width: 80px;
+  }
+}
+
+
+
+/* Painel Lateral */
+.service-details-sidebar {
+  z-index: 1000;
+}
+
+.sidebar-header h3 {
+  color: #333;
+  margin: 0 0 0.5rem 0;
+}
+
+.sidebar-subtitle {
+  color: #666;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.sidebar-content {
+  padding: 1rem 0;
+}
+
+.sidebar-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.chart-container-sidebar {
+  height: 300px;
+  position: relative;
+}
+
+.service-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.mt-3 {
+  margin-top: 1rem;
+}
+
+/* Insights Complementares */
+.insights-complementares {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.insight-card {
+  height: fit-content;
+}
+
+/* Métricas de Concentração */
+.concentration-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.metric-item {
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 4px solid #007BFF;
+}
+
+.metric-label {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.metric-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #007BFF;
+  margin-bottom: 0.1rem;
+}
+
+.metric-desc {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+/* Recomendações */
+.recommendations {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.recommendation-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 0.75rem;
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.recommendation-item:hover {
+  border-color: #007BFF;
+  box-shadow: 0 2px 8px rgba(0,123,255,0.1);
+}
+
+.recommendation-item i {
+  font-size: 1.2rem;
+  margin-right: 0.75rem;
+  margin-top: 0.1rem;
+}
+
+.rec-content {
+  flex: 1;
+}
+
+.rec-title {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.rec-desc {
+  color: #666;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+/* Informações do Período */
+.period-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.period-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.period-label {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.period-value {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.85rem;
+}
+
+/* Estilos para abas */
+.analysis-tabs {
+  margin-top: 1rem;
+}
+
+.analysis-tabs :deep(.p-tabview-nav) {
+  background: #f8f9fa;
+  border-radius: 8px 8px 0 0;
+}
+
+.analysis-tabs :deep(.p-tabview-nav-link) {
+  padding: 1rem 1.5rem;
+  font-weight: 500;
+}
+
+.analysis-tabs :deep(.p-tabview-panels) {
+  background: white;
+  border-radius: 0 0 8px 8px;
+  padding: 1.5rem;
+}
+
+/* Estilos para variação */
+.grid {
+  display: grid;
+}
+
+.grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.gap-4 {
+  gap: 1rem;
+}
+
+.gap-6 {
+  gap: 1.5rem;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-end {
+  justify-content: flex-end;
+}
+
+.space-y-6 > * + * {
+  margin-top: 1.5rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+}
+
+.text-xl {
+  font-size: 1.25rem;
+}
+
+.text-2xl {
+  font-size: 1.5rem;
+}
+
+.text-6xl {
+  font-size: 4rem;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.font-mono {
+  font-family: monospace;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
+.ml-3 {
+  margin-left: 0.75rem;
+}
+
+.mr-2 {
+  margin-right: 0.5rem;
+}
+
+.p-4 {
+  padding: 1rem;
+}
+
+.py-12 {
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+.px-4 {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.py-2 {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.h-full {
+  height: 100%;
+}
+
+.h-80 {
+  height: 20rem;
+}
+
+.rounded {
+  border-radius: 0.25rem;
+}
+
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+
+/* Cores */
+.bg-blue-50 {
+  background-color: #eff6ff;
+}
+
+.bg-green-50 {
+  background-color: #f0fdf4;
+}
+
+.bg-red-50 {
+  background-color: #fef2f2;
+}
+
+.bg-yellow-50 {
+  background-color: #fffbeb;
+}
+
+.bg-blue-600 {
+  background-color: #2563eb;
+}
+
+.bg-blue-700 {
+  background-color: #1d4ed8;
+}
+
+.text-blue-600 {
+  color: #2563eb;
+}
+
+.text-green-600 {
+  color: #16a34a;
+}
+
+.text-red-600 {
+  color: #dc2626;
+}
+
+.text-yellow-600 {
+  color: #d97706;
+}
+
+.text-gray-500 {
+  color: #6b7280;
+}
+
+.text-gray-600 {
+  color: #4b5563;
+}
+
+.text-white {
+  color: white;
+}
+
+.hover\:bg-blue-700:hover {
+  background-color: #1d4ed8;
+}
+
+.disabled\:opacity-50:disabled {
+  opacity: 0.5;
+}
+
+/* Responsividade */
+@media (min-width: 768px) {
+  .md\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .lg\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
+  .lg\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .xl\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Estilos para ranking */
+.ranking-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  min-width: 2rem;
+}
+
+.rank-1 {
+  background-color: #ffd700;
+  color: #b45309;
+}
+
+.rank-2 {
+  background-color: #c0c0c0;
+  color: #374151;
+}
+
+.rank-3 {
+  background-color: #cd7f32;
+  color: #ffffff;
+}
+
+.rank-other {
+  background-color: #e5e7eb;
+  color: #6b7280;
+}
+</style>

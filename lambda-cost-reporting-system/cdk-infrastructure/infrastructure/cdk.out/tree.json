@@ -1,0 +1,1462 @@
+{
+  "version": "tree-0.1",
+  "tree": {
+    "id": "App",
+    "path": "",
+    "children": {
+      "costshub-frontend-api-dev": {
+        "id": "costshub-frontend-api-dev",
+        "path": "costshub-frontend-api-dev",
+        "children": {
+          "APIHandler": {
+            "id": "APIHandler",
+            "path": "costshub-frontend-api-dev/APIHandler",
+            "children": {
+              "ServiceRole": {
+                "id": "ServiceRole",
+                "path": "costshub-frontend-api-dev/APIHandler/ServiceRole",
+                "children": {
+                  "ImportServiceRole": {
+                    "id": "ImportServiceRole",
+                    "path": "costshub-frontend-api-dev/APIHandler/ServiceRole/ImportServiceRole",
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.Resource",
+                      "version": "2.122.0"
+                    }
+                  },
+                  "Resource": {
+                    "id": "Resource",
+                    "path": "costshub-frontend-api-dev/APIHandler/ServiceRole/Resource",
+                    "attributes": {
+                      "aws:cdk:cloudformation:type": "AWS::IAM::Role",
+                      "aws:cdk:cloudformation:props": {
+                        "assumeRolePolicyDocument": {
+                          "Statement": [
+                            {
+                              "Action": "sts:AssumeRole",
+                              "Effect": "Allow",
+                              "Principal": {
+                                "Service": "lambda.amazonaws.com"
+                              }
+                            }
+                          ],
+                          "Version": "2012-10-17"
+                        },
+                        "managedPolicyArns": [
+                          {
+                            "Fn::Join": [
+                              "",
+                              [
+                                "arn:",
+                                {
+                                  "Ref": "AWS::Partition"
+                                },
+                                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                              ]
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_iam.CfnRole",
+                      "version": "2.122.0"
+                    }
+                  },
+                  "DefaultPolicy": {
+                    "id": "DefaultPolicy",
+                    "path": "costshub-frontend-api-dev/APIHandler/ServiceRole/DefaultPolicy",
+                    "children": {
+                      "Resource": {
+                        "id": "Resource",
+                        "path": "costshub-frontend-api-dev/APIHandler/ServiceRole/DefaultPolicy/Resource",
+                        "attributes": {
+                          "aws:cdk:cloudformation:type": "AWS::IAM::Policy",
+                          "aws:cdk:cloudformation:props": {
+                            "policyDocument": {
+                              "Statement": [
+                                {
+                                  "Action": [
+                                    "dynamodb:DeleteItem",
+                                    "dynamodb:GetItem",
+                                    "dynamodb:PutItem",
+                                    "dynamodb:Query",
+                                    "dynamodb:Scan",
+                                    "dynamodb:UpdateItem"
+                                  ],
+                                  "Effect": "Allow",
+                                  "Resource": "arn:aws:dynamodb:us-east-1:008195334540:table/costhub-accounts"
+                                },
+                                {
+                                  "Action": [
+                                    "ce:GetCostAndUsage",
+                                    "ce:GetDimensionValues",
+                                    "ce:GetReservationCoverage",
+                                    "ce:GetReservationPurchaseRecommendation",
+                                    "ce:GetReservationUtilization",
+                                    "ce:GetRightsizingRecommendation",
+                                    "ce:GetUsageReport"
+                                  ],
+                                  "Effect": "Allow",
+                                  "Resource": "*"
+                                }
+                              ],
+                              "Version": "2012-10-17"
+                            },
+                            "policyName": "APIHandlerServiceRoleDefaultPolicy3C24A6E6",
+                            "roles": [
+                              {
+                                "Ref": "APIHandlerServiceRole41BB65E0"
+                              }
+                            ]
+                          }
+                        },
+                        "constructInfo": {
+                          "fqn": "aws-cdk-lib.aws_iam.CfnPolicy",
+                          "version": "2.122.0"
+                        }
+                      }
+                    },
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_iam.Policy",
+                      "version": "2.122.0"
+                    }
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_iam.Role",
+                  "version": "2.122.0"
+                }
+              },
+              "Code": {
+                "id": "Code",
+                "path": "costshub-frontend-api-dev/APIHandler/Code",
+                "children": {
+                  "Stage": {
+                    "id": "Stage",
+                    "path": "costshub-frontend-api-dev/APIHandler/Code/Stage",
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.AssetStaging",
+                      "version": "2.122.0"
+                    }
+                  },
+                  "AssetBucket": {
+                    "id": "AssetBucket",
+                    "path": "costshub-frontend-api-dev/APIHandler/Code/AssetBucket",
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_s3.BucketBase",
+                      "version": "2.122.0"
+                    }
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_s3_assets.Asset",
+                  "version": "2.122.0"
+                }
+              },
+              "Resource": {
+                "id": "Resource",
+                "path": "costshub-frontend-api-dev/APIHandler/Resource",
+                "attributes": {
+                  "aws:cdk:cloudformation:type": "AWS::Lambda::Function",
+                  "aws:cdk:cloudformation:props": {
+                    "code": {
+                      "s3Bucket": "cdk-hnb659fds-assets-008195334540-us-east-1",
+                      "s3Key": "cd501f019836c1257f07b4c0a84129f485c043f234e879f69bc9d8df805706e3.zip"
+                    },
+                    "description": "API Gateway Handler for Frontend Integration",
+                    "environment": {
+                      "variables": {
+                        "CORS_ALLOWED_ORIGINS": "https://costhub.4bfast.com.br,https://www.costhub.4bfast.com.br",
+                        "LOG_LEVEL": "INFO"
+                      }
+                    },
+                    "handler": "simple_handlers.api_gateway_handler_simple.lambda_handler",
+                    "memorySize": 512,
+                    "role": {
+                      "Fn::GetAtt": [
+                        "APIHandlerServiceRole41BB65E0",
+                        "Arn"
+                      ]
+                    },
+                    "runtime": "python3.11",
+                    "timeout": 30
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_lambda.CfnFunction",
+                  "version": "2.122.0"
+                }
+              }
+            },
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.aws_lambda.Function",
+              "version": "2.122.0"
+            }
+          },
+          "UserPool": {
+            "id": "UserPool",
+            "path": "costshub-frontend-api-dev/UserPool",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.Resource",
+              "version": "2.122.0"
+            }
+          },
+          "CognitoAuthorizer": {
+            "id": "CognitoAuthorizer",
+            "path": "costshub-frontend-api-dev/CognitoAuthorizer",
+            "children": {
+              "Resource": {
+                "id": "Resource",
+                "path": "costshub-frontend-api-dev/CognitoAuthorizer/Resource",
+                "attributes": {
+                  "aws:cdk:cloudformation:type": "AWS::ApiGateway::Authorizer",
+                  "aws:cdk:cloudformation:props": {
+                    "identitySource": "method.request.header.Authorization",
+                    "name": "costshubfrontendapidevCognitoAuthorizerA3DC47A8",
+                    "providerArns": [
+                      "arn:aws:cognito-idp:us-east-1:008195334540:userpool/us-east-1_94OYkzcSO"
+                    ],
+                    "restApiId": {
+                      "Ref": "FrontendAPI00E92687"
+                    },
+                    "type": "COGNITO_USER_POOLS"
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_apigateway.CfnAuthorizer",
+                  "version": "2.122.0"
+                }
+              }
+            },
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.aws_apigateway.CognitoUserPoolsAuthorizer",
+              "version": "2.122.0"
+            }
+          },
+          "FrontendAPI": {
+            "id": "FrontendAPI",
+            "path": "costshub-frontend-api-dev/FrontendAPI",
+            "children": {
+              "Resource": {
+                "id": "Resource",
+                "path": "costshub-frontend-api-dev/FrontendAPI/Resource",
+                "attributes": {
+                  "aws:cdk:cloudformation:type": "AWS::ApiGateway::RestApi",
+                  "aws:cdk:cloudformation:props": {
+                    "description": "CostHub Frontend API with Authentication",
+                    "name": "costhub-frontend-api"
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_apigateway.CfnRestApi",
+                  "version": "2.122.0"
+                }
+              },
+              "Deployment": {
+                "id": "Deployment",
+                "path": "costshub-frontend-api-dev/FrontendAPI/Deployment",
+                "children": {
+                  "Resource": {
+                    "id": "Resource",
+                    "path": "costshub-frontend-api-dev/FrontendAPI/Deployment/Resource",
+                    "attributes": {
+                      "aws:cdk:cloudformation:type": "AWS::ApiGateway::Deployment",
+                      "aws:cdk:cloudformation:props": {
+                        "description": "CostHub Frontend API with Authentication",
+                        "restApiId": {
+                          "Ref": "FrontendAPI00E92687"
+                        }
+                      }
+                    },
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_apigateway.CfnDeployment",
+                      "version": "2.122.0"
+                    }
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_apigateway.Deployment",
+                  "version": "2.122.0"
+                }
+              },
+              "DeploymentStage.prod": {
+                "id": "DeploymentStage.prod",
+                "path": "costshub-frontend-api-dev/FrontendAPI/DeploymentStage.prod",
+                "children": {
+                  "Resource": {
+                    "id": "Resource",
+                    "path": "costshub-frontend-api-dev/FrontendAPI/DeploymentStage.prod/Resource",
+                    "attributes": {
+                      "aws:cdk:cloudformation:type": "AWS::ApiGateway::Stage",
+                      "aws:cdk:cloudformation:props": {
+                        "deploymentId": {
+                          "Ref": "FrontendAPIDeploymentBE18F28E3559b0b83ca7bd841648e57f074c0e95"
+                        },
+                        "methodSettings": [
+                          {
+                            "httpMethod": "*",
+                            "resourcePath": "/*",
+                            "dataTraceEnabled": false,
+                            "throttlingBurstLimit": 2000,
+                            "throttlingRateLimit": 1000
+                          }
+                        ],
+                        "restApiId": {
+                          "Ref": "FrontendAPI00E92687"
+                        },
+                        "stageName": "prod"
+                      }
+                    },
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_apigateway.CfnStage",
+                      "version": "2.122.0"
+                    }
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_apigateway.Stage",
+                  "version": "2.122.0"
+                }
+              },
+              "Endpoint": {
+                "id": "Endpoint",
+                "path": "costshub-frontend-api-dev/FrontendAPI/Endpoint",
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.CfnOutput",
+                  "version": "2.122.0"
+                }
+              },
+              "Default": {
+                "id": "Default",
+                "path": "costshub-frontend-api-dev/FrontendAPI/Default",
+                "children": {
+                  "OPTIONS": {
+                    "id": "OPTIONS",
+                    "path": "costshub-frontend-api-dev/FrontendAPI/Default/OPTIONS",
+                    "children": {
+                      "Resource": {
+                        "id": "Resource",
+                        "path": "costshub-frontend-api-dev/FrontendAPI/Default/OPTIONS/Resource",
+                        "attributes": {
+                          "aws:cdk:cloudformation:type": "AWS::ApiGateway::Method",
+                          "aws:cdk:cloudformation:props": {
+                            "apiKeyRequired": false,
+                            "authorizationType": "NONE",
+                            "httpMethod": "OPTIONS",
+                            "integration": {
+                              "type": "MOCK",
+                              "requestTemplates": {
+                                "application/json": "{ statusCode: 200 }"
+                              },
+                              "integrationResponses": [
+                                {
+                                  "statusCode": "204",
+                                  "responseParameters": {
+                                    "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Requested-With,x-request-id,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+                                    "method.response.header.Access-Control-Allow-Origin": "'https://costhub.4bfast.com.br'",
+                                    "method.response.header.Vary": "'Origin'",
+                                    "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+                                    "method.response.header.Access-Control-Allow-Credentials": "'true'"
+                                  },
+                                  "responseTemplates": {
+                                    "application/json": "#set($origin = $input.params().header.get(\"Origin\"))\n#if($origin == \"\")\n  #set($origin = $input.params().header.get(\"origin\"))\n#end\n#if($origin == \"https://www.costhub.4bfast.com.br\")\n  #set($context.responseOverride.header.Access-Control-Allow-Origin = $origin)\n#end"
+                                  }
+                                }
+                              ]
+                            },
+                            "methodResponses": [
+                              {
+                                "statusCode": "204",
+                                "responseParameters": {
+                                  "method.response.header.Access-Control-Allow-Headers": true,
+                                  "method.response.header.Access-Control-Allow-Origin": true,
+                                  "method.response.header.Vary": true,
+                                  "method.response.header.Access-Control-Allow-Methods": true,
+                                  "method.response.header.Access-Control-Allow-Credentials": true
+                                }
+                              }
+                            ],
+                            "resourceId": {
+                              "Fn::GetAtt": [
+                                "FrontendAPI00E92687",
+                                "RootResourceId"
+                              ]
+                            },
+                            "restApiId": {
+                              "Ref": "FrontendAPI00E92687"
+                            }
+                          }
+                        },
+                        "constructInfo": {
+                          "fqn": "aws-cdk-lib.aws_apigateway.CfnMethod",
+                          "version": "2.122.0"
+                        }
+                      }
+                    },
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_apigateway.Method",
+                      "version": "2.122.0"
+                    }
+                  },
+                  "api": {
+                    "id": "api",
+                    "path": "costshub-frontend-api-dev/FrontendAPI/Default/api",
+                    "children": {
+                      "Resource": {
+                        "id": "Resource",
+                        "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/Resource",
+                        "attributes": {
+                          "aws:cdk:cloudformation:type": "AWS::ApiGateway::Resource",
+                          "aws:cdk:cloudformation:props": {
+                            "parentId": {
+                              "Fn::GetAtt": [
+                                "FrontendAPI00E92687",
+                                "RootResourceId"
+                              ]
+                            },
+                            "pathPart": "api",
+                            "restApiId": {
+                              "Ref": "FrontendAPI00E92687"
+                            }
+                          }
+                        },
+                        "constructInfo": {
+                          "fqn": "aws-cdk-lib.aws_apigateway.CfnResource",
+                          "version": "2.122.0"
+                        }
+                      },
+                      "OPTIONS": {
+                        "id": "OPTIONS",
+                        "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/OPTIONS",
+                        "children": {
+                          "Resource": {
+                            "id": "Resource",
+                            "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/OPTIONS/Resource",
+                            "attributes": {
+                              "aws:cdk:cloudformation:type": "AWS::ApiGateway::Method",
+                              "aws:cdk:cloudformation:props": {
+                                "apiKeyRequired": false,
+                                "authorizationType": "NONE",
+                                "httpMethod": "OPTIONS",
+                                "integration": {
+                                  "type": "MOCK",
+                                  "requestTemplates": {
+                                    "application/json": "{ statusCode: 200 }"
+                                  },
+                                  "integrationResponses": [
+                                    {
+                                      "statusCode": "204",
+                                      "responseParameters": {
+                                        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Requested-With,x-request-id,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+                                        "method.response.header.Access-Control-Allow-Origin": "'https://costhub.4bfast.com.br'",
+                                        "method.response.header.Vary": "'Origin'",
+                                        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+                                        "method.response.header.Access-Control-Allow-Credentials": "'true'"
+                                      },
+                                      "responseTemplates": {
+                                        "application/json": "#set($origin = $input.params().header.get(\"Origin\"))\n#if($origin == \"\")\n  #set($origin = $input.params().header.get(\"origin\"))\n#end\n#if($origin == \"https://www.costhub.4bfast.com.br\")\n  #set($context.responseOverride.header.Access-Control-Allow-Origin = $origin)\n#end"
+                                      }
+                                    }
+                                  ]
+                                },
+                                "methodResponses": [
+                                  {
+                                    "statusCode": "204",
+                                    "responseParameters": {
+                                      "method.response.header.Access-Control-Allow-Headers": true,
+                                      "method.response.header.Access-Control-Allow-Origin": true,
+                                      "method.response.header.Vary": true,
+                                      "method.response.header.Access-Control-Allow-Methods": true,
+                                      "method.response.header.Access-Control-Allow-Credentials": true
+                                    }
+                                  }
+                                ],
+                                "resourceId": {
+                                  "Ref": "FrontendAPIapi928960A9"
+                                },
+                                "restApiId": {
+                                  "Ref": "FrontendAPI00E92687"
+                                }
+                              }
+                            },
+                            "constructInfo": {
+                              "fqn": "aws-cdk-lib.aws_apigateway.CfnMethod",
+                              "version": "2.122.0"
+                            }
+                          }
+                        },
+                        "constructInfo": {
+                          "fqn": "aws-cdk-lib.aws_apigateway.Method",
+                          "version": "2.122.0"
+                        }
+                      },
+                      "v1": {
+                        "id": "v1",
+                        "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1",
+                        "children": {
+                          "Resource": {
+                            "id": "Resource",
+                            "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/Resource",
+                            "attributes": {
+                              "aws:cdk:cloudformation:type": "AWS::ApiGateway::Resource",
+                              "aws:cdk:cloudformation:props": {
+                                "parentId": {
+                                  "Ref": "FrontendAPIapi928960A9"
+                                },
+                                "pathPart": "v1",
+                                "restApiId": {
+                                  "Ref": "FrontendAPI00E92687"
+                                }
+                              }
+                            },
+                            "constructInfo": {
+                              "fqn": "aws-cdk-lib.aws_apigateway.CfnResource",
+                              "version": "2.122.0"
+                            }
+                          },
+                          "OPTIONS": {
+                            "id": "OPTIONS",
+                            "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/OPTIONS",
+                            "children": {
+                              "Resource": {
+                                "id": "Resource",
+                                "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/OPTIONS/Resource",
+                                "attributes": {
+                                  "aws:cdk:cloudformation:type": "AWS::ApiGateway::Method",
+                                  "aws:cdk:cloudformation:props": {
+                                    "apiKeyRequired": false,
+                                    "authorizationType": "NONE",
+                                    "httpMethod": "OPTIONS",
+                                    "integration": {
+                                      "type": "MOCK",
+                                      "requestTemplates": {
+                                        "application/json": "{ statusCode: 200 }"
+                                      },
+                                      "integrationResponses": [
+                                        {
+                                          "statusCode": "204",
+                                          "responseParameters": {
+                                            "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Requested-With,x-request-id,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+                                            "method.response.header.Access-Control-Allow-Origin": "'https://costhub.4bfast.com.br'",
+                                            "method.response.header.Vary": "'Origin'",
+                                            "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+                                            "method.response.header.Access-Control-Allow-Credentials": "'true'"
+                                          },
+                                          "responseTemplates": {
+                                            "application/json": "#set($origin = $input.params().header.get(\"Origin\"))\n#if($origin == \"\")\n  #set($origin = $input.params().header.get(\"origin\"))\n#end\n#if($origin == \"https://www.costhub.4bfast.com.br\")\n  #set($context.responseOverride.header.Access-Control-Allow-Origin = $origin)\n#end"
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    "methodResponses": [
+                                      {
+                                        "statusCode": "204",
+                                        "responseParameters": {
+                                          "method.response.header.Access-Control-Allow-Headers": true,
+                                          "method.response.header.Access-Control-Allow-Origin": true,
+                                          "method.response.header.Vary": true,
+                                          "method.response.header.Access-Control-Allow-Methods": true,
+                                          "method.response.header.Access-Control-Allow-Credentials": true
+                                        }
+                                      }
+                                    ],
+                                    "resourceId": {
+                                      "Ref": "FrontendAPIapiv10C580F49"
+                                    },
+                                    "restApiId": {
+                                      "Ref": "FrontendAPI00E92687"
+                                    }
+                                  }
+                                },
+                                "constructInfo": {
+                                  "fqn": "aws-cdk-lib.aws_apigateway.CfnMethod",
+                                  "version": "2.122.0"
+                                }
+                              }
+                            },
+                            "constructInfo": {
+                              "fqn": "aws-cdk-lib.aws_apigateway.Method",
+                              "version": "2.122.0"
+                            }
+                          },
+                          "auth": {
+                            "id": "auth",
+                            "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth",
+                            "children": {
+                              "Resource": {
+                                "id": "Resource",
+                                "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/Resource",
+                                "attributes": {
+                                  "aws:cdk:cloudformation:type": "AWS::ApiGateway::Resource",
+                                  "aws:cdk:cloudformation:props": {
+                                    "parentId": {
+                                      "Ref": "FrontendAPIapiv10C580F49"
+                                    },
+                                    "pathPart": "auth",
+                                    "restApiId": {
+                                      "Ref": "FrontendAPI00E92687"
+                                    }
+                                  }
+                                },
+                                "constructInfo": {
+                                  "fqn": "aws-cdk-lib.aws_apigateway.CfnResource",
+                                  "version": "2.122.0"
+                                }
+                              },
+                              "OPTIONS": {
+                                "id": "OPTIONS",
+                                "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/OPTIONS",
+                                "children": {
+                                  "Resource": {
+                                    "id": "Resource",
+                                    "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/OPTIONS/Resource",
+                                    "attributes": {
+                                      "aws:cdk:cloudformation:type": "AWS::ApiGateway::Method",
+                                      "aws:cdk:cloudformation:props": {
+                                        "apiKeyRequired": false,
+                                        "authorizationType": "NONE",
+                                        "httpMethod": "OPTIONS",
+                                        "integration": {
+                                          "type": "MOCK",
+                                          "requestTemplates": {
+                                            "application/json": "{ statusCode: 200 }"
+                                          },
+                                          "integrationResponses": [
+                                            {
+                                              "statusCode": "204",
+                                              "responseParameters": {
+                                                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Requested-With,x-request-id,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+                                                "method.response.header.Access-Control-Allow-Origin": "'https://costhub.4bfast.com.br'",
+                                                "method.response.header.Vary": "'Origin'",
+                                                "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+                                                "method.response.header.Access-Control-Allow-Credentials": "'true'"
+                                              },
+                                              "responseTemplates": {
+                                                "application/json": "#set($origin = $input.params().header.get(\"Origin\"))\n#if($origin == \"\")\n  #set($origin = $input.params().header.get(\"origin\"))\n#end\n#if($origin == \"https://www.costhub.4bfast.com.br\")\n  #set($context.responseOverride.header.Access-Control-Allow-Origin = $origin)\n#end"
+                                              }
+                                            }
+                                          ]
+                                        },
+                                        "methodResponses": [
+                                          {
+                                            "statusCode": "204",
+                                            "responseParameters": {
+                                              "method.response.header.Access-Control-Allow-Headers": true,
+                                              "method.response.header.Access-Control-Allow-Origin": true,
+                                              "method.response.header.Vary": true,
+                                              "method.response.header.Access-Control-Allow-Methods": true,
+                                              "method.response.header.Access-Control-Allow-Credentials": true
+                                            }
+                                          }
+                                        ],
+                                        "resourceId": {
+                                          "Ref": "FrontendAPIapiv1authEAE3EF00"
+                                        },
+                                        "restApiId": {
+                                          "Ref": "FrontendAPI00E92687"
+                                        }
+                                      }
+                                    },
+                                    "constructInfo": {
+                                      "fqn": "aws-cdk-lib.aws_apigateway.CfnMethod",
+                                      "version": "2.122.0"
+                                    }
+                                  }
+                                },
+                                "constructInfo": {
+                                  "fqn": "aws-cdk-lib.aws_apigateway.Method",
+                                  "version": "2.122.0"
+                                }
+                              },
+                              "ANY": {
+                                "id": "ANY",
+                                "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/ANY",
+                                "children": {
+                                  "ApiPermission.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.auth": {
+                                    "id": "ApiPermission.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.auth",
+                                    "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/ANY/ApiPermission.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.auth",
+                                    "attributes": {
+                                      "aws:cdk:cloudformation:type": "AWS::Lambda::Permission",
+                                      "aws:cdk:cloudformation:props": {
+                                        "action": "lambda:InvokeFunction",
+                                        "functionName": {
+                                          "Fn::GetAtt": [
+                                            "APIHandler68F11976",
+                                            "Arn"
+                                          ]
+                                        },
+                                        "principal": "apigateway.amazonaws.com",
+                                        "sourceArn": {
+                                          "Fn::Join": [
+                                            "",
+                                            [
+                                              "arn:aws:execute-api:us-east-1:008195334540:",
+                                              {
+                                                "Ref": "FrontendAPI00E92687"
+                                              },
+                                              "/",
+                                              {
+                                                "Ref": "FrontendAPIDeploymentStageprod1F4F1079"
+                                              },
+                                              "/*/api/v1/auth"
+                                            ]
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    "constructInfo": {
+                                      "fqn": "aws-cdk-lib.aws_lambda.CfnPermission",
+                                      "version": "2.122.0"
+                                    }
+                                  },
+                                  "ApiPermission.Test.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.auth": {
+                                    "id": "ApiPermission.Test.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.auth",
+                                    "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/ANY/ApiPermission.Test.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.auth",
+                                    "attributes": {
+                                      "aws:cdk:cloudformation:type": "AWS::Lambda::Permission",
+                                      "aws:cdk:cloudformation:props": {
+                                        "action": "lambda:InvokeFunction",
+                                        "functionName": {
+                                          "Fn::GetAtt": [
+                                            "APIHandler68F11976",
+                                            "Arn"
+                                          ]
+                                        },
+                                        "principal": "apigateway.amazonaws.com",
+                                        "sourceArn": {
+                                          "Fn::Join": [
+                                            "",
+                                            [
+                                              "arn:aws:execute-api:us-east-1:008195334540:",
+                                              {
+                                                "Ref": "FrontendAPI00E92687"
+                                              },
+                                              "/test-invoke-stage/*/api/v1/auth"
+                                            ]
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    "constructInfo": {
+                                      "fqn": "aws-cdk-lib.aws_lambda.CfnPermission",
+                                      "version": "2.122.0"
+                                    }
+                                  },
+                                  "Resource": {
+                                    "id": "Resource",
+                                    "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/ANY/Resource",
+                                    "attributes": {
+                                      "aws:cdk:cloudformation:type": "AWS::ApiGateway::Method",
+                                      "aws:cdk:cloudformation:props": {
+                                        "authorizationType": "NONE",
+                                        "httpMethod": "ANY",
+                                        "integration": {
+                                          "type": "AWS_PROXY",
+                                          "uri": {
+                                            "Fn::Join": [
+                                              "",
+                                              [
+                                                "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+                                                {
+                                                  "Fn::GetAtt": [
+                                                    "APIHandler68F11976",
+                                                    "Arn"
+                                                  ]
+                                                },
+                                                "/invocations"
+                                              ]
+                                            ]
+                                          },
+                                          "integrationHttpMethod": "POST"
+                                        },
+                                        "resourceId": {
+                                          "Ref": "FrontendAPIapiv1authEAE3EF00"
+                                        },
+                                        "restApiId": {
+                                          "Ref": "FrontendAPI00E92687"
+                                        }
+                                      }
+                                    },
+                                    "constructInfo": {
+                                      "fqn": "aws-cdk-lib.aws_apigateway.CfnMethod",
+                                      "version": "2.122.0"
+                                    }
+                                  }
+                                },
+                                "constructInfo": {
+                                  "fqn": "aws-cdk-lib.aws_apigateway.Method",
+                                  "version": "2.122.0"
+                                }
+                              },
+                              "{proxy+}": {
+                                "id": "{proxy+}",
+                                "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/{proxy+}",
+                                "children": {
+                                  "Resource": {
+                                    "id": "Resource",
+                                    "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/{proxy+}/Resource",
+                                    "attributes": {
+                                      "aws:cdk:cloudformation:type": "AWS::ApiGateway::Resource",
+                                      "aws:cdk:cloudformation:props": {
+                                        "parentId": {
+                                          "Ref": "FrontendAPIapiv1authEAE3EF00"
+                                        },
+                                        "pathPart": "{proxy+}",
+                                        "restApiId": {
+                                          "Ref": "FrontendAPI00E92687"
+                                        }
+                                      }
+                                    },
+                                    "constructInfo": {
+                                      "fqn": "aws-cdk-lib.aws_apigateway.CfnResource",
+                                      "version": "2.122.0"
+                                    }
+                                  },
+                                  "OPTIONS": {
+                                    "id": "OPTIONS",
+                                    "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/{proxy+}/OPTIONS",
+                                    "children": {
+                                      "Resource": {
+                                        "id": "Resource",
+                                        "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/{proxy+}/OPTIONS/Resource",
+                                        "attributes": {
+                                          "aws:cdk:cloudformation:type": "AWS::ApiGateway::Method",
+                                          "aws:cdk:cloudformation:props": {
+                                            "apiKeyRequired": false,
+                                            "authorizationType": "NONE",
+                                            "httpMethod": "OPTIONS",
+                                            "integration": {
+                                              "type": "MOCK",
+                                              "requestTemplates": {
+                                                "application/json": "{ statusCode: 200 }"
+                                              },
+                                              "integrationResponses": [
+                                                {
+                                                  "statusCode": "204",
+                                                  "responseParameters": {
+                                                    "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Requested-With,x-request-id,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+                                                    "method.response.header.Access-Control-Allow-Origin": "'https://costhub.4bfast.com.br'",
+                                                    "method.response.header.Vary": "'Origin'",
+                                                    "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+                                                    "method.response.header.Access-Control-Allow-Credentials": "'true'"
+                                                  },
+                                                  "responseTemplates": {
+                                                    "application/json": "#set($origin = $input.params().header.get(\"Origin\"))\n#if($origin == \"\")\n  #set($origin = $input.params().header.get(\"origin\"))\n#end\n#if($origin == \"https://www.costhub.4bfast.com.br\")\n  #set($context.responseOverride.header.Access-Control-Allow-Origin = $origin)\n#end"
+                                                  }
+                                                }
+                                              ]
+                                            },
+                                            "methodResponses": [
+                                              {
+                                                "statusCode": "204",
+                                                "responseParameters": {
+                                                  "method.response.header.Access-Control-Allow-Headers": true,
+                                                  "method.response.header.Access-Control-Allow-Origin": true,
+                                                  "method.response.header.Vary": true,
+                                                  "method.response.header.Access-Control-Allow-Methods": true,
+                                                  "method.response.header.Access-Control-Allow-Credentials": true
+                                                }
+                                              }
+                                            ],
+                                            "resourceId": {
+                                              "Ref": "FrontendAPIapiv1authproxy0885399B"
+                                            },
+                                            "restApiId": {
+                                              "Ref": "FrontendAPI00E92687"
+                                            }
+                                          }
+                                        },
+                                        "constructInfo": {
+                                          "fqn": "aws-cdk-lib.aws_apigateway.CfnMethod",
+                                          "version": "2.122.0"
+                                        }
+                                      }
+                                    },
+                                    "constructInfo": {
+                                      "fqn": "aws-cdk-lib.aws_apigateway.Method",
+                                      "version": "2.122.0"
+                                    }
+                                  },
+                                  "ANY": {
+                                    "id": "ANY",
+                                    "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/{proxy+}/ANY",
+                                    "children": {
+                                      "ApiPermission.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.auth.{proxy+}": {
+                                        "id": "ApiPermission.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.auth.{proxy+}",
+                                        "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/{proxy+}/ANY/ApiPermission.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.auth.{proxy+}",
+                                        "attributes": {
+                                          "aws:cdk:cloudformation:type": "AWS::Lambda::Permission",
+                                          "aws:cdk:cloudformation:props": {
+                                            "action": "lambda:InvokeFunction",
+                                            "functionName": {
+                                              "Fn::GetAtt": [
+                                                "APIHandler68F11976",
+                                                "Arn"
+                                              ]
+                                            },
+                                            "principal": "apigateway.amazonaws.com",
+                                            "sourceArn": {
+                                              "Fn::Join": [
+                                                "",
+                                                [
+                                                  "arn:aws:execute-api:us-east-1:008195334540:",
+                                                  {
+                                                    "Ref": "FrontendAPI00E92687"
+                                                  },
+                                                  "/",
+                                                  {
+                                                    "Ref": "FrontendAPIDeploymentStageprod1F4F1079"
+                                                  },
+                                                  "/*/api/v1/auth/*"
+                                                ]
+                                              ]
+                                            }
+                                          }
+                                        },
+                                        "constructInfo": {
+                                          "fqn": "aws-cdk-lib.aws_lambda.CfnPermission",
+                                          "version": "2.122.0"
+                                        }
+                                      },
+                                      "ApiPermission.Test.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.auth.{proxy+}": {
+                                        "id": "ApiPermission.Test.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.auth.{proxy+}",
+                                        "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/{proxy+}/ANY/ApiPermission.Test.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.auth.{proxy+}",
+                                        "attributes": {
+                                          "aws:cdk:cloudformation:type": "AWS::Lambda::Permission",
+                                          "aws:cdk:cloudformation:props": {
+                                            "action": "lambda:InvokeFunction",
+                                            "functionName": {
+                                              "Fn::GetAtt": [
+                                                "APIHandler68F11976",
+                                                "Arn"
+                                              ]
+                                            },
+                                            "principal": "apigateway.amazonaws.com",
+                                            "sourceArn": {
+                                              "Fn::Join": [
+                                                "",
+                                                [
+                                                  "arn:aws:execute-api:us-east-1:008195334540:",
+                                                  {
+                                                    "Ref": "FrontendAPI00E92687"
+                                                  },
+                                                  "/test-invoke-stage/*/api/v1/auth/*"
+                                                ]
+                                              ]
+                                            }
+                                          }
+                                        },
+                                        "constructInfo": {
+                                          "fqn": "aws-cdk-lib.aws_lambda.CfnPermission",
+                                          "version": "2.122.0"
+                                        }
+                                      },
+                                      "Resource": {
+                                        "id": "Resource",
+                                        "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/{proxy+}/ANY/Resource",
+                                        "attributes": {
+                                          "aws:cdk:cloudformation:type": "AWS::ApiGateway::Method",
+                                          "aws:cdk:cloudformation:props": {
+                                            "authorizationType": "NONE",
+                                            "httpMethod": "ANY",
+                                            "integration": {
+                                              "type": "AWS_PROXY",
+                                              "uri": {
+                                                "Fn::Join": [
+                                                  "",
+                                                  [
+                                                    "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+                                                    {
+                                                      "Fn::GetAtt": [
+                                                        "APIHandler68F11976",
+                                                        "Arn"
+                                                      ]
+                                                    },
+                                                    "/invocations"
+                                                  ]
+                                                ]
+                                              },
+                                              "integrationHttpMethod": "POST"
+                                            },
+                                            "resourceId": {
+                                              "Ref": "FrontendAPIapiv1authproxy0885399B"
+                                            },
+                                            "restApiId": {
+                                              "Ref": "FrontendAPI00E92687"
+                                            }
+                                          }
+                                        },
+                                        "constructInfo": {
+                                          "fqn": "aws-cdk-lib.aws_apigateway.CfnMethod",
+                                          "version": "2.122.0"
+                                        }
+                                      }
+                                    },
+                                    "constructInfo": {
+                                      "fqn": "aws-cdk-lib.aws_apigateway.Method",
+                                      "version": "2.122.0"
+                                    }
+                                  }
+                                },
+                                "constructInfo": {
+                                  "fqn": "aws-cdk-lib.aws_apigateway.Resource",
+                                  "version": "2.122.0"
+                                }
+                              }
+                            },
+                            "constructInfo": {
+                              "fqn": "aws-cdk-lib.aws_apigateway.Resource",
+                              "version": "2.122.0"
+                            }
+                          },
+                          "{proxy+}": {
+                            "id": "{proxy+}",
+                            "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/{proxy+}",
+                            "children": {
+                              "Resource": {
+                                "id": "Resource",
+                                "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/{proxy+}/Resource",
+                                "attributes": {
+                                  "aws:cdk:cloudformation:type": "AWS::ApiGateway::Resource",
+                                  "aws:cdk:cloudformation:props": {
+                                    "parentId": {
+                                      "Ref": "FrontendAPIapiv10C580F49"
+                                    },
+                                    "pathPart": "{proxy+}",
+                                    "restApiId": {
+                                      "Ref": "FrontendAPI00E92687"
+                                    }
+                                  }
+                                },
+                                "constructInfo": {
+                                  "fqn": "aws-cdk-lib.aws_apigateway.CfnResource",
+                                  "version": "2.122.0"
+                                }
+                              },
+                              "OPTIONS": {
+                                "id": "OPTIONS",
+                                "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/{proxy+}/OPTIONS",
+                                "children": {
+                                  "Resource": {
+                                    "id": "Resource",
+                                    "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/{proxy+}/OPTIONS/Resource",
+                                    "attributes": {
+                                      "aws:cdk:cloudformation:type": "AWS::ApiGateway::Method",
+                                      "aws:cdk:cloudformation:props": {
+                                        "apiKeyRequired": false,
+                                        "authorizationType": "NONE",
+                                        "httpMethod": "OPTIONS",
+                                        "integration": {
+                                          "type": "MOCK",
+                                          "requestTemplates": {
+                                            "application/json": "{ statusCode: 200 }"
+                                          },
+                                          "integrationResponses": [
+                                            {
+                                              "statusCode": "204",
+                                              "responseParameters": {
+                                                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Requested-With,x-request-id,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+                                                "method.response.header.Access-Control-Allow-Origin": "'https://costhub.4bfast.com.br'",
+                                                "method.response.header.Vary": "'Origin'",
+                                                "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+                                                "method.response.header.Access-Control-Allow-Credentials": "'true'"
+                                              },
+                                              "responseTemplates": {
+                                                "application/json": "#set($origin = $input.params().header.get(\"Origin\"))\n#if($origin == \"\")\n  #set($origin = $input.params().header.get(\"origin\"))\n#end\n#if($origin == \"https://www.costhub.4bfast.com.br\")\n  #set($context.responseOverride.header.Access-Control-Allow-Origin = $origin)\n#end"
+                                              }
+                                            }
+                                          ]
+                                        },
+                                        "methodResponses": [
+                                          {
+                                            "statusCode": "204",
+                                            "responseParameters": {
+                                              "method.response.header.Access-Control-Allow-Headers": true,
+                                              "method.response.header.Access-Control-Allow-Origin": true,
+                                              "method.response.header.Vary": true,
+                                              "method.response.header.Access-Control-Allow-Methods": true,
+                                              "method.response.header.Access-Control-Allow-Credentials": true
+                                            }
+                                          }
+                                        ],
+                                        "resourceId": {
+                                          "Ref": "FrontendAPIapiv1proxy895339E7"
+                                        },
+                                        "restApiId": {
+                                          "Ref": "FrontendAPI00E92687"
+                                        }
+                                      }
+                                    },
+                                    "constructInfo": {
+                                      "fqn": "aws-cdk-lib.aws_apigateway.CfnMethod",
+                                      "version": "2.122.0"
+                                    }
+                                  }
+                                },
+                                "constructInfo": {
+                                  "fqn": "aws-cdk-lib.aws_apigateway.Method",
+                                  "version": "2.122.0"
+                                }
+                              },
+                              "ANY": {
+                                "id": "ANY",
+                                "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/{proxy+}/ANY",
+                                "children": {
+                                  "ApiPermission.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.{proxy+}": {
+                                    "id": "ApiPermission.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.{proxy+}",
+                                    "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/{proxy+}/ANY/ApiPermission.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.{proxy+}",
+                                    "attributes": {
+                                      "aws:cdk:cloudformation:type": "AWS::Lambda::Permission",
+                                      "aws:cdk:cloudformation:props": {
+                                        "action": "lambda:InvokeFunction",
+                                        "functionName": {
+                                          "Fn::GetAtt": [
+                                            "APIHandler68F11976",
+                                            "Arn"
+                                          ]
+                                        },
+                                        "principal": "apigateway.amazonaws.com",
+                                        "sourceArn": {
+                                          "Fn::Join": [
+                                            "",
+                                            [
+                                              "arn:aws:execute-api:us-east-1:008195334540:",
+                                              {
+                                                "Ref": "FrontendAPI00E92687"
+                                              },
+                                              "/",
+                                              {
+                                                "Ref": "FrontendAPIDeploymentStageprod1F4F1079"
+                                              },
+                                              "/*/api/v1/*"
+                                            ]
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    "constructInfo": {
+                                      "fqn": "aws-cdk-lib.aws_lambda.CfnPermission",
+                                      "version": "2.122.0"
+                                    }
+                                  },
+                                  "ApiPermission.Test.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.{proxy+}": {
+                                    "id": "ApiPermission.Test.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.{proxy+}",
+                                    "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/{proxy+}/ANY/ApiPermission.Test.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.{proxy+}",
+                                    "attributes": {
+                                      "aws:cdk:cloudformation:type": "AWS::Lambda::Permission",
+                                      "aws:cdk:cloudformation:props": {
+                                        "action": "lambda:InvokeFunction",
+                                        "functionName": {
+                                          "Fn::GetAtt": [
+                                            "APIHandler68F11976",
+                                            "Arn"
+                                          ]
+                                        },
+                                        "principal": "apigateway.amazonaws.com",
+                                        "sourceArn": {
+                                          "Fn::Join": [
+                                            "",
+                                            [
+                                              "arn:aws:execute-api:us-east-1:008195334540:",
+                                              {
+                                                "Ref": "FrontendAPI00E92687"
+                                              },
+                                              "/test-invoke-stage/*/api/v1/*"
+                                            ]
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    "constructInfo": {
+                                      "fqn": "aws-cdk-lib.aws_lambda.CfnPermission",
+                                      "version": "2.122.0"
+                                    }
+                                  },
+                                  "Resource": {
+                                    "id": "Resource",
+                                    "path": "costshub-frontend-api-dev/FrontendAPI/Default/api/v1/{proxy+}/ANY/Resource",
+                                    "attributes": {
+                                      "aws:cdk:cloudformation:type": "AWS::ApiGateway::Method",
+                                      "aws:cdk:cloudformation:props": {
+                                        "authorizationType": "COGNITO_USER_POOLS",
+                                        "authorizerId": {
+                                          "Ref": "CognitoAuthorizerF3215DBC"
+                                        },
+                                        "httpMethod": "ANY",
+                                        "integration": {
+                                          "type": "AWS_PROXY",
+                                          "uri": {
+                                            "Fn::Join": [
+                                              "",
+                                              [
+                                                "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+                                                {
+                                                  "Fn::GetAtt": [
+                                                    "APIHandler68F11976",
+                                                    "Arn"
+                                                  ]
+                                                },
+                                                "/invocations"
+                                              ]
+                                            ]
+                                          },
+                                          "integrationHttpMethod": "POST"
+                                        },
+                                        "methodResponses": [
+                                          {
+                                            "statusCode": "200",
+                                            "responseParameters": {
+                                              "method.response.header.Access-Control-Allow-Origin": true,
+                                              "method.response.header.Access-Control-Allow-Headers": true,
+                                              "method.response.header.Access-Control-Allow-Methods": true,
+                                              "method.response.header.Access-Control-Allow-Credentials": true
+                                            }
+                                          }
+                                        ],
+                                        "resourceId": {
+                                          "Ref": "FrontendAPIapiv1proxy895339E7"
+                                        },
+                                        "restApiId": {
+                                          "Ref": "FrontendAPI00E92687"
+                                        }
+                                      }
+                                    },
+                                    "constructInfo": {
+                                      "fqn": "aws-cdk-lib.aws_apigateway.CfnMethod",
+                                      "version": "2.122.0"
+                                    }
+                                  }
+                                },
+                                "constructInfo": {
+                                  "fqn": "aws-cdk-lib.aws_apigateway.Method",
+                                  "version": "2.122.0"
+                                }
+                              }
+                            },
+                            "constructInfo": {
+                              "fqn": "aws-cdk-lib.aws_apigateway.Resource",
+                              "version": "2.122.0"
+                            }
+                          }
+                        },
+                        "constructInfo": {
+                          "fqn": "aws-cdk-lib.aws_apigateway.Resource",
+                          "version": "2.122.0"
+                        }
+                      }
+                    },
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_apigateway.Resource",
+                      "version": "2.122.0"
+                    }
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_apigateway.ResourceBase",
+                  "version": "2.122.0"
+                }
+              }
+            },
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.aws_apigateway.RestApi",
+              "version": "2.122.0"
+            }
+          },
+          "Certificate": {
+            "id": "Certificate",
+            "path": "costshub-frontend-api-dev/Certificate",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.Resource",
+              "version": "2.122.0"
+            }
+          },
+          "APIDomain": {
+            "id": "APIDomain",
+            "path": "costshub-frontend-api-dev/APIDomain",
+            "children": {
+              "Resource": {
+                "id": "Resource",
+                "path": "costshub-frontend-api-dev/APIDomain/Resource",
+                "attributes": {
+                  "aws:cdk:cloudformation:type": "AWS::ApiGateway::DomainName",
+                  "aws:cdk:cloudformation:props": {
+                    "domainName": "api-costhub.4bfast.com.br",
+                    "endpointConfiguration": {
+                      "types": [
+                        "REGIONAL"
+                      ]
+                    },
+                    "regionalCertificateArn": "arn:aws:acm:us-east-1:008195334540:certificate/cc33150f-be90-44d0-87ca-63caf5a48b2f"
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_apigateway.CfnDomainName",
+                  "version": "2.122.0"
+                }
+              },
+              "Map:--=>costshubfrontendapidevFrontendAPIA17F46E8": {
+                "id": "Map:--=>costshubfrontendapidevFrontendAPIA17F46E8",
+                "path": "costshub-frontend-api-dev/APIDomain/Map:--=>costshubfrontendapidevFrontendAPIA17F46E8",
+                "children": {
+                  "Resource": {
+                    "id": "Resource",
+                    "path": "costshub-frontend-api-dev/APIDomain/Map:--=>costshubfrontendapidevFrontendAPIA17F46E8/Resource",
+                    "attributes": {
+                      "aws:cdk:cloudformation:type": "AWS::ApiGateway::BasePathMapping",
+                      "aws:cdk:cloudformation:props": {
+                        "domainName": {
+                          "Ref": "APIDomain02CC2FA9"
+                        },
+                        "restApiId": {
+                          "Ref": "FrontendAPI00E92687"
+                        },
+                        "stage": {
+                          "Ref": "FrontendAPIDeploymentStageprod1F4F1079"
+                        }
+                      }
+                    },
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_apigateway.CfnBasePathMapping",
+                      "version": "2.122.0"
+                    }
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_apigateway.BasePathMapping",
+                  "version": "2.122.0"
+                }
+              }
+            },
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.aws_apigateway.DomainName",
+              "version": "2.122.0"
+            }
+          },
+          "HostedZone": {
+            "id": "HostedZone",
+            "path": "costshub-frontend-api-dev/HostedZone",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.Resource",
+              "version": "2.122.0"
+            }
+          },
+          "APIAliasRecord": {
+            "id": "APIAliasRecord",
+            "path": "costshub-frontend-api-dev/APIAliasRecord",
+            "children": {
+              "Resource": {
+                "id": "Resource",
+                "path": "costshub-frontend-api-dev/APIAliasRecord/Resource",
+                "attributes": {
+                  "aws:cdk:cloudformation:type": "AWS::Route53::RecordSet",
+                  "aws:cdk:cloudformation:props": {
+                    "aliasTarget": {
+                      "dnsName": {
+                        "Fn::GetAtt": [
+                          "APIDomain02CC2FA9",
+                          "RegionalDomainName"
+                        ]
+                      },
+                      "hostedZoneId": {
+                        "Fn::GetAtt": [
+                          "APIDomain02CC2FA9",
+                          "RegionalHostedZoneId"
+                        ]
+                      }
+                    },
+                    "hostedZoneId": "Z05900913NMLNYFKQHMUL",
+                    "name": "api-costhub.4bfast.com.br.",
+                    "type": "A"
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_route53.CfnRecordSet",
+                  "version": "2.122.0"
+                }
+              }
+            },
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.aws_route53.ARecord",
+              "version": "2.122.0"
+            }
+          },
+          "FrontendAPIUrl": {
+            "id": "FrontendAPIUrl",
+            "path": "costshub-frontend-api-dev/FrontendAPIUrl",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.CfnOutput",
+              "version": "2.122.0"
+            }
+          },
+          "CustomDomainUrl": {
+            "id": "CustomDomainUrl",
+            "path": "costshub-frontend-api-dev/CustomDomainUrl",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.CfnOutput",
+              "version": "2.122.0"
+            }
+          },
+          "FrontendAPIId": {
+            "id": "FrontendAPIId",
+            "path": "costshub-frontend-api-dev/FrontendAPIId",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.CfnOutput",
+              "version": "2.122.0"
+            }
+          },
+          "CDKMetadata": {
+            "id": "CDKMetadata",
+            "path": "costshub-frontend-api-dev/CDKMetadata",
+            "children": {
+              "Default": {
+                "id": "Default",
+                "path": "costshub-frontend-api-dev/CDKMetadata/Default",
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.CfnResource",
+                  "version": "2.122.0"
+                }
+              }
+            },
+            "constructInfo": {
+              "fqn": "constructs.Construct",
+              "version": "10.4.2"
+            }
+          },
+          "BootstrapVersion": {
+            "id": "BootstrapVersion",
+            "path": "costshub-frontend-api-dev/BootstrapVersion",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.CfnParameter",
+              "version": "2.122.0"
+            }
+          },
+          "CheckBootstrapVersion": {
+            "id": "CheckBootstrapVersion",
+            "path": "costshub-frontend-api-dev/CheckBootstrapVersion",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.CfnRule",
+              "version": "2.122.0"
+            }
+          }
+        },
+        "constructInfo": {
+          "fqn": "aws-cdk-lib.Stack",
+          "version": "2.122.0"
+        }
+      },
+      "Tree": {
+        "id": "Tree",
+        "path": "Tree",
+        "constructInfo": {
+          "fqn": "constructs.Construct",
+          "version": "10.4.2"
+        }
+      }
+    },
+    "constructInfo": {
+      "fqn": "aws-cdk-lib.App",
+      "version": "2.122.0"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "cognito-idp:AdminInitiateAuth",
+                "cognito-idp:AdminCreateUser",
+                "cognito-idp:AdminSetUserPassword",
+                "cognito-idp:AdminConfirmSignUp",
+                "cognito-idp:GetUser",
+                "cognito-idp:AdminGetUser",
+                "cognito-idp:AdminUpdateUserAttributes",
+                "cognito-idp:AdminDeleteUser",
+                "cognito-idp:ListUsers",
+                "cognito-idp:DescribeUserPool",
+                "cognito-idp:AdminListGroupsForUser",
+                "cognito-idp:AdminRespondToAuthChallenge",
+                "cognito-idp:InitiateAuth",
+                "cognito-idp:RespondToAuthChallenge"
+            ],
+            "Resource": "arn:aws:cognito-idp:us-east-1:008195334540:userpool/us-east-1_94OYkzcSO"
+        }
+    ]
+}

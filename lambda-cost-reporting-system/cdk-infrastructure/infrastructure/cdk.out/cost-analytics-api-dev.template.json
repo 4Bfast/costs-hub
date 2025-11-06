@@ -1,0 +1,5628 @@
+{
+ "Description": "Multi-Cloud Cost Analytics API - DEV environment",
+ "Resources": {
+  "APIGatewayLogGroupCDBB0658": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": "/aws/apigateway/cost-analytics-api-dev",
+    "RetentionInDays": 30
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/APIGatewayLogGroup/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIEB2ACF08": {
+   "Type": "AWS::ApiGateway::RestApi",
+   "Properties": {
+    "Description": "Multi-Cloud Cost Analytics API with AI insights",
+    "EndpointConfiguration": {
+     "Types": [
+      "REGIONAL"
+     ]
+    },
+    "Name": "cost-analytics-api-dev"
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPICloudWatchRoleAE66AA45": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "apigateway.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+       ]
+      ]
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/CloudWatchRole/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIAccountAAE42927": {
+   "Type": "AWS::ApiGateway::Account",
+   "Properties": {
+    "CloudWatchRoleArn": {
+     "Fn::GetAtt": [
+      "MultiCloudCostAnalyticsAPICloudWatchRoleAE66AA45",
+      "Arn"
+     ]
+    }
+   },
+   "DependsOn": [
+    "MultiCloudCostAnalyticsAPIEB2ACF08"
+   ],
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Account"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIDeployment426154CD272d05e6d6adad9754960e648cd3a13d": {
+   "Type": "AWS::ApiGateway::Deployment",
+   "Properties": {
+    "Description": "Multi-Cloud Cost Analytics API with AI insights",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "DependsOn": [
+    "JWTAuthorizerE8D8D90E",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsaccountIdDELETEvalidatorDECE7A6D",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsGETvalidatorA560AACD",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsPOSTvalidator4C9988DC",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeGETvalidatorEC2C69D1",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmePUTvalidator74A1F9CD",
+    "MultiCloudCostAnalyticsAPIapiv1costdataGETvalidator825A2E9B",
+    "MultiCloudCostAnalyticsAPIapiv1costdataprovidersGETvalidator41EA7649",
+    "MultiCloudCostAnalyticsAPIapiv1costdatasummaryGETvalidatorB103FA96",
+    "MultiCloudCostAnalyticsAPIapiv1costdatatrendsGETvalidatorDADC14C5",
+    "MultiCloudCostAnalyticsAPIapiv1insightsanomaliesGETvalidator9500F27F",
+    "MultiCloudCostAnalyticsAPIapiv1insightsforecastsGETvalidatorB70D9243",
+    "MultiCloudCostAnalyticsAPIapiv1insightsGETvalidator25E75B39",
+    "MultiCloudCostAnalyticsAPIapiv1insightsrecommendationsGETvalidatorC4B4797D",
+    "MultiCloudCostAnalyticsAPIapiv1notificationshistoryGETvalidatorBD05D285",
+    "MultiCloudCostAnalyticsAPIapiv1notificationspreferencesGETvalidator17ED6509",
+    "MultiCloudCostAnalyticsAPIapiv1notificationspreferencesPUTvalidator17F0A1F2",
+    "MultiCloudCostAnalyticsAPIapiv1notificationssendPOSTvalidatorEE2F7187",
+    "MultiCloudCostAnalyticsAPIapiv1webhooksGETvalidator7D39BE07",
+    "MultiCloudCostAnalyticsAPIapiv1webhooksPOSTvalidatorB914E5A4",
+    "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdDELETEvalidator550F8702",
+    "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdGETvalidator24E104E9",
+    "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdPUTvalidatorE44871B7",
+    "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdtestPOSTvalidator5C236BB9",
+    "MultiCloudCostAnalyticsAPIapiOPTIONS7C79F9E9",
+    "MultiCloudCostAnalyticsAPIapiA884C82E",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsaccountIdDELETE07B24483",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsaccountIdOPTIONS002791A5",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsaccountIdCB5521C1",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsGET24B2C9EF",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsOPTIONSCC395C0E",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsPOST5920D089",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsA35A3558",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeGET4DF6B79F",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeOPTIONSB27ECE51",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmePUT80B86F19",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeD4E5157C",
+    "MultiCloudCostAnalyticsAPIapiv1clientsOPTIONSCD3976E8",
+    "MultiCloudCostAnalyticsAPIapiv1clients62ED1E00",
+    "MultiCloudCostAnalyticsAPIapiv1costdataGET39A20D44",
+    "MultiCloudCostAnalyticsAPIapiv1costdataOPTIONS89AF8364",
+    "MultiCloudCostAnalyticsAPIapiv1costdataprovidersGET4D1758D2",
+    "MultiCloudCostAnalyticsAPIapiv1costdataprovidersOPTIONS92FBBE3E",
+    "MultiCloudCostAnalyticsAPIapiv1costdataprovidersFE77BCE6",
+    "MultiCloudCostAnalyticsAPIapiv1costdata8F225919",
+    "MultiCloudCostAnalyticsAPIapiv1costdatasummaryGET2E90BE6A",
+    "MultiCloudCostAnalyticsAPIapiv1costdatasummaryOPTIONS17AA94A7",
+    "MultiCloudCostAnalyticsAPIapiv1costdatasummary2F615498",
+    "MultiCloudCostAnalyticsAPIapiv1costdatatrendsGET45D89077",
+    "MultiCloudCostAnalyticsAPIapiv1costdatatrendsOPTIONSDAD75462",
+    "MultiCloudCostAnalyticsAPIapiv1costdatatrends934097AB",
+    "MultiCloudCostAnalyticsAPIapiv1insightsanomaliesGET486FEEE0",
+    "MultiCloudCostAnalyticsAPIapiv1insightsanomaliesOPTIONS1787B341",
+    "MultiCloudCostAnalyticsAPIapiv1insightsanomaliesE48F5515",
+    "MultiCloudCostAnalyticsAPIapiv1insightsforecastsGETDE3959C9",
+    "MultiCloudCostAnalyticsAPIapiv1insightsforecastsOPTIONSF98097EF",
+    "MultiCloudCostAnalyticsAPIapiv1insightsforecasts390CCE35",
+    "MultiCloudCostAnalyticsAPIapiv1insightsGET9D7954A2",
+    "MultiCloudCostAnalyticsAPIapiv1insightsOPTIONS960B5129",
+    "MultiCloudCostAnalyticsAPIapiv1insightsrecommendationsGET672C3EC1",
+    "MultiCloudCostAnalyticsAPIapiv1insightsrecommendationsOPTIONSBC1165BD",
+    "MultiCloudCostAnalyticsAPIapiv1insightsrecommendations043D9D33",
+    "MultiCloudCostAnalyticsAPIapiv1insights7592BC2D",
+    "MultiCloudCostAnalyticsAPIapiv1notificationshistoryGETD15B18AD",
+    "MultiCloudCostAnalyticsAPIapiv1notificationshistoryOPTIONSF6589D5F",
+    "MultiCloudCostAnalyticsAPIapiv1notificationshistory1A79D29F",
+    "MultiCloudCostAnalyticsAPIapiv1notificationsOPTIONSD59851B5",
+    "MultiCloudCostAnalyticsAPIapiv1notificationspreferencesGETFC8E246D",
+    "MultiCloudCostAnalyticsAPIapiv1notificationspreferencesOPTIONS0D04C371",
+    "MultiCloudCostAnalyticsAPIapiv1notificationspreferencesPUT4EEF6E04",
+    "MultiCloudCostAnalyticsAPIapiv1notificationspreferences5D1A9913",
+    "MultiCloudCostAnalyticsAPIapiv1notifications839BA725",
+    "MultiCloudCostAnalyticsAPIapiv1notificationssendOPTIONS741D2087",
+    "MultiCloudCostAnalyticsAPIapiv1notificationssendPOST654F71F0",
+    "MultiCloudCostAnalyticsAPIapiv1notificationssend0821D428",
+    "MultiCloudCostAnalyticsAPIapiv1OPTIONS4902F138",
+    "MultiCloudCostAnalyticsAPIapiv16C5FB4DF",
+    "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdDELETEB15C60C9",
+    "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdGETA3FAFA17",
+    "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdOPTIONS73BD6406",
+    "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdPUTEE76D3F7",
+    "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdAF3B0A30",
+    "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdtestOPTIONS5E6B7F19",
+    "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdtestPOST211F859C",
+    "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdtest01D59926",
+    "MultiCloudCostAnalyticsAPIapiv1webhooksGETCBADDBE9",
+    "MultiCloudCostAnalyticsAPIapiv1webhooksOPTIONS48857221",
+    "MultiCloudCostAnalyticsAPIapiv1webhooksPOSTD8EF14B2",
+    "MultiCloudCostAnalyticsAPIapiv1webhooks459AEF5C",
+    "MultiCloudCostAnalyticsAPIhealthGET418D85D9",
+    "MultiCloudCostAnalyticsAPIhealthOPTIONSA0E1383B",
+    "MultiCloudCostAnalyticsAPIhealth0DE94E0D",
+    "MultiCloudCostAnalyticsAPIOPTIONSDCD64E45"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Deployment/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348": {
+   "Type": "AWS::ApiGateway::Stage",
+   "Properties": {
+    "DeploymentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIDeployment426154CD272d05e6d6adad9754960e648cd3a13d"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "StageName": "prod"
+   },
+   "DependsOn": [
+    "MultiCloudCostAnalyticsAPIAccountAAE42927"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/DeploymentStage.prod/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIOPTIONSDCD64E45": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Fn::GetAtt": [
+      "MultiCloudCostAnalyticsAPIEB2ACF08",
+      "RootResourceId"
+     ]
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIhealth0DE94E0D": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "MultiCloudCostAnalyticsAPIEB2ACF08",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "health",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/health/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIhealthOPTIONSA0E1383B": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIhealth0DE94E0D"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/health/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIhealthGETApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GEThealth1FA67EB3": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/GET/health"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/health/GET/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..health"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIhealthGETApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GEThealthDDB47C82": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/GET/health"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/health/GET/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..health"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIhealthGET418D85D9": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "NONE",
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIhealth0DE94E0D"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/health/GET/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiA884C82E": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "MultiCloudCostAnalyticsAPIEB2ACF08",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "api",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiOPTIONS7C79F9E9": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiA884C82E"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv16C5FB4DF": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiA884C82E"
+    },
+    "PathPart": "v1",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1OPTIONS4902F138": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv16C5FB4DF"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdata8F225919": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv16C5FB4DF"
+    },
+    "PathPart": "cost-data",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdataOPTIONS89AF8364": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1costdata8F225919"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdataGETApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1costdata09674FBF": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/GET/api/v1/cost-data"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/GET/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.cost-data"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdataGETApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1costdata6D4DFD5A": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/GET/api/v1/cost-data"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/GET/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.cost-data"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdataGET39A20D44": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1costdataGETvalidator825A2E9B"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1costdata8F225919"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/GET/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdatasummary2F615498": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1costdata8F225919"
+    },
+    "PathPart": "summary",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/summary/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdatasummaryOPTIONS17AA94A7": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1costdatasummary2F615498"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/summary/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdatasummaryGETApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1costdatasummary012E04F8": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/GET/api/v1/cost-data/summary"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/summary/GET/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.cost-data.summary"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdatasummaryGETApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1costdatasummary02DE03B7": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/GET/api/v1/cost-data/summary"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/summary/GET/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.cost-data.summary"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdatasummaryGET2E90BE6A": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1costdatasummaryGETvalidatorB103FA96"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1costdatasummary2F615498"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/summary/GET/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdatatrends934097AB": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1costdata8F225919"
+    },
+    "PathPart": "trends",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/trends/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdatatrendsOPTIONSDAD75462": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1costdatatrends934097AB"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/trends/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdatatrendsGETApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1costdatatrends58232750": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/GET/api/v1/cost-data/trends"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/trends/GET/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.cost-data.trends"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdatatrendsGETApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1costdatatrends0578EA99": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/GET/api/v1/cost-data/trends"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/trends/GET/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.cost-data.trends"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdatatrendsGET45D89077": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1costdatatrendsGETvalidatorDADC14C5"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1costdatatrends934097AB"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/trends/GET/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdataprovidersFE77BCE6": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1costdata8F225919"
+    },
+    "PathPart": "providers",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/providers/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdataprovidersOPTIONS92FBBE3E": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1costdataprovidersFE77BCE6"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/providers/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdataprovidersGETApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1costdataproviders87C761F8": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/GET/api/v1/cost-data/providers"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/providers/GET/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.cost-data.providers"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdataprovidersGETApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1costdataprovidersE08B43FD": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/GET/api/v1/cost-data/providers"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/providers/GET/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.cost-data.providers"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdataprovidersGET4D1758D2": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1costdataprovidersGETvalidator41EA7649"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1costdataprovidersFE77BCE6"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/cost-data/providers/GET/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insights7592BC2D": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv16C5FB4DF"
+    },
+    "PathPart": "insights",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsOPTIONS960B5129": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1insights7592BC2D"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsGETApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1insightsA7C454C5": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/GET/api/v1/insights"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/GET/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.insights"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsGETApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1insightsB6BB92DB": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/GET/api/v1/insights"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/GET/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.insights"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsGET9D7954A2": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1insightsGETvalidator25E75B39"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1insights7592BC2D"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/GET/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsanomaliesE48F5515": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1insights7592BC2D"
+    },
+    "PathPart": "anomalies",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/anomalies/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsanomaliesOPTIONS1787B341": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1insightsanomaliesE48F5515"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/anomalies/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsanomaliesGETApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1insightsanomalies09EB7CFA": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/GET/api/v1/insights/anomalies"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/anomalies/GET/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.insights.anomalies"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsanomaliesGETApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1insightsanomalies5A0C04EC": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/GET/api/v1/insights/anomalies"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/anomalies/GET/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.insights.anomalies"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsanomaliesGET486FEEE0": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1insightsanomaliesGETvalidator9500F27F"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1insightsanomaliesE48F5515"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/anomalies/GET/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsrecommendations043D9D33": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1insights7592BC2D"
+    },
+    "PathPart": "recommendations",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/recommendations/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsrecommendationsOPTIONSBC1165BD": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1insightsrecommendations043D9D33"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/recommendations/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsrecommendationsGETApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1insightsrecommendationsF11279FE": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/GET/api/v1/insights/recommendations"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/recommendations/GET/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.insights.recommendations"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsrecommendationsGETApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1insightsrecommendationsAB5D73B7": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/GET/api/v1/insights/recommendations"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/recommendations/GET/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.insights.recommendations"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsrecommendationsGET672C3EC1": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1insightsrecommendationsGETvalidatorC4B4797D"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1insightsrecommendations043D9D33"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/recommendations/GET/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsforecasts390CCE35": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1insights7592BC2D"
+    },
+    "PathPart": "forecasts",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/forecasts/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsforecastsOPTIONSF98097EF": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1insightsforecasts390CCE35"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/forecasts/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsforecastsGETApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1insightsforecasts8F7CB827": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/GET/api/v1/insights/forecasts"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/forecasts/GET/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.insights.forecasts"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsforecastsGETApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1insightsforecastsF67592E8": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/GET/api/v1/insights/forecasts"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/forecasts/GET/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.insights.forecasts"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsforecastsGETDE3959C9": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1insightsforecastsGETvalidatorB70D9243"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1insightsforecasts390CCE35"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/insights/forecasts/GET/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clients62ED1E00": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv16C5FB4DF"
+    },
+    "PathPart": "clients",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsOPTIONSCD3976E8": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1clients62ED1E00"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeD4E5157C": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1clients62ED1E00"
+    },
+    "PathPart": "me",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeOPTIONSB27ECE51": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1clientsmeD4E5157C"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeGETApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1clientsme8E5D0648": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/GET/api/v1/clients/me"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/GET/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.clients.me"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeGETApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1clientsmeE3AE19F9": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/GET/api/v1/clients/me"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/GET/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.clients.me"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeGET4DF6B79F": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1clientsmeGETvalidatorEC2C69D1"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1clientsmeD4E5157C"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/GET/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmePUTApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59PUTapiv1clientsme48D9D6C9": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/PUT/api/v1/clients/me"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/PUT/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.PUT..api.v1.clients.me"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmePUTApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59PUTapiv1clientsmeCC761081": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/PUT/api/v1/clients/me"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/PUT/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.PUT..api.v1.clients.me"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmePUT80B86F19": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "PUT",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1clientsmePUTvalidator74A1F9CD"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1clientsmeD4E5157C"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/PUT/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsA35A3558": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1clientsmeD4E5157C"
+    },
+    "PathPart": "accounts",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/accounts/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsOPTIONSCC395C0E": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsA35A3558"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/accounts/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsGETApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1clientsmeaccountsBE13B35E": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/GET/api/v1/clients/me/accounts"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/accounts/GET/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.clients.me.accounts"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsGETApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1clientsmeaccountsCADD4F25": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/GET/api/v1/clients/me/accounts"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/accounts/GET/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.clients.me.accounts"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsGET24B2C9EF": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsGETvalidatorA560AACD"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsA35A3558"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/accounts/GET/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsPOSTApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59POSTapiv1clientsmeaccountsAD1BF71D": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/POST/api/v1/clients/me/accounts"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/accounts/POST/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.POST..api.v1.clients.me.accounts"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsPOSTApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59POSTapiv1clientsmeaccountsCA2FAE0F": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/POST/api/v1/clients/me/accounts"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/accounts/POST/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.POST..api.v1.clients.me.accounts"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsPOST5920D089": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsPOSTvalidator4C9988DC"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsA35A3558"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/accounts/POST/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsaccountIdCB5521C1": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsA35A3558"
+    },
+    "PathPart": "{accountId}",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/accounts/{accountId}/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsaccountIdOPTIONS002791A5": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsaccountIdCB5521C1"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/accounts/{accountId}/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsaccountIdDELETEApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59DELETEapiv1clientsmeaccountsaccountIdB16C0855": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/DELETE/api/v1/clients/me/accounts/*"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/accounts/{accountId}/DELETE/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.DELETE..api.v1.clients.me.accounts.{accountId}"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsaccountIdDELETEApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59DELETEapiv1clientsmeaccountsaccountId406A85FC": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/DELETE/api/v1/clients/me/accounts/*"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/accounts/{accountId}/DELETE/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.DELETE..api.v1.clients.me.accounts.{accountId}"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsaccountIdDELETE07B24483": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "DELETE",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsaccountIdDELETEvalidatorDECE7A6D"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsaccountIdCB5521C1"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/clients/me/accounts/{accountId}/DELETE/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhooks459AEF5C": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv16C5FB4DF"
+    },
+    "PathPart": "webhooks",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhooksOPTIONS48857221": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1webhooks459AEF5C"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhooksGETApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1webhooksA5EA71EC": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/GET/api/v1/webhooks"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/GET/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.webhooks"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhooksGETApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1webhooksD49B0753": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/GET/api/v1/webhooks"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/GET/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.webhooks"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhooksGETCBADDBE9": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1webhooksGETvalidator7D39BE07"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1webhooks459AEF5C"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/GET/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhooksPOSTApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59POSTapiv1webhooks413C0AA2": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/POST/api/v1/webhooks"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/POST/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.POST..api.v1.webhooks"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhooksPOSTApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59POSTapiv1webhooks072B3233": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/POST/api/v1/webhooks"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/POST/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.POST..api.v1.webhooks"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhooksPOSTD8EF14B2": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1webhooksPOSTvalidatorB914E5A4"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1webhooks459AEF5C"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/POST/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdAF3B0A30": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1webhooks459AEF5C"
+    },
+    "PathPart": "{webhookId}",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/{webhookId}/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdOPTIONS73BD6406": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdAF3B0A30"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/{webhookId}/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdGETApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1webhookswebhookIdFD7C74E8": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/GET/api/v1/webhooks/*"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/{webhookId}/GET/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.webhooks.{webhookId}"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdGETApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1webhookswebhookId9EB1BCE7": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/GET/api/v1/webhooks/*"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/{webhookId}/GET/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.webhooks.{webhookId}"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdGETA3FAFA17": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdGETvalidator24E104E9"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdAF3B0A30"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/{webhookId}/GET/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdPUTApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59PUTapiv1webhookswebhookId6E5B875F": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/PUT/api/v1/webhooks/*"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/{webhookId}/PUT/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.PUT..api.v1.webhooks.{webhookId}"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdPUTApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59PUTapiv1webhookswebhookIdA330E16B": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/PUT/api/v1/webhooks/*"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/{webhookId}/PUT/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.PUT..api.v1.webhooks.{webhookId}"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdPUTEE76D3F7": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "PUT",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdPUTvalidatorE44871B7"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdAF3B0A30"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/{webhookId}/PUT/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdDELETEApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59DELETEapiv1webhookswebhookId7A335F48": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/DELETE/api/v1/webhooks/*"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/{webhookId}/DELETE/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.DELETE..api.v1.webhooks.{webhookId}"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdDELETEApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59DELETEapiv1webhookswebhookIdAF7638F0": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/DELETE/api/v1/webhooks/*"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/{webhookId}/DELETE/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.DELETE..api.v1.webhooks.{webhookId}"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdDELETEB15C60C9": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "DELETE",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdDELETEvalidator550F8702"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdAF3B0A30"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/{webhookId}/DELETE/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdtest01D59926": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdAF3B0A30"
+    },
+    "PathPart": "test",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/{webhookId}/test/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdtestOPTIONS5E6B7F19": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdtest01D59926"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/{webhookId}/test/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdtestPOSTApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59POSTapiv1webhookswebhookIdtest50425AA0": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/POST/api/v1/webhooks/*/test"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/{webhookId}/test/POST/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.POST..api.v1.webhooks.{webhookId}.test"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdtestPOSTApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59POSTapiv1webhookswebhookIdtestABB057CE": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/POST/api/v1/webhooks/*/test"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/{webhookId}/test/POST/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.POST..api.v1.webhooks.{webhookId}.test"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdtestPOST211F859C": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdtestPOSTvalidator5C236BB9"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdtest01D59926"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/webhooks/{webhookId}/test/POST/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notifications839BA725": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv16C5FB4DF"
+    },
+    "PathPart": "notifications",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationsOPTIONSD59851B5": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1notifications839BA725"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationssend0821D428": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1notifications839BA725"
+    },
+    "PathPart": "send",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/send/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationssendOPTIONS741D2087": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1notificationssend0821D428"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/send/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationssendPOSTApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59POSTapiv1notificationssend0F1E935C": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/POST/api/v1/notifications/send"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/send/POST/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.POST..api.v1.notifications.send"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationssendPOSTApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59POSTapiv1notificationssend426DC9A9": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/POST/api/v1/notifications/send"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/send/POST/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.POST..api.v1.notifications.send"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationssendPOST654F71F0": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1notificationssendPOSTvalidatorEE2F7187"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1notificationssend0821D428"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/send/POST/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationshistory1A79D29F": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1notifications839BA725"
+    },
+    "PathPart": "history",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/history/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationshistoryOPTIONSF6589D5F": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1notificationshistory1A79D29F"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/history/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationshistoryGETApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1notificationshistoryB54D6E33": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/GET/api/v1/notifications/history"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/history/GET/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.notifications.history"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationshistoryGETApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1notificationshistory2CD20B62": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/GET/api/v1/notifications/history"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/history/GET/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.notifications.history"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationshistoryGETD15B18AD": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1notificationshistoryGETvalidatorBD05D285"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1notificationshistory1A79D29F"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/history/GET/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationspreferences5D1A9913": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1notifications839BA725"
+    },
+    "PathPart": "preferences",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/preferences/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationspreferencesOPTIONS0D04C371": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Max-Age": "'3600'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Max-Age": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1notificationspreferences5D1A9913"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/preferences/OPTIONS/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationspreferencesGETApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1notificationspreferencesBE35529E": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/GET/api/v1/notifications/preferences"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/preferences/GET/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.notifications.preferences"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationspreferencesGETApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59GETapiv1notificationspreferences456FB02B": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/GET/api/v1/notifications/preferences"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/preferences/GET/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.GET..api.v1.notifications.preferences"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationspreferencesGETFC8E246D": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1notificationspreferencesGETvalidator17ED6509"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1notificationspreferences5D1A9913"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/preferences/GET/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationspreferencesPUTApiPermissioncostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59PUTapiv1notificationspreferencesDE67CACB": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+       },
+       "/PUT/api/v1/notifications/preferences"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/preferences/PUT/ApiPermission.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.PUT..api.v1.notifications.preferences"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationspreferencesPUTApiPermissionTestcostanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59PUTapiv1notificationspreferences931134B3": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/test-invoke-stage/PUT/api/v1/notifications/preferences"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/preferences/PUT/ApiPermission.Test.costanalyticsapidevMultiCloudCostAnalyticsAPIA4BDFE59.PUT..api.v1.notifications.preferences"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationspreferencesPUT4EEF6E04": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "CUSTOM",
+    "AuthorizerId": {
+     "Ref": "JWTAuthorizerE8D8D90E"
+    },
+    "HttpMethod": "PUT",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "200"
+      },
+      {
+       "SelectionPattern": "4\\d{2}",
+       "StatusCode": "400"
+      },
+      {
+       "SelectionPattern": "5\\d{2}",
+       "StatusCode": "500"
+      }
+     ],
+     "TimeoutInMillis": 29000,
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::ImportValue": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "200"
+     },
+     {
+      "StatusCode": "400"
+     },
+     {
+      "StatusCode": "401"
+     },
+     {
+      "StatusCode": "403"
+     },
+     {
+      "StatusCode": "404"
+     },
+     {
+      "StatusCode": "429"
+     },
+     {
+      "StatusCode": "500"
+     }
+    ],
+    "RequestValidatorId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1notificationspreferencesPUTvalidator17F0A1F2"
+    },
+    "ResourceId": {
+     "Ref": "MultiCloudCostAnalyticsAPIapiv1notificationspreferences5D1A9913"
+    },
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/Default/api/v1/notifications/preferences/PUT/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdataGETvalidator825A2E9B": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": false,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-cost-data-GET-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdatasummaryGETvalidatorB103FA96": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": false,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-cost-data-summary-GET-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdatatrendsGETvalidatorDADC14C5": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": false,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-cost-data-trends-GET-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1costdataprovidersGETvalidator41EA7649": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": false,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-cost-data-providers-GET-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsGETvalidator25E75B39": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": false,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-insights-GET-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsanomaliesGETvalidator9500F27F": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": false,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-insights-anomalies-GET-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsrecommendationsGETvalidatorC4B4797D": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": false,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-insights-recommendations-GET-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1insightsforecastsGETvalidatorB70D9243": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": false,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-insights-forecasts-GET-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeGETvalidatorEC2C69D1": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": false,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-clients-me-GET-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmePUTvalidator74A1F9CD": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": true,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-clients-me-PUT-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsGETvalidatorA560AACD": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": false,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-clients-me-accounts-GET-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsPOSTvalidator4C9988DC": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": true,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-clients-me-accounts-POST-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsaccountIdDELETEvalidatorDECE7A6D": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": false,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-clients-me-accounts-accountId-DELETE-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhooksGETvalidator7D39BE07": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": false,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-webhooks-GET-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhooksPOSTvalidatorB914E5A4": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": true,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-webhooks-POST-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdGETvalidator24E104E9": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": false,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-webhooks-webhookId-GET-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdPUTvalidatorE44871B7": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": true,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-webhooks-webhookId-PUT-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdDELETEvalidator550F8702": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": false,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-webhooks-webhookId-DELETE-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdtestPOSTvalidator5C236BB9": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": true,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-webhooks-webhookId-test-POST-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationssendPOSTvalidatorEE2F7187": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": true,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-notifications-send-POST-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationshistoryGETvalidatorBD05D285": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": false,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-notifications-history-GET-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationspreferencesGETvalidator17ED6509": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": false,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-notifications-preferences-GET-validator/Resource"
+   }
+  },
+  "MultiCloudCostAnalyticsAPIapiv1notificationspreferencesPUTvalidator17F0A1F2": {
+   "Type": "AWS::ApiGateway::RequestValidator",
+   "Properties": {
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "ValidateRequestBody": true,
+    "ValidateRequestParameters": true
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/MultiCloudCostAnalyticsAPI/-api-v1-notifications-preferences-PUT-validator/Resource"
+   }
+  },
+  "APIAuthorizerServiceRole2FDB9AFB": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/APIAuthorizer/ServiceRole/Resource"
+   }
+  },
+  "APIAuthorizer327915AB": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-008195334540-us-east-1",
+     "S3Key": "a1a6083d4e269df081ed0bb8dfd7408dcad95b039a1ffb154bdfae99550303db.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "JWT_SECRET": "dev-jwt-secret-change-me",
+      "ENVIRONMENT": "dev"
+     }
+    },
+    "FunctionName": "cost-analytics-api-dev-authorizer",
+    "Handler": "authorizer.lambda_handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "APIAuthorizerServiceRole2FDB9AFB",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.11",
+    "Timeout": 30
+   },
+   "DependsOn": [
+    "APIAuthorizerServiceRole2FDB9AFB"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/APIAuthorizer/Resource",
+    "aws:asset:path": "asset.a1a6083d4e269df081ed0bb8dfd7408dcad95b039a1ffb154bdfae99550303db",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "APIAuthorizercostanalyticsapidevJWTAuthorizerC95CC1A5Permissions80EF2E05": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "APIAuthorizer327915AB",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+       },
+       "/authorizers/",
+       {
+        "Ref": "JWTAuthorizerE8D8D90E"
+       }
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/APIAuthorizer/costanalyticsapidevJWTAuthorizerC95CC1A5:Permissions"
+   }
+  },
+  "JWTAuthorizerE8D8D90E": {
+   "Type": "AWS::ApiGateway::Authorizer",
+   "Properties": {
+    "AuthorizerResultTtlInSeconds": 300,
+    "AuthorizerUri": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:",
+       {
+        "Fn::Select": [
+         1,
+         {
+          "Fn::Split": [
+           ":",
+           {
+            "Fn::GetAtt": [
+             "APIAuthorizer327915AB",
+             "Arn"
+            ]
+           }
+          ]
+         }
+        ]
+       },
+       ":apigateway:",
+       {
+        "Fn::Select": [
+         3,
+         {
+          "Fn::Split": [
+           ":",
+           {
+            "Fn::GetAtt": [
+             "APIAuthorizer327915AB",
+             "Arn"
+            ]
+           }
+          ]
+         }
+        ]
+       },
+       ":lambda:path/2015-03-31/functions/",
+       {
+        "Fn::GetAtt": [
+         "APIAuthorizer327915AB",
+         "Arn"
+        ]
+       },
+       "/invocations"
+      ]
+     ]
+    },
+    "IdentitySource": "method.request.header.Authorization,method.request.header.X-Api-Key",
+    "Name": "costanalyticsapidevJWTAuthorizerC95CC1A5",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "Type": "REQUEST"
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/JWTAuthorizer/Resource"
+   }
+  },
+  "APIDeploymentEC816D829709c6bed3856d0d451321bb7635e7d9": {
+   "Type": "AWS::ApiGateway::Deployment",
+   "Properties": {
+    "Description": "Deployment for dev environment",
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    }
+   },
+   "DependsOn": [
+    "MultiCloudCostAnalyticsAPIapiOPTIONS7C79F9E9",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsaccountIdDELETE07B24483",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsaccountIdOPTIONS002791A5",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsGET24B2C9EF",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsOPTIONSCC395C0E",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeaccountsPOST5920D089",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeGET4DF6B79F",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmeOPTIONSB27ECE51",
+    "MultiCloudCostAnalyticsAPIapiv1clientsmePUT80B86F19",
+    "MultiCloudCostAnalyticsAPIapiv1clientsOPTIONSCD3976E8",
+    "MultiCloudCostAnalyticsAPIapiv1costdataGET39A20D44",
+    "MultiCloudCostAnalyticsAPIapiv1costdataOPTIONS89AF8364",
+    "MultiCloudCostAnalyticsAPIapiv1costdataprovidersGET4D1758D2",
+    "MultiCloudCostAnalyticsAPIapiv1costdataprovidersOPTIONS92FBBE3E",
+    "MultiCloudCostAnalyticsAPIapiv1costdatasummaryGET2E90BE6A",
+    "MultiCloudCostAnalyticsAPIapiv1costdatasummaryOPTIONS17AA94A7",
+    "MultiCloudCostAnalyticsAPIapiv1costdatatrendsGET45D89077",
+    "MultiCloudCostAnalyticsAPIapiv1costdatatrendsOPTIONSDAD75462",
+    "MultiCloudCostAnalyticsAPIapiv1insightsanomaliesGET486FEEE0",
+    "MultiCloudCostAnalyticsAPIapiv1insightsanomaliesOPTIONS1787B341",
+    "MultiCloudCostAnalyticsAPIapiv1insightsforecastsGETDE3959C9",
+    "MultiCloudCostAnalyticsAPIapiv1insightsforecastsOPTIONSF98097EF",
+    "MultiCloudCostAnalyticsAPIapiv1insightsGET9D7954A2",
+    "MultiCloudCostAnalyticsAPIapiv1insightsOPTIONS960B5129",
+    "MultiCloudCostAnalyticsAPIapiv1insightsrecommendationsGET672C3EC1",
+    "MultiCloudCostAnalyticsAPIapiv1insightsrecommendationsOPTIONSBC1165BD",
+    "MultiCloudCostAnalyticsAPIapiv1notificationshistoryGETD15B18AD",
+    "MultiCloudCostAnalyticsAPIapiv1notificationshistoryOPTIONSF6589D5F",
+    "MultiCloudCostAnalyticsAPIapiv1notificationsOPTIONSD59851B5",
+    "MultiCloudCostAnalyticsAPIapiv1notificationspreferencesGETFC8E246D",
+    "MultiCloudCostAnalyticsAPIapiv1notificationspreferencesOPTIONS0D04C371",
+    "MultiCloudCostAnalyticsAPIapiv1notificationspreferencesPUT4EEF6E04",
+    "MultiCloudCostAnalyticsAPIapiv1notificationssendOPTIONS741D2087",
+    "MultiCloudCostAnalyticsAPIapiv1notificationssendPOST654F71F0",
+    "MultiCloudCostAnalyticsAPIapiv1OPTIONS4902F138",
+    "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdDELETEB15C60C9",
+    "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdGETA3FAFA17",
+    "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdOPTIONS73BD6406",
+    "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdPUTEE76D3F7",
+    "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdtestOPTIONS5E6B7F19",
+    "MultiCloudCostAnalyticsAPIapiv1webhookswebhookIdtestPOST211F859C",
+    "MultiCloudCostAnalyticsAPIapiv1webhooksGETCBADDBE9",
+    "MultiCloudCostAnalyticsAPIapiv1webhooksOPTIONS48857221",
+    "MultiCloudCostAnalyticsAPIapiv1webhooksPOSTD8EF14B2",
+    "MultiCloudCostAnalyticsAPIhealthGET418D85D9",
+    "MultiCloudCostAnalyticsAPIhealthOPTIONSA0E1383B",
+    "MultiCloudCostAnalyticsAPIOPTIONSDCD64E45"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/APIDeployment/Resource"
+   }
+  },
+  "APIStageLogGroup39903CEB": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": "/aws/apigateway/cost-analytics-api-dev/dev",
+    "RetentionInDays": 30
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/APIStageLogGroup/Resource"
+   }
+  },
+  "APIStage1A037A7D": {
+   "Type": "AWS::ApiGateway::Stage",
+   "Properties": {
+    "AccessLogSetting": {
+     "DestinationArn": {
+      "Fn::GetAtt": [
+       "APIStageLogGroup39903CEB",
+       "Arn"
+      ]
+     },
+     "Format": "{\"requestId\":\"$context.requestId\",\"ip\":\"$context.identity.sourceIp\",\"user\":\"$context.identity.user\",\"caller\":\"$context.identity.caller\",\"requestTime\":\"$context.requestTime\",\"httpMethod\":\"$context.httpMethod\",\"resourcePath\":\"$context.resourcePath\",\"status\":\"$context.status\",\"protocol\":\"$context.protocol\",\"responseLength\":\"$context.responseLength\"}"
+    },
+    "DeploymentId": {
+     "Ref": "APIDeploymentEC816D829709c6bed3856d0d451321bb7635e7d9"
+    },
+    "Description": "API stage for dev environment",
+    "MethodSettings": [
+     {
+      "DataTraceEnabled": true,
+      "HttpMethod": "*",
+      "LoggingLevel": "INFO",
+      "ResourcePath": "/*",
+      "ThrottlingBurstLimit": 200,
+      "ThrottlingRateLimit": 100
+     }
+    ],
+    "RestApiId": {
+     "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+    },
+    "StageName": "dev",
+    "Variables": {
+     "environment": "dev",
+     "version": "1.0.0"
+    }
+   },
+   "DependsOn": [
+    "MultiCloudCostAnalyticsAPIAccountAAE42927"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/APIStage/Resource"
+   }
+  },
+  "APIDashboard8F09A84C": {
+   "Type": "AWS::CloudWatch::Dashboard",
+   "Properties": {
+    "DashboardBody": {
+     "Fn::Join": [
+      "",
+      [
+       "{\"start\":\"-PT24H\",\"periodOverride\":\"auto\",\"widgets\":[{\"type\":\"metric\",\"width\":12,\"height\":6,\"x\":0,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"API Gateway Metrics\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/ApiGateway\",\"Count\",\"ApiName\",\"cost-analytics-api-dev\",{\"label\":\"Requests\",\"stat\":\"Sum\"}],[\"AWS/ApiGateway\",\"4XXError\",\"ApiName\",\"cost-analytics-api-dev\",{\"label\":\"4XX Errors\",\"stat\":\"Sum\"}],[\"AWS/ApiGateway\",\"5XXError\",\"ApiName\",\"cost-analytics-api-dev\",{\"label\":\"5XX Errors\",\"stat\":\"Sum\"}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":12,\"height\":6,\"x\":12,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"API Latency\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/ApiGateway\",\"Latency\",\"ApiName\",\"cost-analytics-api-dev\",{\"label\":\"Average Latency\"}],[\"AWS/ApiGateway\",\"IntegrationLatency\",\"ApiName\",\"cost-analytics-api-dev\",{\"label\":\"Integration Latency\"}]],\"yAxis\":{\"left\":{\"label\":\"Latency (ms)\",\"min\":0}}}}]}"
+      ]
+     ]
+    },
+    "DashboardName": "cost-analytics-api-dev-metrics"
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/APIDashboard/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/12QQU/DMAyFfwv3LLBN4t5tgguIqZO4Tl7qtWFpXGJH1ajy31HaDQYnf+89y9HLQs8XC/1wBz3PTHWaOXvQw07AnBT0vB8c1ayHF6qfA8VOrY/+yklBZ2sQ7OGshxJZis7mhRssjKHoRW2wc3Ru0Ut2b9ROoMbsTVAiUwwGV8CoXlEaqnJ4oWt6eWTiEj8jsryDsxUIhSn8512MIkpDwX7huPWrkrLQ6qEkN90mh0k5aA8V6GF99FsMrWW25NVT9EYyrI/+yknxcg/MKKyLPBQv9SqaE8pYxDiKVQ9iGj1sgJsDQRh7/YiU/pR7i9JFUeOt/DHW17edk9qepSF/v9TzuX68+2BrZyF6sS3qcprfOOI2+dgBAAA="
+   },
+   "Metadata": {
+    "aws:cdk:path": "cost-analytics-api-dev/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "MultiCloudCostAnalyticsAPIEndpoint6D2CDE1D": {
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+      },
+      ".execute-api.us-east-1.",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/",
+      {
+       "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+      },
+      "/"
+     ]
+    ]
+   }
+  },
+  "APIGatewayURL": {
+   "Description": "API Gateway URL",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+      },
+      ".execute-api.us-east-1.",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/",
+      {
+       "Ref": "MultiCloudCostAnalyticsAPIDeploymentStageprod53994348"
+      },
+      "/"
+     ]
+    ]
+   },
+   "Export": {
+    "Name": "cost-analytics-api-dev-url"
+   }
+  },
+  "APIGatewayStageURL": {
+   "Description": "API Gateway Stage URL",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+      },
+      ".execute-api.us-east-1.",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/",
+      {
+       "Ref": "APIStage1A037A7D"
+      },
+      "/"
+     ]
+    ]
+   },
+   "Export": {
+    "Name": "cost-analytics-api-dev-stage-url"
+   }
+  },
+  "APIGatewayId": {
+   "Description": "API Gateway ID",
+   "Value": {
+    "Ref": "MultiCloudCostAnalyticsAPIEB2ACF08"
+   },
+   "Export": {
+    "Name": "cost-analytics-api-dev-id"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

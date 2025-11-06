@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Cost Analysis - Weekly Report</title>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: #f1f5f9; line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 25px rgba(30,58,138,0.15); }
+        .email-container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; font-family: Arial, sans-serif; }
+        
+        /* CostHub Branding */
+        .costhub-header { background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 25px; border-radius: 12px 12px 0 0; margin: -30px -30px 30px -30px; text-align: center; }
+        .costhub-logo-container { margin-bottom: 12px; }
+        .costhub-logo-container img { max-width: 200px; height: auto; filter: brightness(0) invert(1); }
+        .costhub-logo { font-size: 28px; font-weight: bold; margin-bottom: 8px; }
+        .costhub-tagline { font-size: 14px; opacity: 0.9; }
+        
+        h1 { color: #1e40af; text-align: center; border-bottom: 3px solid #fbbf24; padding-bottom: 15px; margin-bottom: 25px; }
+        h2 { color: #1e40af; border-left: 5px solid #fbbf24; padding-left: 20px; margin-top: 35px; background: #f8fafc; padding: 15px 20px; border-radius: 8px; }
+        h3 { color: #1e40af; margin-top: 25px; }
+        
+        /* Summary Section */
+        .summary { background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 25px; border-radius: 12px; margin: 25px 0; text-align: center; box-shadow: 0 4px 15px rgba(30,64,175,0.3); }
+        .summary h3 { color: white; margin-top: 0; }
+        
+        /* Cards and Grids */
+        .month-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin: 25px 0; }
+        .month-card { background: linear-gradient(135deg, #eff6ff, #dbeafe); padding: 20px; border-radius: 10px; text-align: center; border-left: 5px solid #fbbf24; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .month-card h4 { color: #1e40af; margin-top: 0; }
+        
+        .metric-card { background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 20px; border-radius: 10px; margin: 15px 0; border-left: 5px solid #1e40af; }
+        
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin: 25px 0; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 15px rgba(0,0,0,0.1); }
+        th, td { border: none; padding: 15px 12px; text-align: left; }
+        th { background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; font-weight: 600; }
+        tr:nth-child(even) { background-color: #f8fafc; }
+        tr:hover { background-color: #eff6ff; }
+        
+        /* Status Colors */
+        .increase { color: #dc2626; font-weight: bold; }
+        .decrease { color: #059669; font-weight: bold; }
+        .stable { color: #6b7280; }
+        
+        /* Badges */
+        .badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-info { background: #dbeafe; color: #1e40af; }
+        
+        /* New Services */
+        .new-service { background: linear-gradient(135deg, #dbeafe, #bfdbfe); padding: 15px; margin: 8px 0; border-radius: 8px; border-left: 5px solid #fbbf24; }
+        
+        /* Forecast Alerts */
+        .forecast-alert { padding: 25px; border-radius: 12px; margin: 25px 0; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .forecast-alert.high { background: linear-gradient(135deg, #dc2626, #ef4444); color: white; }
+        .forecast-alert.warning { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: white; }
+        .forecast-alert.good { background: linear-gradient(135deg, #059669, #10b981); color: white; }
+        
+        .forecast-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin: 25px 0; }
+        .forecast-card { background: #f8fafc; padding: 25px; border-radius: 12px; border-left: 5px solid #fbbf24; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .forecast-card.alert { border-left-color: #dc2626; background: #fef2f2; }
+        .forecast-card h4 { color: #1e40af; margin-top: 0; }
+        
+        .cost-driver { background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 20px; margin: 15px 0; border-radius: 10px; border-left: 5px solid #1e40af; }
+        .cost-driver.high { border-left-color: #dc2626; background: linear-gradient(135deg, #fee2e2, #fecaca); }
+        
+        /* Footer */
+        .footer { text-align: center; margin-top: 40px; padding-top: 25px; border-top: 2px solid #e5e7eb; color: #6b7280; }
+        .costhub-badge { background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 8px 16px; border-radius: 25px; font-size: 12px; font-weight: bold; }
+        
+        /* Email Specific Styles */
+        .email-header { background: #1e40af; color: white; padding: 20px; text-align: center; }
+        .email-summary { background: #f8fafc; padding: 20px; border-left: 5px solid #fbbf24; margin: 20px 0; }
+        .email-cta { background: #fbbf24; color: #1e40af; padding: 15px 30px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; margin: 20px 0; }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container, .email-container { padding: 15px; }
+            .month-grid, .forecast-grid { grid-template-columns: 1fr; }
+            table { font-size: 14px; }
+            th, td { padding: 10px 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <div class="costhub-header">
+            <div class="costhub-logo-container">
+                <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/Pgo8IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDIwMDEwOTA0Ly9FTiIKICJodHRwOi8vd3d3LnczLm9yZy9UUi8yMDAxL1JFQy1TVkctMjAwMTA5MDQvRFREL3N2ZzEwLmR0ZCI+CjxzdmcgdmVyc2lvbj0iMS4wIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiB3aWR0aD0iMTAyNC4wMDAwMDBwdCIgaGVpZ2h0PSIxMDI0LjAwMDAwMHB0IiB2aWV3Qm94PSIwIDAgMTAyNC4wMDAwMDAgMTAyNC4wMDAwMDAiCiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWlkWU1pZCBtZWV0Ij4KCjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAuMDAwMDAwLDEwMjQuMDAwMDAwKSBzY2FsZSgwLjEwMDAwMCwtMC4xMDAwMDApIgpmaWxsPSIjMDAwMDAwIiBzdHJva2U9Im5vbmUiPgo8cGF0aCBkPSJNMjYzMCA1NzI5IGMtMTE4IC0yMCAtMjQ5IC0xMDggLTMwNyAtMjA3IC0xNCAtMjMgLTMzIC02OCAtNDMgLTk5CmwtMTcgLTU3IC02MyAtMTIgYy0xMTUgLTI0IC0yMTAgLTEwNCAtMjUxIC0yMTMgLTI5IC03OSAtMjQgLTIwMyAxMiAtMjgxIDQ1Ci05NSAxMzMgLTE2NSAyNDEgLTE5MCAyNCAtNSAxMzQgLTEwIDI0NiAtMTAgMTg4IDAgMjAzIDEgMjAwIDE4IC0zIDE1IC0yNCAxNwotMjIzIDIyIC0yMTUgNSAtMjIxIDYgLTI3NiAzMiAtMTE2IDU3IC0xNzAgMTM4IC0xNzcgMjY0IC00IDczIC0xIDg4IDIzIDE0Mwo0NiAxMDIgMTU3IDE4MSAyNTcgMTgxIGw0NiAwIDExIDUyIGMyNyAxMjIgMTI3IDI0NSAyMzkgMjkwIDQ4IDE5IDc1IDIzIDE2NwoyMyA5OSAwIDExNiAtMyAxNjggLTI3IDY2IC0zMSAxNTYgLTExMiAxOTEgLTE3MyAxNCAtMjMgMzMgLTcwIDQyIC0xMDMgbDE3Ci02MiA4MSAwIGM5OCAwIDE0NCAtMTkgMjE1IC04NSA3MiAtNjcgOTQgLTEyNiA4OSAtMjM1IC0zIC03MyAtOSAtOTUgLTM0Ci0xNDEgLTYyIC0xMTAgLTE2NiAtMTU5IC0zMzcgLTE1OSAtOTIgMCAtOTcgLTEgLTk3IC0yMSAwIC0yMSAzIC0yMSAxMjMgLTE3CjE1MSA2IDIxNSAyOCAyODUgOTYgNTcgNTcgOTAgMTIyIDEwNSAyMDYgMzQgMTk5IC0xMjUgMzkyIC0zMzEgNDAyIGwtNjYgMwotMjIgNjIgYy01OCAxNTkgLTE5MSAyNzIgLTM1NCAyOTggLTc0IDEyIC04NCAxMiAtMTYwIDB6Ii8+CjxwYXRoIGQ9Ik0yNzM4IDU2MTMgYzI2IC01IDI0IC0yOSAtMyAtMjYgLTEyIDEgLTE0IC0yIC02IC0xMCA4IC04IDE1IC03IDI3CjUgMjAgMjAgMTAgMzggLTE5IDM3IC0yMSAtMiAtMjEgLTIgMSAtNnoiLz4KPHBhdGggZD0iTTI1NzggNTU5MyBjNiAtMiAxOCAtMiAyNSAwIDYgMyAxIDUgLTEzIDUgLTE0IDAgLTE5IC0yIC0xMiAtNXoiLz4KPHBhdGggZD0iTTQ0NzkgNTU4MSBjLTEwOCAtMzUgLTE4MCAtMTAwIC0yMzMgLTIxMSAtMjggLTU5IC0zMSAtNzQgLTMxIC0xNjUKMCAtOTIgMyAtMTA2IDMyIC0xNjcgNDIgLTg5IDEwMSAtMTUxIDE4MiAtMTkxIDYxIC0zMCA3MiAtMzIgMTcxIC0zMiA5NyAwCjExMCAyIDE3MiAzMiAzNiAxNyA4NSA1MSAxMDggNzQgbDQyIDQ0IC00OCA0MSAtNDggNDIgLTM5IC0zNSBjLTg0IC03NiAtMTg4Ci05NCAtMjgyIC00OSAtOTcgNDYgLTE0NSAxMjUgLTE0NSAyNDEgMCAxMTMgNTEgMTk4IDE0NSAyNDEgOTEgNDMgMTk1IDI4IDI3MAotMzggMjQgLTIxIDQ3IC0zOCA1MiAtMzggNSAwIDI4IDE5IDUxIDQzIGw0MiA0MyAtNDIgNDAgYy01MyA1MCAtNzkgNjYgLTE0Mgo4NyAtNjUgMjIgLTE4NSAyMSAtMjU3IC0yeiIvPgo8cGF0aCBkPSJNMjYwMSA1NTU3IGMtMTMgLTIxIC0xMiAtMjEgNSAtNSAxMCAxMCAxNiAyMCAxMyAyMiAtMyAzIC0xMSAtNSAtMTgKLTE3eiIvPgo8cGF0aCBkPSJNMjgzMyA1NTQ0IGMtMyAtOCAtMSAtMjAgNiAtMjcgNyAtNyAxMiAtNTcgMTMgLTEyNiBsMiAtMTE2IDMgMTE0CmMzIDg4IDcgMTE3IDE5IDEyNSAyMCAxNSA4IDQ2IC0xNyA0NiAtMTEgMCAtMjIgLTcgLTI2IC0xNnogbTQ1IC0xMSBjMiAtOCAtNQotMTMgLTE3IC0xMyAtMTIgMCAtMjEgNiAtMjEgMTYgMCAxOCAzMSAxNSAzOCAtM3oiLz4KPHBhdGggZD0iTTYyNDAgNTQ2MCBsMCAtODAgLTQzIDAgYy0yNCAwIC00NiAtMiAtNDggLTQgLTIgLTIgLTIgLTI3IC0xIC01NQpsNCAtNTAgNDEgLTMgNDIgLTMgNSAtMTgwIGM2IC0yMDggMTMgLTIzMiA4MCAtMjU5IDUxIC0yMCAxMDQgLTIwIDE2MyAwIDUyCjE4IDUyIDE2IDM1IDc5IC05IDM0IC0xNiA0NCAtMjggMzkgLTQ0IC0xNyAtNzggLTE2IC05OSA1IC0yMCAyMCAtMjEgMzAgLTE5CjE2OSAzIDEzOSA0IDE0NyAyMyAxNDggMTEgMCA0NCAxIDczIDIgbDUyIDIgMCA1NSAwIDU1IC03NSAwIC03NSAwIDAgODAgMCA4MAotNjUgMCAtNjUgMCAwIC04MHoiLz4KPHBhdGggZD0iTTI3MzEgNTUxNyBjLTEgLTI0IDIyIC02OCA0OCAtODkgMzAgLTI1IDI2IC02IC00IDIyIC0xNCAxMyAtMjkgMzgKLTM0IDU0IC01IDE3IC0xMCAyMyAtMTAgMTN6Ii8+CjxwYXRoIGQ9Ik0yNjU3IDU1MTMgYy0xMSAtMTAgLTggLTQxIDQgLTQ5IDYgLTMgMTYgLTEgMjIgNSA5IDkgOCAxMSAtNSA2IC0xNAotNSAtMTggLTIgLTE4IDEzIDAgMTEgOCAyMyAxOCAyNSAxNCA0IDE0IDUgMSA2IC05IDAgLTE5IC0yIC0yMiAtNnoiLz4KPHBhdGggZD0iTTI0NzMgNTQ5NCBjLTMgLTggLTEgLTI1IDUgLTM3IDYgLTEyIDEzIC00MCAxNSAtNjIgbDQgLTQwIDEgNDMgYzEKMjMgNyA1MSAxNCA2MSA2IDEwIDggMjYgNSAzNSAtOCAyMCAtMzYgMjEgLTQ0IDB6IG0zNyAtMTUgYzAgLTI0IC0yMyAtMjEgLTI4CjQgLTIgMTAgMyAxNyAxMiAxNyAxMCAwIDE2IC05IDE2IC0yMXoiLz4KPHBhdGggZD0iTTI5NDAgNTQ3NSBjLTEwIC0xMiAtMTAgLTE5IC0yIC0yNyA3IC03IDEzIC0zNyAxNCAtNjcgbDIgLTU2IDMgNTAKYzMgMjcgMTEgNTggMjAgNjcgMTMgMTQgMTMgMjAgMyAzMyAtMTYgMTkgLTI0IDE5IC00MCAweiBtMzYgLTYgYzEwIC0xNyAtMTMKLTM2IC0yNyAtMjIgLTEyIDEyIC00IDMzIDExIDMzIDUgMCAxMiAtNSAxNiAtMTF6Ii8+CjxwYXRoIGQ9Ik0yNzA4IDUzODggYzExIC0xMyAyMiAtNDEgMjUgLTYzIGw0IC00MCAxIDQwIGMyIDQxIC0xOSA4NSAtNDAgODUKLTYgMCAtMiAtMTAgMTAgLTIyeiIvPgo8cGF0aCBkPSJNMjM3OCA1Mzg4IGMtNyAtMTcgMSAtMzggMTQgLTM4IDcgMCA3IDUgLTEgMTMgLTEyIDE1IC01IDI3IDE2IDI3CjExIDAgMTMgLTggOSAtMjcgLTUgLTI0IDQgLTM4IDc0IC0xMTAgNDQgLTQ1IDgwIC04MCA4MCAtNzcgMCA0IC0zNCA0MSAtNzUKODMgLTYyIDY0IC03NCA4MiAtNzIgMTA2IDIgMjQgLTIgMzEgLTE5IDMzIC0xMiAyIC0yNCAtMyAtMjYgLTEweiIvPgo8cGF0aCBkPSJNMjc5MCA1MzUzIGMtMiAtMjQgLTMgLTQ4IC00IC01NSAtMSAtNiA1IC0xMyAxMiAtMTYgOCAtMiAxMCAyIDUgMTQKLTQgMTIgLTMgMTUgNSAxMCAxNCAtOSAxNiA2IDMgMjAgLTUgNSAtMTEgMjMgLTE0IDM5IC0zIDI1IC00IDI0IC03IC0xMnoiLz4KPHBhdGggZD0iTTUxNjcgNTM3NiBjLTE2MyAtNjEgLTIzOSAtMjQxIC0xNjggLTQwMCA3NiAtMTc0IDMzMCAtMjIyIDQ3MiAtODkKNjkgNjUgOTMgMTIwIDkzIDIxMyAwIDE2OCAtMTA5IDI3OSAtMjg0IDI4NyAtNDggMiAtODkgLTIgLTExMyAtMTF6IG0xODQKLTEyOSBjNDEgLTI3IDc5IC05OCA3OSAtMTQ3IDAgLTQ1IC0zNyAtMTE4IC03MyAtMTQ0IC0yMSAtMTYgLTQ0IC0yMSAtODcgLTIxCi00MyAwIC02NiA1IC04NyAyMSAtMzYgMjYgLTczIDk5IC03MyAxNDQgMCA0OSAzOCAxMjAgNzkgMTQ3IDIzIDE2IDQ5IDIzIDgxCjIzIDMyIDAgNTggLTcgODEgLTIzeiIvPgo8cGF0aCBkPSJNNTc1NSA1MzcyIGMtODAgLTM4IC0xMTYgLTExMyAtOTUgLTE5NCAyMCAtNzEgNTEgLTkyIDIwOCAtMTM4IDU2Ci0xNiA3NiAtMjcgODQgLTQ1IDE1IC0zMyA0IC01MyAtMzggLTcxIC00NCAtMTkgLTExNSAtNyAtMTgyIDMxIC0yNSAxNCAtNDYKMjUgLTQ4IDI1IC0yIDAgLTE3IC0yMCAtMzQgLTQ0IGwtMzAgLTQ1IDQzIC0yNSBjMTAzIC02MCAyNTQgLTcxIDMzOCAtMjUgNTcKMzIgODEgNjcgODcgMTI3IDkgOTggLTQ0IDE1NCAtMTc5IDE4NyAtMTA2IDI3IC0xNDggNjEgLTEyMSAxMDEgMzAgNDYgMTA0IDQyCjIyNCAtMTAgMTIgLTYgMjMgMyA0MiAzNyAxNCAyNCAyNiA0NiAyNiA0OSAwIDMgLTI0IDE2IC01MiAyOSAtNzQgMzIgLTIxNiAzOAotMjczIDExeiIvPgo8cGF0aCBkPSJNMjYzMCA1Mzc2IGMwIC0yIDkgLTYgMjAgLTkgMTEgLTMgMTggLTEgMTQgNCAtNSA5IC0zNCAxMyAtMzQgNXoiLz4KPHBhdGggZD0iTTMwMjUgNTM1OCBjLTIgLTcgLTMgLTI1IC0yIC0zOSAyIC0yNSAzIC0yNiAyNCAtMTAgMjEgMTUgMzIgNjEgMTUKNjEgLTUgMCAtOCAtOSAtOCAtMjAgMSAtMTAgLTMgLTE4IC05IC0xNyAtNSAxIC0xMCAxMCAtOSAyMCAxIDIwIC01IDIyIC0xMSA1eiIvPgo8cGF0aCBkPSJNMjU1MiA1Mjk1IGw1NyAtNjAgNCAtMTQ1IDMgLTE0NSAyIDE0NSAyIDE0NiAtNjIgNTkgLTYzIDYwIDU3IC02MHoiLz4KPHBhdGggZD0iTTI2NTAgNTM0MCBjLTEzIC04IC0xMiAtMTAgMyAtMTAgOSAwIDE3IDUgMTcgMTAgMCAxMiAtMSAxMiAtMjAgMHoiLz4KPHBhdGggZD0iTTI4NzUgNTIzOCBsLTgwIC04MSA4MyA3MyBjNDUgNDAgODIgNzYgODIgODEgMCAxMyAyIDE1IC04NSAtNzN6Ii8+CjxwYXRoIGQ9Ik0yNjUwIDUyODYgYzggLTEwIDE3IC0zOSAyMSAtNjUgbDYgLTQ2IDIgNDYgYzEgMzYgLTQgNTAgLTIxIDY1IC0yMQoxOCAtMjIgMTggLTggMHoiLz4KPHBhdGggZD0iTTI3MjMgNTIzMCBjMCAtMzAgMiAtNDMgNCAtMjcgMiAxNSAyIDM5IDAgNTUgLTIgMTUgLTQgMiAtNCAtMjh6Ii8+CjxwYXRoIGQ9Ik0yOTU4IDUyMjkgbC01MyAtNTEgNTggNDggYzMxIDI2IDU3IDQ5IDU3IDUxIDAgOSAtMTMgLTIgLTYyIC00OHoiLz4KPHBhdGggZD0iTTIxOTQgNTI1NSBjLTExIC0yOCA2IC0zNSA2NiAtMjggNTggNiA2MSA1IDEwMCAtMzEgMzYgLTMyIDQ2IC0zNgo5NSAtMzYgMzAgMCA1NSA0IDU1IDkgMCA2IC0yMyA3IC01NCA0IC01MCAtNSAtNTUgLTQgLTkzIDMxIC0zMiAyOSAtNDggMzYKLTgxIDM2IC0yNiAwIC00MiA1IC00NiAxNSAtNyAxOSAtMzUgMTkgLTQyIDB6IG0zNiAtMTYgYzAgLTUgLTcgLTkgLTE1IC05Ci0xNSAwIC0yMCAxMiAtOSAyMyA4IDggMjQgLTEgMjQgLTE0eiIvPgo8cGF0aCBkPSJNMzI2NCA1MjU1IGMtOCAtMjAgNCAtMzUgMjYgLTM1IDI1IDAgMzUgMTcgMjAgMzUgLTE2IDE5IC0zOSAxOSAtNDYKMHogbTQ0IC0xMyBjMiAtNyAtNiAtMTIgLTE3IC0xMiAtMjEgMCAtMjcgMTEgLTE0IDI0IDkgOSAyNiAyIDMxIC0xMnoiLz4KPHBhdGggZD0iTTI3ODcgNTIyMiBsLTM4IC0zOSA0IC05NCAzIC05NCAyIDk1IGMyIDk0IDIgOTQgMzkgMTMyIDIwIDIxIDM1IDM4CjMyIDM4IC0zIDAgLTIyIC0xNyAtNDIgLTM4eiIvPgo8cGF0aCBkPSJNMzA0MCA1MjQxIGMwIC0xMCAxOSAtMjUgMjUgLTIwIDEgMiAtMyAxMCAtMTEgMTcgLTggNyAtMTQgOCAtMTQgM3oiLz4KPHBhdGggZD0iTTMxNDcgNTIxNCBjLTExIC0xNCAtMjkgLTI5IC00MCAtMzQgLTE1IC02IC0xNyAtOSAtNiAtOSA4IC0xIDI4IDEyCjQ0IDI4IDIwIDIyIDM5IDMxIDY5IDM0IGw0MSA0IC00NSAxIGMtMzggMSAtNDggLTMgLTYzIC0yNHoiLz4KPHBhdGggZD0iTTMzNzUgNTE4NSBjLTExIC04IC0yOSAtMTUgLTQwIC0xNSAtMTEgMCAtMzEgLTggLTQ1IC0xNiAtMTQgLTkgLTE3Ci0xMyAtNyAtMTAgNTAgMTYgNjcgMTcgODcgNiAxOCAtMTAgMjUgLTkgMzggNCAxNSAxNCAxNSAxOCAxIDMxIC0xMyAxMyAtMTcKMTMgLTM0IDB6IG0yNyAtMjcgYy05IC05IC0xNSAtOSAtMjQgMCAtMTAgMTAgLTEwIDE1IDIgMjIgMjAgMTIgMzggLTYgMjIgLTIyeiIvPgo8cGF0aCBkPSJNMjA5MCA1MTY1IGMwIC0yMiA0IC0yNiAyMyAtMjMgMTQgMiAyMiAxMCAyMiAyMyAwIDEzIC04IDIxIC0yMiAyMwotMTkgMyAtMjMgLTEgLTIzIC0yM3ogbTQwIDAgYzAgLTggLTcgLTE1IC0xNSAtMTUgLTggMCAtMTUgNyAtMTUgMTUgMCA4IDcgMTUKMTUgMTUgOCAwIDE1IC03IDE1IC0xNXoiLz4KPHBhdGggZD0iTTI5ODggNTE3MyBjNiAtMiAxOCAtMiAyNSAwIDYgMyAxIDUgLTEzIDUgLTE0IDAgLTE5IC0yIC0xMiAtNXoiLz4KPHBhdGggZD0iTTIxNjMgNTE2MyBjOSAtMiAyNSAtMiAzNSAwIDkgMyAxIDUgLTE4IDUgLTE5IDAgLTI3IC0yIC0xNyAtNXoiLz4KPHBhdGggZD0iTTI4NzQgNTE1NyBjLTIgLTcgLTMgLTc4IC0yIC0xNTcgbDMgLTE0NSA1IDE1OCBjMyA4NiA0IDE1NyAyIDE1NwotMSAwIC01IC02IC04IC0xM3oiLz4KPHBhdGggZD0iTTIzMTUgNTE1MSBjMTEgLTUgMjkgLTE4IDM5IC0zMCAyMSAtMjMgNjEgLTI2IDEzMSAtMTEgMzQgNyAyOSA4Ci0zOCA4IC02NiAtMSAtODEgMiAtMTAwIDIxIC0xMyAxMSAtMzAgMjEgLTM4IDIwIC04IDAgLTYgLTQgNiAtOHoiLz4KPHBhdGggZD0iTTMxNzAgNTE1MCBjMCAtNSA4IC02IDE3IC0zIDEyIDUgMTUgMiAxMCAtMTAgLTMgLTkgLTIgLTE3IDMgLTE3IDYKMCAxMCA5IDEwIDIwIDAgMTMgLTcgMjAgLTIwIDIwIC0xMSAwIC0yMCAtNCAtMjAgLTEweiIvPgo8cGF0aCBkPSJNMjY3MCA1MTI0IGMwIC04IDUgLTEyIDEwIC05IDYgNCA4IDExIDUgMTYgLTkgMTQgLTE1IDExIC0xNSAtN3oiLz4KPHBhdGggZD0iTTMwNDggNTEyMyBjMjMgLTIgNjEgLTIgODUgMCAyMyAyIDQgNCAtNDMgNCAtNDcgMCAtNjYgLTIgLTQyIC00eiIvPgo8cGF0aCBkPSJNMzI2NSA1MTEwIGMtMyAtNSAtMiAtMTAgNCAtMTAgNSAwIDEzIDUgMTYgMTAgMyA2IDIgMTAgLTQgMTAgLTUgMAotMTMgLTQgLTE2IC0xMHoiLz4KPHBhdGggZD0iTTIwNDcgNTA5NiBjLTYgLTE1IDExIC0zNiAyOCAtMzYgNSAwIDIgNSAtOCAxMSAtMTQgOCAtMTYgMTQgLTYgMjUKNyA4IDcgMTQgMSAxNCAtNSAwIC0xMiAtNiAtMTUgLTE0eiIvPgo8cGF0aCBkPSJNMzQyOSA1MTAxIGM4IC01IDEwIC0xNCA2IC0yMiAtNiAtMTEgLTUgLTExIDUgLTIgMTQgMTIgNiAzMyAtMTMgMzMKLTggMCAtNyAtMyAyIC05eiIvPgo8cGF0aCBkPSJNMjE4MiA1MDc1IGMxNSAtMTYgMjkgLTI3IDMxIC0yNCAzIDIgLTEwIDE1IC0yNyAyOCBsLTMxIDI0IDI3IC0yOHoiLz4KPHBhdGggZD0iTTMyNDAgNTA5MiBjMCAtOCAtMzYgLTEyIC0xMDcgLTE1IGwtMTA4IC0zIDEyNSAtMiBjNjkgLTEgMTIxIDIgMTE1CjYgLTUgNCAtMTMgMTEgLTE3IDE2IC01IDUgLTggNCAtOCAtMnoiLz4KPHBhdGggZD0iTTMzNzYgNTA5MiBjLTMgLTYgLTEgLTE0IDUgLTE3IDE0IC05IDIwIC0yIDEwIDE0IC02IDggLTExIDkgLTE1IDN6Ii8+CjxwYXRoIGQ9Ik0yMTAwIDUwODAgYzAgLTYgNyAtMTAgMTUgLTEwIDggMCAxNSAyIDE1IDQgMCAyIC03IDYgLTE1IDEwIC04IDMKLTE1IDEgLTE1IC00eiIvPgo8cGF0aCBkPSJNMjI3NCA1MDc1IGMtNCAtOSAtMiAtMjEgNCAtMjcgMTUgLTE1IDQ0IC0xIDQwIDE5IC00IDIzIC0zNiAyOSAtNDQKOHogbTM2IC0xMCBjMCAtOCAtNyAtMTUgLTE1IC0xNSAtOCAwIC0xNSA3IC0xNSAxNSAwIDggNyAxNSAxNSAxNSA4IDAgMTUgLTcKMTUgLTE1eiIvPgo8cGF0aCBkPSJNMzMxOSA1MDUzIGwtMzQgLTM4IDM4IDM0IGMyMCAxOSAzNyAzNiAzNyAzOCAwIDggLTggMCAtNDEgLTM0eiIvPgo8cGF0aCBkPSJNMjY2NSA1MDYwIGMtMyAtNiAxIC03IDkgLTQgMTEgNCAxNiAwIDE2IC0xMSAwIC0xMiAtNSAtMTUgLTE3IC0xMAotMTQgNSAtMTUgMyAtNiAtNiAxNSAtMTUgMzMgLTMgMzMgMjIgMCAyMCAtMjQgMjYgLTM1IDl6Ii8+CjxwYXRoIGQ9Ik0yOTI1IDUwNjEgYy0zIC01IC0xIC0xMiA0IC0xNSA1IC0zIDExIDEgMTUgOSA2IDE2IC05IDIxIC0xOSA2eiIvPgo8cGF0aCBkPSJNMjk2MCA1MDU5IGMwIC01IDQgLTggOSAtNSA1IDQgMTIgMCAxNCAtNiAzIC04IDYgLTYgNiA1IDEgOSAtNiAxNwotMTQgMTcgLTggMCAtMTUgLTUgLTE1IC0xMXoiLz4KPHBhdGggZD0iTTI0MDMgNTA1MyBjMTUgLTIgMzkgLTIgNTUgMCAxNSAyIDIgNCAtMjggNCAtMzAgMCAtNDMgLTIgLTI3IC00eiIvPgo8cGF0aCBkPSJNMzA0OCA1MDQzIGMxMiAtMiAzMCAtMiA0MCAwIDkgMyAtMSA1IC0yMyA0IC0yMiAwIC0zMCAtMiAtMTcgLTR6Ii8+CjxwYXRoIGQ9Ik0zMTMzIDUwMTUgYzE1IC0xNCAzMyAtMjUgNDAgLTI1IDcgMSAwIDggLTE1IDE2IC0xNiA4IC0yOCAxOSAtMjgKMjQgMCA2IC02IDEwIC0xMiAxMCAtNyAwIDAgLTEyIDE1IC0yNXoiLz4KPHBhdGggZD0iTTIwMzcgNTAxMyBjLTQgLTMgLTcgLTE1IC03IC0yNSAwIC0yMCAyOSAtMjUgNDcgLTcgMTIgMTIgNzQgOCAxMDYKLTUgOSAtNSAxNyAtNCAxNyAxIDAgNSAtNiAxMCAtMTIgMTEgLTcgMSAtMzMgNSAtNTggOCAtMjUgMyAtNDkgMTAgLTU0IDE1Ci0xMiAxMSAtMzAgMTIgLTM5IDJ6IG0zNiAtMTggYzEgLTUgLTYgLTExIC0xNSAtMTMgLTExIC0yIC0xOCAzIC0xOCAxMyAwIDE3CjMwIDE4IDMzIDB6Ii8+CjxwYXRoIGQ9Ik0zMzIwIDUwMTAgbC0xMDUgLTYgMTAxIC0yIGM4MiAtMiAxMDMgLTUgMTA4IC0xOCA5IC0yMyA1MSAtMTQgNTEKMTEgMCAyNCAtNiAyNCAtMTU1IDE1eiBtMTQ4IC0xMiBjLTMgLTcgLTExIC0xMyAtMTggLTEzIC03IDAgLTE1IDYgLTE3IDEzIC0zCjcgNCAxMiAxNyAxMiAxMyAwIDIwIC01IDE4IC0xMnoiLz4KPHBhdGggZD0iTTIyNzggNTAwMyBjMTggLTIgNDUgLTIgNjAgMCAxNSAyIDAgNCAtMzMgNCAtMzMgMCAtNDUgLTIgLTI3IC00eiIvPgo8cGF0aCBkPSJNMjY3OCA0OTU1IGMtMSAtMzAgMCAtNTUgNSAtNTUgNCAwIDcgMjUgNyA1NSAwIDcxIC03IDcxIC0xMiAweiIvPgo8cGF0aCBkPSJNMjQ0MyA0OTkzIGMxNSAtMiAzNyAtMiA1MCAwIDEyIDIgMCA0IC0yOCA0IC0yNyAwIC0zOCAtMiAtMjIgLTR6Ii8+CjxwYXRoIGQ9Ik0zMDEwIDQ5OTMgYzUzIC00IDU4IC03IDEyMSAtNjkgNTcgLTU2IDcwIC02NSA5NSAtNjEgbDI5IDQgLTMxIDIKYy0yNCAxIC00NSAxNSAtOTMgNjYgbC02MyA2NSAtNTYgLTIgLTU3IC0yIDU1IC0zeiIvPgo8cGF0aCBkPSJNMjgwOCA0OTY1IGMtMyAtMTQgLTEgLTI1IDMgLTI1IDUgMCA5IDExIDkgMjUgMCAxNCAtMiAyNSAtNCAyNSAtMgowIC02IC0xMSAtOCAtMjV6Ii8+CjxwYXRoIGQ9Ik0yMzYwIDQ5NTUgYy0xOSAtMjEgLTMwIC0yNCAtNTcgLTE5IC0yMSA0IC0zMyAyIC0zMyAtNSAwIC02IDcgLTgKMTUgLTUgOCA0IDIyIDEgMjkgLTYgMTIgLTkgMTkgLTcgMzMgNyAxMCAxMCAzMCAyNiA0MyAzNSAxOCAxMiAyMCAxNyA5IDE3IC04CjEgLTI2IC0xMCAtMzkgLTI0eiIvPgo8cGF0aCBkPSJNMjczOCA0OTYzIGM3IC0zIDE2IC0yIDE5IDEgNCAzIC0yIDYgLTEzIDUgLTExIDAgLTE0IC0zIC02IC02eiIvPgo8cGF0aCBkPSJNMjIyMCA0OTUxIGMwIC02IDQgLTEzIDEwIC0xNiA2IC0zIDcgMSA0IDkgLTcgMTggLTE0IDIxIC0xNCA3eiIvPgo8cGF0aCBkPSJNMzE3MCA0OTQ5IGMwIC01IDUgLTcgMTAgLTQgNiAzIDEwIDggMTAgMTEgMCAyIC00IDQgLTEwIDQgLTUgMCAtMTAKLTUgLTEwIC0xMXoiLz4KPHBhdGggZD0iTTMyMjAgNDk0NCBjMCAtOCAtNCAtMTIgLTEwIC05IC01IDMgLTEwIDEgLTEwIC00IDAgLTYgNyAtMTEgMTUgLTExCjggMCAxNSA5IDE1IDIwIDAgMTEgLTIgMjAgLTUgMjAgLTMgMCAtNSAtNyAtNSAtMTZ6Ii8+CjxwYXRoIGQ9Ik0zMjQwIDQ5NTIgYzAgLTUgNyAtOSAxNSAtOSA4IDAgMTIgNCA5IDkgLTMgNCAtOSA4IC0xNSA4IC01IDAgLTkKLTQgLTkgLTh6Ii8+CjxwYXRoIGQ9Ik0yNzQwIDQ4OTMgYy0zIC0zNCAtMSAtNTggMyAtNTQgNSA0IDcgMzIgNSA2MiBsLTMgNTQgLTUgLTYyeiIvPgo8cGF0aCBkPSJNMjk3MCA0OTQzIGM1MyAtNCA1NyAtNyAxMzEgLTc5IDQ1IC00MyA4NSAtNzQgOTcgLTc0IDEyIDAgMjQgLTQgMjcKLTEwIDMgLTUgMTUgLTEwIDI2IC0xMCAxNSAwIDIwIDYgMTcgMjIgLTIgMTIgLTkgMjMgLTE2IDI0IC03IDEgLTggMCAtMiAtMwoxNiAtNyAxMiAtMzMgLTUgLTMzIC04IDAgLTE1IDUgLTE1IDEwIDAgNiAtMTEgMTAgLTI1IDEwIC0xOCAwIC00NyAyMiAtMTAyCjc1IGwtNzYgNzUgLTU2IC0yIC01NiAtMiA1NSAtM3oiLz4KPHBhdGggZD0iTTI0MDIgNDkxNSBjLTExIC0xMyAtMzIgLTI5IC00NiAtMzUgLTM3IC0xNCAtMTEyIC0xMyAtMTM1IDIgLTIzIDE0Ci01MyAtNSAtNDQgLTI4IDYgLTE1IDM5IC0xOSA0NyAtNSAzIDQgMzYgMTAgNzMgMTMgNjcgNSAxNTEgNDAgMTIxIDUxIC03IDIgMwo5IDIyIDE1IDMyIDkgMzMgMTAgOCAxMSAtMTcgMSAtMzMgLTggLTQ2IC0yNHogbS0xODQgLTQ3IGMtNiAtMTggLTI4IC0yMSAtMjgKLTQgMCA5IDcgMTYgMTYgMTYgOSAwIDE0IC01IDEyIC0xMnoiLz4KPHBhdGggZD0iTTMzNjUgNDkxMCBjLTkgLTE1IDQgLTMwIDI1IC0zMCAyNCAwIDM2IDE4IDIxIDMzIC05IDkgLTExIDggLTYgLTUKNiAtMTQgMiAtMTggLTE1IC0xOCAtMTYgMCAtMjAgNCAtMTYgMTUgNiAxNyAwIDIwIC05IDV6Ii8+CjxwYXRoIGQ9Ik0yODA1IDQ5MDIgYy0xNyAtMTEgLTEyIC0zNiA4IC00MCAxOCAtNCAyMCAyIDkgMzAgLTQgMTAgLTEyIDE0IC0xNwoxMHoiLz4KPHBhdGggZD0iTTIwOTMgNDg3NCBjLTMgLTggMCAtMjEgNiAtMjcgOSAtOSAxMSAtOCA1IDcgLTQgMTEgLTIgMjEgNyAyNyAxMCA2CjExIDkgMSA5IC03IDAgLTE1IC03IC0xOSAtMTZ6Ii8+CjxwYXRoIGQ9Ik0yOTU4IDQ3NjIgYy0yIC03MCAtMSAtMTU4IDAgLTE5NiAyIC00MyAtMSAtNjcgLTcgLTY1IC02IDIgLTY3IDY1Ci0xMzcgMTM5IC0xMjkgMTM3IC0xNjcgMTY5IC0xNzkgMTUwIC03IC0xMiA0NyAtNzUgMjI0IC0yNjAgbDExOSAtMTI1IDYxIDYyCmM2NCA2NiA3MSA4MCA0NCA5MCAtMTEgNCAtMjUgLTQgLTQzIC0yNSAtMTUgLTE4IC0zMCAtMzIgLTMzIC0zMiAtNCAwIC03IDg1Ci03IDE4OSAwIDE4MCAtMSAxODkgLTIwIDE5NCAtMTkgNSAtMjAgMCAtMjIgLTEyMXoiLz4KPHBhdGggZD0iTTMyNzQgNDg3OSBjLTMgLTYgMSAtMTggMTAgLTI3IDE1IC0xNSAxNyAtMTUgMzIgMCAxOSAxOSAxMSAzOCAtMTYKMzggLTEwIDAgLTIyIC01IC0yNiAtMTF6IG0zNyAtMTQgYy0xIC0xNSAtMjQgLTEyIC0yOSAzIC0zIDkgMiAxMyAxMiAxMCAxMAotMSAxNyAtNyAxNyAtMTN6Ii8+CjxwYXRoIGQ9Ik0yMTI3IDQ4NjAgYy0zIC0xMSAtMSAtMjAgNCAtMjAgNSAwIDkgOSA5IDIwIDAgMTEgLTIgMjAgLTQgMjAgLTIgMAotNiAtOSAtOSAtMjB6Ii8+CjxwYXRoIGQ9Ik0yNDEwIDQ4MjUgYy0zNCAtMzUgLTgxIC00NyAtOTUgLTI1IC04IDEzIC00NSAxMyAtNDUgMCAwIC01IDYgLTcKMTQgLTQgMTYgNiAzMCAtMTEgMjEgLTI2IC01IC04IC0xMSAtNyAtMjEgMSAtOCA3IC0xNCA3IC0xNCAxIDAgLTE3IDI4IC0yMgo0MCAtNiA3IDggMjUgMTQgNDEgMTQgMjkgMCAxMTEgNjIgOTggNzQgLTMgMyAtMjEgLTEwIC0zOSAtMjl6Ii8+CjxwYXRoIGQ9Ik0yODA4IDQ4MDAgYy0zIC0xNiAtMSAtMzAgNCAtMzAgNCAwIDggMTQgOCAzMCAwIDE3IC0yIDMwIC00IDMwIC0yCjAgLTYgLTEzIC04IC0zMHoiLz4KPHBhdGggZD0iTTI4NDAgNDY5MyBjMCAtMTYgMTYgLTMxIDM1IC0zNSAxNCAtMiAyMSAzIDIzIDIwIDMgMTkgLTEgMjIgLTI3IDIyCi0xNyAwIC0zMSAtMyAtMzEgLTd6Ii8+CjxwYXRoIGQ9Ik00MjM1IDQ0NjAgYzAgLTExNSA1IC0xNTQgMTcgLTExOSAyIDcgMTQgNCAzNCAtNyA1OCAtMzMgMTI0IDYgMTI0Cjc0IDAgNjkgLTU1IDExNSAtMTEyIDkxIC0xNSAtNiAtMjggLTE2IC0yOCAtMjEgMCAtNSAtNCAtNiAtMTAgLTMgLTUgMyAtMTAKMzEgLTEwIDYxIDAgMzAgLTMgNTQgLTcgNTQgLTUgMCAtOCAtNTkgLTggLTEzMHogbTEzNSA4IGMyNSAtMjcgMjcgLTg0IDMKLTExMCAtMjUgLTI4IC03NyAtMjQgLTEwMiA4IC0yOCAzNSAtMjYgNjkgNCA5OSAzMCAzMSA2OCAzMiA5NSAzeiIvPgo8cGF0aCBkPSJNNDk5MSA0NDUzIGMxIC03NiAzIC0xMzAgNiAtMTIwIDYgMjEgOCAyMSAzOCAxIDM4IC0yNSA5MSAtMTEgMTE1CjI5IDI0IDM4IDI1IDU5IDUgOTYgLTE4IDM2IC02MiA1NSAtOTcgNDIgLTE0IC01IC0yOSAtMTUgLTMzIC0yMCAtMyAtNiAtMTEKLTExIC0xNyAtMTEgLTcgMCAtOCAxOSAtNCA1NCA1IDM0IDMgNTYgLTMgNjEgLTggNCAtMTEgLTM3IC0xMCAtMTMyeiBtMTM4IDExCmMxMiAtMTUgMjEgLTM3IDIxIC00OSAwIC0zNyAtMzcgLTc1IC03MiAtNzUgLTQ2IDAgLTY4IDI1IC02OCA3NiAwIDMzIDUgNDYKMjIgNTggMzQgMjQgNzMgMjAgOTcgLTEweiIvPgo8cGF0aCBkPSJNNTI0NyA0NTcyIGMtMTAgLTEwIC0xNyAtMjggLTE3IC00MCAwIC0xMyAtNiAtMjIgLTE1IC0yMiAtOCAwIC0xNQotNCAtMTUgLTEwIDAgLTUgNyAtMTAgMTUgLTEwIDEyIDAgMTUgLTE2IDE1IC04NSAwIC01MCA0IC04NSAxMCAtODUgNiAwIDEwCjM1IDEwIDg1IDAgODQgMCA4NSAyNSA4NSAxNCAwIDI1IDUgMjUgMTAgMCA2IC0xMSAxMCAtMjUgMTAgLTE3IDAgLTI1IDUgLTI1CjE4IDAgMjUgMTkgNDIgNDggNDIgMTMgMCAyMCA0IDE3IDEwIC0xMCAxNiAtNTEgMTEgLTY4IC04eiIvPgo8cGF0aCBkPSJNNDgyMCA0NTA1IGMtOTQgLTExOSAtOTQgLTExNSAtMTAgLTExNSBsNzAgMCAxIC0zNyAyIC0zOCA2IDM1IGM0CjI2IDEyIDM2IDMxIDQxIGwyNSA2IC0yNSA0IGMtMjQgNCAtMjUgNiAtMjQgODcgMSA0NSAtMiA4NCAtNyA4NyAtNCAzIC0zNQotMjkgLTY5IC03MHogbTYwIC00MCBsMCAtNjUgLTU1IDAgYy0zMCAwIC01NSAzIC01NSA2IDAgMTEgOTEgMTI0IDEwMSAxMjQgNQowIDkgLTI5IDkgLTY1eiIvPgo8cGF0aCBkPSJNNTc0MCA0NTM1IGMwIC0xNyAtNyAtMjkgLTIyIC0zNSBsLTIzIC05IDIzIDAgYzIxIC0xIDIyIC01IDIyIC03NgowIC04MiAxMyAtMTAwIDYxIC04NyAyMyA2IDIzIDYgLTYgMTIgLTMwIDUgLTMwIDYgLTMzIDc3IC0zIDcyIC0zIDcyIDI1IDc2CmwyOCA0IC0yNyAyIGMtMjQgMSAtMjggNSAtMjggMzEgMCAxNyAtNCAzMCAtMTAgMzAgLTUgMCAtMTAgLTExIC0xMCAtMjV6Ii8+CjxwYXRoIGQ9Ik01MzczIDQ0OTkgYy0xOCAtNSAtMzMgLTE0IC0zMyAtMjAgMCAtNyA3IC04IDE4IC00IDM3IDE3IDc5IDE3IDk1CjAgMjYgLTI1IDIxIC00NSAtMTAgLTQ1IC00OSAwIC0xMDIgLTIwIC0xMDggLTQwIC0xNSAtNDggNDAgLTgzIDk2IC02MCAyNiAxMQozMiAxMSA0MCAtMSA1IC05IDkgMTYgOSA2NyAwIDUzIC00IDg1IC0xMyA5MiAtMjAgMTcgLTU5IDIxIC05NCAxMXogbTkxIC0xMjMKYy0xMSAtMjggLTU5IC00OCAtODggLTM2IC0yOCAxMCAtMzUgNDAgLTEzIDU4IDE4IDE1IDgwIDE5IDk1IDcgNyAtNyAxMCAtMTkKNiAtMjl6Ii8+CjxwYXRoIGQ9Ik01NTczIDQ1MDAgYy0yNyAtMTEgLTQwIC00OCAtMjIgLTY2IDggLTcgMzIgLTIwIDU0IC0yNyAzMiAtMTEgNDAKLTE5IDQwIC0zOCAwIC0yMCAtNiAtMjUgLTMyIC0yNyAtMTggLTIgLTQyIDIgLTU0IDggLTE3IDEwIC0yMCA5IC0xNyAtMSA4Ci0yMyA2MiAtMzMgOTQgLTE3IDIyIDEwIDI5IDIwIDI5IDQyIDAgMjUgLTYgMzAgLTUzIDQ4IC00NCAxNiAtNTMgMjQgLTUwIDQxCjIgMTcgMTEgMjMgMzYgMjUgMTggMiAzOSAtMiA0NyAtOCA3IC02IDE2IC03IDE5IC0yIDYgOSAtMzYgMzIgLTU3IDMxIC03IDAKLTIyIC00IC0zNCAtOXoiLz4KPHBhdGggZD0iTTQ0NTQgNDQ2OCBjOCAtMTggMjYgLTU5IDQwIC05MSAyMiAtNDggMjQgLTYyIDE1IC04MCAtMTUgLTI3IC0zMAotMzggLTQ2IC0zMiAtNyAyIC0xNSAwIC0xOCAtNSAtMTEgLTE4IDUyIC0xMCA2NyA4IDIwIDIxIDEwMSAyMjMgOTMgMjMwIC04IDgKLTExIDMgLTQzIC03OCBsLTMwIC03NSAtMzYgNzggYy0yMCA0MiAtNDEgNzcgLTQ2IDc3IC02IDAgLTQgLTE0IDQgLTMyeiIvPgo8L2c+Cjwvc3ZnPgo=" alt="CostHub" style="width: 200px; height: auto; max-width: 100%;">
+            </div>
+            <div class="costhub-tagline">AWS Cost Analysis & Optimization Platform</div>
+        </div>
+        <h1>Weekly Cost Analysis Report</h1>
+        <div style="text-align: center; margin-bottom: 25px;">
+            <span class="costhub-badge">Generated on October 28, 2025 at 23:29</span>
+        </div>
+        
+        
+        <div class="summary">
+            <h3>📊 Executive Summary</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 15px;">
+                <div>
+                    <h4>Previous Week</h4>
+                    <p style="font-size: 24px; margin: 5px 0;">$5.69</p>
+                </div>
+                <div>
+                    <h4>Current Week</h4>
+                    <p style="font-size: 24px; margin: 5px 0;">$1.01</p>
+                </div>
+                <div>
+                    <h4>Change</h4>
+                    <p style="font-size: 24px; margin: 5px 0;">
+                        📉 $4.68<br>
+                        <span style="font-size: 18px;">(-82.2%)</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        
+        <h2>📅 Weekly Overview</h2>
+        <div class="month-grid">
+            <div class="month-card">
+                <h4>Week of Oct 27, 2025</h4>
+                <p style="font-size: 20px; color: #2563eb; margin: 10px 0;">
+                    <strong>$1.01</strong>
+                </p>
+                <p style="font-size: 14px; color: #6b7280;">
+                    12 services
+                </p>
+            </div>
+            <div class="month-card">
+                <h4>Week of Oct 20, 2025</h4>
+                <p style="font-size: 20px; color: #2563eb; margin: 10px 0;">
+                    <strong>$5.69</strong>
+                </p>
+                <p style="font-size: 14px; color: #6b7280;">
+                    14 services
+                </p>
+            </div>
+            <div class="month-card">
+                <h4>Week of Oct 13, 2025</h4>
+                <p style="font-size: 20px; color: #2563eb; margin: 10px 0;">
+                    <strong>$5.68</strong>
+                </p>
+                <p style="font-size: 14px; color: #6b7280;">
+                    10 services
+                </p>
+            </div>
+            <div class="month-card">
+                <h4>Week of Oct 06, 2025</h4>
+                <p style="font-size: 20px; color: #2563eb; margin: 10px 0;">
+                    <strong>$5.68</strong>
+                </p>
+                <p style="font-size: 14px; color: #6b7280;">
+                    10 services
+                </p>
+            </div></div>
+        
+        <h2>🔝 Top Services by Cost</h2>
+        <table>
+            <thead>
+                <tr><th>Service</th><th>Current Cost</th><th>% of Total</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Amazon Q</td>
+                    <td>$0.77</td>
+                    <td>75.7%</td>
+                    <td><span class="badge badge-success">-82.1%</span></td>
+                </tr>
+                <tr>
+                    <td>EC2 - Other</td>
+                    <td>$0.13</td>
+                    <td>13.3%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>AWS Cost Explorer</td>
+                    <td>$0.06</td>
+                    <td>6.3%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>AWS Secrets Manager</td>
+                    <td>$0.03</td>
+                    <td>3.3%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>Amazon EC2 Container Registry (ECR)</td>
+                    <td>$0.01</td>
+                    <td>0.9%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>Amazon Relational Database Service</td>
+                    <td>$0.00</td>
+                    <td>0.3%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>Amazon Simple Storage Service</td>
+                    <td>$0.00</td>
+                    <td>0.2%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>AWS Payment Cryptography</td>
+                    <td>$0.00</td>
+                    <td>0.1%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>Amazon Location Service</td>
+                    <td>$0.00</td>
+                    <td>0.0%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>Amazon DynamoDB</td>
+                    <td>$0.00</td>
+                    <td>0.0%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr></tbody></table>
+        
+        <h2>🔝 Top Accounts by Cost</h2>
+        <table>
+            <thead>
+                <tr><th>Account ID</th><th>Current Cost</th><th>% of Total</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>008195334540</td>
+                    <td>$1.01</td>
+                    <td>100.0%</td>
+                    <td><span class="badge badge-success">-82.2%</span></td>
+                </tr>
+                <tr>
+                    <td>975050180090</td>
+                    <td>$0.00</td>
+                    <td>0.0%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr></tbody></table>
+        
+        <h2>📈 Main Weekly Cost Changes</h2>
+        <table>
+            <thead>
+                <tr><th>Service</th><th>Previous</th><th>Current</th><th>Change</th><th>%</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Amazon Q</td>
+                    <td>$4.29</td>
+                    <td>$0.77</td>
+                    <td class="decrease">$-3.52</td>
+                    <td class="decrease">-82.1%</td>
+                </tr></tbody></table>
+        
+        <h2>📈 Main Weekly Account Cost Changes</h2>
+        <table>
+            <thead>
+                <tr><th>Account ID</th><th>Previous</th><th>Current</th><th>Change</th><th>%</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>008195334540</td>
+                    <td>$5.69</td>
+                    <td>$1.01</td>
+                    <td class="decrease">$-4.68</td>
+                    <td class="decrease">-82.2%</td>
+                </tr></tbody></table>
+        
+        
+        
+        <div class="footer">
+            <p>
+                <span class="costhub-badge">CostHub</span><br>
+                <strong>AWS Cost Analysis & Optimization Platform</strong><br>
+                <small>Data sourced from AWS Cost Explorer API</small>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

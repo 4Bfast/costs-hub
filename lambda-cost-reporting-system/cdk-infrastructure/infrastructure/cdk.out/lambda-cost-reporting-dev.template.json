@@ -1,0 +1,1138 @@
+{
+ "Description": "Lambda Cost Reporting System - DEV environment",
+ "Resources": {
+  "CostReportingKeyD1D71A1C": {
+   "Type": "AWS::KMS::Key",
+   "Properties": {
+    "Description": "KMS key for Lambda Cost Reporting System - dev",
+    "EnableKeyRotation": true,
+    "KeyPolicy": {
+     "Statement": [
+      {
+       "Action": "kms:*",
+       "Effect": "Allow",
+       "Principal": {
+        "AWS": "arn:aws:iam::008195334540:root"
+       },
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/CostReportingKey/Resource"
+   }
+  },
+  "ClientConfigTableE705763C": {
+   "Type": "AWS::DynamoDB::Table",
+   "Properties": {
+    "AttributeDefinitions": [
+     {
+      "AttributeName": "client_id",
+      "AttributeType": "S"
+     },
+     {
+      "AttributeName": "status",
+      "AttributeType": "S"
+     }
+    ],
+    "BillingMode": "PAY_PER_REQUEST",
+    "GlobalSecondaryIndexes": [
+     {
+      "IndexName": "status-index",
+      "KeySchema": [
+       {
+        "AttributeName": "status",
+        "KeyType": "HASH"
+       }
+      ],
+      "Projection": {
+       "ProjectionType": "ALL"
+      }
+     }
+    ],
+    "KeySchema": [
+     {
+      "AttributeName": "client_id",
+      "KeyType": "HASH"
+     }
+    ],
+    "PointInTimeRecoverySpecification": {
+     "PointInTimeRecoveryEnabled": false
+    },
+    "SSESpecification": {
+     "KMSMasterKeyId": {
+      "Fn::GetAtt": [
+       "CostReportingKeyD1D71A1C",
+       "Arn"
+      ]
+     },
+     "SSEEnabled": true,
+     "SSEType": "KMS"
+    },
+    "TableName": "cost-reporting-dev-clients"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/ClientConfigTable/Resource"
+   }
+  },
+  "ReportsBucket4E7C5994": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "KMSMasterKeyID": {
+         "Fn::GetAtt": [
+          "CostReportingKeyD1D71A1C",
+          "Arn"
+         ]
+        },
+        "SSEAlgorithm": "aws:kms"
+       }
+      }
+     ]
+    },
+    "BucketName": "cost-reporting-dev-reports-008195334540",
+    "LifecycleConfiguration": {
+     "Rules": [
+      {
+       "ExpirationInDays": 30,
+       "Id": "DeleteOldReports",
+       "Status": "Enabled"
+      }
+     ]
+    },
+    "Tags": [
+     {
+      "Key": "aws-cdk:auto-delete-objects",
+      "Value": "true"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/ReportsBucket/Resource"
+   }
+  },
+  "ReportsBucketPolicy11C4A507": {
+   "Type": "AWS::S3::BucketPolicy",
+   "Properties": {
+    "Bucket": {
+     "Ref": "ReportsBucket4E7C5994"
+    },
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "s3:DeleteObject*",
+        "s3:GetBucket*",
+        "s3:List*",
+        "s3:PutBucketPolicy"
+       ],
+       "Effect": "Allow",
+       "Principal": {
+        "AWS": {
+         "Fn::GetAtt": [
+          "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
+          "Arn"
+         ]
+        }
+       },
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "ReportsBucket4E7C5994",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "ReportsBucket4E7C5994",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/ReportsBucket/Policy/Resource"
+   }
+  },
+  "ReportsBucketAutoDeleteObjectsCustomResource98FB8A10": {
+   "Type": "Custom::S3AutoDeleteObjects",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F",
+      "Arn"
+     ]
+    },
+    "BucketName": {
+     "Ref": "ReportsBucket4E7C5994"
+    }
+   },
+   "DependsOn": [
+    "ReportsBucketPolicy11C4A507"
+   ],
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/ReportsBucket/AutoDeleteObjectsCustomResource/Default"
+   }
+  },
+  "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Version": "2012-10-17",
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ]
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role"
+   }
+  },
+  "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-008195334540-us-east-1",
+     "S3Key": "b7f33614a69548d6bafe224d751a7ef238cde19097415e553fe8b63a4c8fd8a6.zip"
+    },
+    "Timeout": 900,
+    "MemorySize": 128,
+    "Handler": "index.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs18.x",
+    "Description": {
+     "Fn::Join": [
+      "",
+      [
+       "Lambda function for auto-deleting objects in ",
+       {
+        "Ref": "ReportsBucket4E7C5994"
+       },
+       " S3 bucket."
+      ]
+     ]
+    }
+   },
+   "DependsOn": [
+    "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler",
+    "aws:asset:path": "asset.b7f33614a69548d6bafe224d751a7ef238cde19097415e553fe8b63a4c8fd8a6",
+    "aws:asset:property": "Code"
+   }
+  },
+  "AdminAlertsTopicC84705D8": {
+   "Type": "AWS::SNS::Topic",
+   "Properties": {
+    "DisplayName": "Cost Reporting Admin Alerts",
+    "KmsMasterKeyId": {
+     "Fn::GetAtt": [
+      "CostReportingKeyD1D71A1C",
+      "Arn"
+     ]
+    },
+    "TopicName": "cost-reporting-dev-admin-alerts"
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/AdminAlertsTopic/Resource"
+   }
+  },
+  "LambdaExecutionRoleD5C26073": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/LambdaExecutionRole/Resource"
+   }
+  },
+  "LambdaExecutionRoleDefaultPolicy6D69732F": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "kms:Decrypt",
+        "kms:DescribeKey",
+        "kms:Encrypt",
+        "kms:GenerateDataKey*",
+        "kms:ReEncrypt*"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "CostReportingKeyD1D71A1C",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": [
+        "dynamodb:BatchGetItem",
+        "dynamodb:BatchWriteItem",
+        "dynamodb:ConditionCheckItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:DescribeTable",
+        "dynamodb:GetItem",
+        "dynamodb:GetRecords",
+        "dynamodb:GetShardIterator",
+        "dynamodb:PutItem",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:UpdateItem"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "ClientConfigTableE705763C",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "ClientConfigTableE705763C",
+             "Arn"
+            ]
+           },
+           "/index/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "s3:Abort*",
+        "s3:DeleteObject*",
+        "s3:GetBucket*",
+        "s3:GetObject*",
+        "s3:List*",
+        "s3:PutObject",
+        "s3:PutObjectLegalHold",
+        "s3:PutObjectRetention",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionTagging"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "ReportsBucket4E7C5994",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "ReportsBucket4E7C5994",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "ce:GetCostAndUsage",
+        "ce:GetCostForecast",
+        "ce:GetUsageForecast",
+        "cloudwatch:PutMetricData",
+        "ses:SendEmail",
+        "ses:SendRawEmail"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      },
+      {
+       "Action": "sns:Publish",
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "AdminAlertsTopicC84705D8"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "LambdaExecutionRoleDefaultPolicy6D69732F",
+    "Roles": [
+     {
+      "Ref": "LambdaExecutionRoleD5C26073"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/LambdaExecutionRole/DefaultPolicy/Resource"
+   }
+  },
+  "CostReportingFunction455D0263": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-008195334540-us-east-1",
+     "S3Key": "2894af79304a7586ee34e00e599a0850cb78c0f6c67977f3d52a03ac2a29f3e2.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "DYNAMODB_TABLE_NAME": {
+       "Ref": "ClientConfigTableE705763C"
+      },
+      "S3_BUCKET_NAME": {
+       "Ref": "ReportsBucket4E7C5994"
+      },
+      "KMS_KEY_ID": {
+       "Ref": "CostReportingKeyD1D71A1C"
+      },
+      "ENVIRONMENT": "dev",
+      "SNS_ALERT_TOPIC_ARN": {
+       "Ref": "AdminAlertsTopicC84705D8"
+      }
+     }
+    },
+    "FunctionName": "cost-reporting-dev-handler",
+    "Handler": "simple_handler.lambda_handler",
+    "Layers": [
+     "arn:aws:lambda:us-east-1:017000801446:layer:AWSLambdaPowertoolsPythonV2:59"
+    ],
+    "MemorySize": 512,
+    "Role": {
+     "Fn::GetAtt": [
+      "LambdaExecutionRoleD5C26073",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.11",
+    "Timeout": 300
+   },
+   "DependsOn": [
+    "LambdaExecutionRoleDefaultPolicy6D69732F",
+    "LambdaExecutionRoleD5C26073"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/CostReportingFunction/Resource",
+    "aws:asset:path": "asset.2894af79304a7586ee34e00e599a0850cb78c0f6c67977f3d52a03ac2a29f3e2",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "CostReportingFunctionLogRetention248BC177": {
+   "Type": "Custom::LogRetention",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aFD4BFC8A",
+      "Arn"
+     ]
+    },
+    "LogGroupName": {
+     "Fn::Join": [
+      "",
+      [
+       "/aws/lambda/",
+       {
+        "Ref": "CostReportingFunction455D0263"
+       }
+      ]
+     ]
+    },
+    "RetentionInDays": 7
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/CostReportingFunction/LogRetention/Resource"
+   }
+  },
+  "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8a/ServiceRole/Resource"
+   }
+  },
+  "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRoleDefaultPolicyADDA7DEB": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "logs:DeleteRetentionPolicy",
+        "logs:PutRetentionPolicy"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRoleDefaultPolicyADDA7DEB",
+    "Roles": [
+     {
+      "Ref": "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8a/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aFD4BFC8A": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Handler": "index.handler",
+    "Runtime": "nodejs18.x",
+    "Timeout": 900,
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-008195334540-us-east-1",
+     "S3Key": "4e26bf2d0a26f2097fb2b261f22bb51e3f6b4b52635777b1e54edbd8e2d58c35.zip"
+    },
+    "Role": {
+     "Fn::GetAtt": [
+      "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB",
+      "Arn"
+     ]
+    }
+   },
+   "DependsOn": [
+    "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRoleDefaultPolicyADDA7DEB",
+    "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8a/Resource",
+    "aws:asset:path": "asset.4e26bf2d0a26f2097fb2b261f22bb51e3f6b4b52635777b1e54edbd8e2d58c35",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "WeeklyReportRule3E0F4A7C": {
+   "Type": "AWS::Events::Rule",
+   "Properties": {
+    "Description": "Trigger weekly cost reports",
+    "Name": "cost-reporting-dev-weekly",
+    "ScheduleExpression": "cron(0 9 ? * MON *)",
+    "State": "ENABLED",
+    "Targets": [
+     {
+      "Arn": {
+       "Fn::GetAtt": [
+        "CostReportingFunction455D0263",
+        "Arn"
+       ]
+      },
+      "Id": "Target0",
+      "Input": "{\"report_type\":\"weekly\",\"source\":\"eventbridge\"}"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/WeeklyReportRule/Resource"
+   }
+  },
+  "WeeklyReportRuleAllowEventRulelambdacostreportingdevCostReportingFunction7C51EA5B929AC22C": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "CostReportingFunction455D0263",
+      "Arn"
+     ]
+    },
+    "Principal": "events.amazonaws.com",
+    "SourceArn": {
+     "Fn::GetAtt": [
+      "WeeklyReportRule3E0F4A7C",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/WeeklyReportRule/AllowEventRulelambdacostreportingdevCostReportingFunction7C51EA5B"
+   }
+  },
+  "MonthlyReportRule2EF8688D": {
+   "Type": "AWS::Events::Rule",
+   "Properties": {
+    "Description": "Trigger monthly cost reports",
+    "Name": "cost-reporting-dev-monthly",
+    "ScheduleExpression": "cron(0 8 1 * ? *)",
+    "State": "ENABLED",
+    "Targets": [
+     {
+      "Arn": {
+       "Fn::GetAtt": [
+        "CostReportingFunction455D0263",
+        "Arn"
+       ]
+      },
+      "Id": "Target0",
+      "Input": "{\"report_type\":\"monthly\",\"source\":\"eventbridge\"}"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/MonthlyReportRule/Resource"
+   }
+  },
+  "MonthlyReportRuleAllowEventRulelambdacostreportingdevCostReportingFunction7C51EA5BCC731313": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "CostReportingFunction455D0263",
+      "Arn"
+     ]
+    },
+    "Principal": "events.amazonaws.com",
+    "SourceArn": {
+     "Fn::GetAtt": [
+      "MonthlyReportRule2EF8688D",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/MonthlyReportRule/AllowEventRulelambdacostreportingdevCostReportingFunction7C51EA5B"
+   }
+  },
+  "LambdaErrorsAlarm8ED74A7D": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AdminAlertsTopicC84705D8"
+     }
+    ],
+    "AlarmDescription": "Lambda function errors",
+    "AlarmName": "cost-reporting-dev-lambda-errors",
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "CostReportingFunction455D0263"
+      }
+     }
+    ],
+    "EvaluationPeriods": 1,
+    "MetricName": "Errors",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Sum",
+    "Threshold": 1
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/LambdaErrorsAlarm/Resource"
+   }
+  },
+  "LambdaDurationAlarmA8007F1F": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AdminAlertsTopicC84705D8"
+     }
+    ],
+    "AlarmDescription": "Lambda function duration approaching timeout",
+    "AlarmName": "cost-reporting-dev-lambda-duration",
+    "ComparisonOperator": "GreaterThanThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "CostReportingFunction455D0263"
+      }
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "Duration",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Average",
+    "Threshold": 600000
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/LambdaDurationAlarm/Resource"
+   }
+  },
+  "LambdaThrottlesAlarm13DE03A1": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AdminAlertsTopicC84705D8"
+     }
+    ],
+    "AlarmDescription": "Lambda function throttles",
+    "AlarmName": "cost-reporting-dev-lambda-throttles",
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "CostReportingFunction455D0263"
+      }
+     }
+    ],
+    "EvaluationPeriods": 1,
+    "MetricName": "Throttles",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Sum",
+    "Threshold": 1
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/LambdaThrottlesAlarm/Resource"
+   }
+  },
+  "ClientSuccessRateAlarm990C327B": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AdminAlertsTopicC84705D8"
+     }
+    ],
+    "AlarmDescription": "Client processing success rate below threshold",
+    "AlarmName": "cost-reporting-dev-client-success-rate",
+    "ComparisonOperator": "LessThanThreshold",
+    "EvaluationPeriods": 2,
+    "MetricName": "ClientSuccessRate",
+    "Namespace": "CostReporting/Dev",
+    "Period": 900,
+    "Statistic": "Average",
+    "Threshold": 80,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/ClientSuccessRateAlarm/Resource"
+   }
+  },
+  "ExecutionFailuresAlarm39D92A1B": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AdminAlertsTopicC84705D8"
+     }
+    ],
+    "AlarmDescription": "Multiple execution failures detected",
+    "AlarmName": "cost-reporting-dev-execution-failures",
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "EvaluationPeriods": 1,
+    "MetricName": "ExecutionFailed",
+    "Namespace": "CostReporting/Dev",
+    "Period": 1800,
+    "Statistic": "Sum",
+    "Threshold": 2
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/ExecutionFailuresAlarm/Resource"
+   }
+  },
+  "EmailDeliveryFailureAlarmCE23C73E": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AdminAlertsTopicC84705D8"
+     }
+    ],
+    "AlarmDescription": "High email delivery failure rate",
+    "AlarmName": "cost-reporting-dev-email-failures",
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "Operation",
+      "Value": "email_delivery"
+     }
+    ],
+    "EvaluationPeriods": 1,
+    "MetricName": "OperationFailure",
+    "Namespace": "CostReporting/Dev",
+    "Period": 900,
+    "Statistic": "Sum",
+    "Threshold": 3
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/EmailDeliveryFailureAlarm/Resource"
+   }
+  },
+  "ComponentErrorAlarmD374EEC9": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "AdminAlertsTopicC84705D8"
+     }
+    ],
+    "AlarmDescription": "Critical component errors detected",
+    "AlarmName": "cost-reporting-dev-component-errors",
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "Severity",
+      "Value": "CRITICAL"
+     }
+    ],
+    "EvaluationPeriods": 1,
+    "MetricName": "ComponentError",
+    "Namespace": "CostReporting/Dev",
+    "Period": 300,
+    "Statistic": "Sum",
+    "Threshold": 1
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/ComponentErrorAlarm/Resource"
+   }
+  },
+  "OperationalDashboard8C0EDB2C": {
+   "Type": "AWS::CloudWatch::Dashboard",
+   "Properties": {
+    "DashboardBody": {
+     "Fn::Join": [
+      "",
+      [
+       "{\"start\":\"-PT24H\",\"periodOverride\":\"auto\",\"widgets\":[{\"type\":\"metric\",\"width\":8,\"height\":6,\"x\":0,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Lambda Invocations\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/Lambda\",\"Invocations\",\"FunctionName\",\"",
+       {
+        "Ref": "CostReportingFunction455D0263"
+       },
+       "\",{\"stat\":\"Sum\"}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":8,\"height\":6,\"x\":8,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Lambda Errors\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/Lambda\",\"Errors\",\"FunctionName\",\"",
+       {
+        "Ref": "CostReportingFunction455D0263"
+       },
+       "\",{\"stat\":\"Sum\"}]],\"yAxis\":{\"left\":{\"min\":0}}}},{\"type\":\"metric\",\"width\":8,\"height\":6,\"x\":16,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Lambda Duration\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/Lambda\",\"Duration\",\"FunctionName\",\"",
+       {
+        "Ref": "CostReportingFunction455D0263"
+       },
+       "\"]],\"yAxis\":{\"left\":{\"label\":\"Duration (ms)\",\"min\":0}}}},{\"type\":\"metric\",\"width\":12,\"height\":6,\"x\":0,\"y\":6,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Execution Results\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"CostReporting/Dev\",\"ExecutionSucceeded\",{\"label\":\"Successful\",\"period\":900,\"stat\":\"Sum\"}],[\"CostReporting/Dev\",\"ExecutionFailed\",{\"label\":\"Failed\",\"period\":900,\"stat\":\"Sum\"}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":12,\"height\":6,\"x\":12,\"y\":6,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Client Success Rate\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"CostReporting/Dev\",\"ClientSuccessRate\",{\"period\":900}]],\"yAxis\":{\"left\":{\"label\":\"Success Rate (%)\",\"max\":100,\"min\":0}}}},{\"type\":\"metric\",\"width\":12,\"height\":6,\"x\":0,\"y\":12,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Operation Duration by Component\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"CostReporting/Dev\",\"OperationDuration\",\"Operation\",\"cost_collection\",{\"label\":\"Cost Collection\",\"period\":900}],[\"CostReporting/Dev\",\"OperationDuration\",\"Operation\",\"report_generation\",{\"label\":\"Report Generation\",\"period\":900}],[\"CostReporting/Dev\",\"OperationDuration\",\"Operation\",\"email_delivery\",{\"label\":\"Email Delivery\",\"period\":900}]],\"yAxis\":{\"left\":{\"label\":\"Duration (seconds)\",\"min\":0}}}},{\"type\":\"metric\",\"width\":12,\"height\":6,\"x\":12,\"y\":12,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Component Errors\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"CostReporting/Dev\",\"ComponentError\",\"Component\",\"cost_agent\",{\"label\":\"Cost Agent\",\"period\":900,\"stat\":\"Sum\"}],[\"CostReporting/Dev\",\"ComponentError\",\"Component\",\"report_generator\",{\"label\":\"Report Generator\",\"period\":900,\"stat\":\"Sum\"}],[\"CostReporting/Dev\",\"ComponentError\",\"Component\",\"email_service\",{\"label\":\"Email Service\",\"period\":900,\"stat\":\"Sum\"}]],\"yAxis\":{\"left\":{\"min\":0}}}},{\"type\":\"metric\",\"width\":12,\"height\":6,\"x\":0,\"y\":18,\"properties\":{\"view\":\"timeSeries\",\"title\":\"DynamoDB Operations\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/DynamoDB\",\"ConsumedReadCapacityUnits\",\"TableName\",\"",
+       {
+        "Ref": "ClientConfigTableE705763C"
+       },
+       "\",{\"label\":\"Read Capacity\",\"stat\":\"Sum\"}],[\"AWS/DynamoDB\",\"ConsumedWriteCapacityUnits\",\"TableName\",\"",
+       {
+        "Ref": "ClientConfigTableE705763C"
+       },
+       "\",{\"label\":\"Write Capacity\",\"stat\":\"Sum\"}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":12,\"height\":6,\"x\":12,\"y\":18,\"properties\":{\"view\":\"timeSeries\",\"title\":\"S3 Operations\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/S3\",\"NumberOfObjects\",\"BucketName\",\"",
+       {
+        "Ref": "ReportsBucket4E7C5994"
+       },
+       "\",\"StorageType\",\"AllStorageTypes\",{\"label\":\"Object Count\",\"period\":3600}]],\"yAxis\":{}}}]}"
+      ]
+     ]
+    },
+    "DashboardName": "cost-reporting-dev-operational"
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/OperationalDashboard/Resource"
+   }
+  },
+  "BusinessDashboard1154F186": {
+   "Type": "AWS::CloudWatch::Dashboard",
+   "Properties": {
+    "DashboardBody": {
+     "Fn::Join": [
+      "",
+      [
+       "{\"start\":\"-P7D\",\"periodOverride\":\"auto\",\"widgets\":[{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":0,\"y\":0,\"properties\":{\"view\":\"singleValue\",\"title\":\"Reports Generated (24h)\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"CostReporting/Dev\",\"ReportsGenerated\",{\"period\":86400,\"stat\":\"Sum\"}]]}},{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":6,\"y\":0,\"properties\":{\"view\":\"singleValue\",\"title\":\"Emails Sent (24h)\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"CostReporting/Dev\",\"EmailsSent\",{\"period\":86400,\"stat\":\"Sum\"}]]}},{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":12,\"y\":0,\"properties\":{\"view\":\"singleValue\",\"title\":\"Clients Processed (24h)\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"CostReporting/Dev\",\"ClientsProcessed\",{\"period\":86400,\"stat\":\"Sum\"}]]}},{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":18,\"y\":0,\"properties\":{\"view\":\"singleValue\",\"title\":\"Success Rate (24h)\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"CostReporting/Dev\",\"ClientSuccessRate\",{\"period\":86400}]]}},{\"type\":\"metric\",\"width\":12,\"height\":6,\"x\":0,\"y\":6,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Daily Reports Generated\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"CostReporting/Dev\",\"ReportsGenerated\",{\"period\":86400,\"stat\":\"Sum\"}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":12,\"height\":6,\"x\":12,\"y\":6,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Client Processing Trend\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"CostReporting/Dev\",\"ClientsSucceeded\",{\"label\":\"Successful\",\"period\":86400,\"stat\":\"Sum\"}],[\"CostReporting/Dev\",\"ClientsFailed\",{\"label\":\"Failed\",\"period\":86400,\"stat\":\"Sum\"}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":12,\"height\":6,\"x\":0,\"y\":12,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Average Execution Duration\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"CostReporting/Dev\",\"ExecutionDuration\",{\"period\":3600}]],\"yAxis\":{\"left\":{\"label\":\"Duration (seconds)\",\"min\":0}}}},{\"type\":\"metric\",\"width\":12,\"height\":6,\"x\":12,\"y\":12,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Email Recipients per Execution\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"CostReporting/Dev\",\"EmailRecipients\",{\"period\":3600,\"stat\":\"Sum\"}]],\"yAxis\":{\"left\":{\"min\":0}}}},{\"type\":\"metric\",\"width\":24,\"height\":6,\"x\":0,\"y\":18,\"properties\":{\"view\":\"timeSeries\",\"title\":\"Errors by Severity\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"CostReporting/Dev\",\"ComponentError\",\"Severity\",\"LOW\",{\"label\":\"Low\",\"period\":3600,\"stat\":\"Sum\"}],[\"CostReporting/Dev\",\"ComponentError\",\"Severity\",\"MEDIUM\",{\"label\":\"Medium\",\"period\":3600,\"stat\":\"Sum\"}],[\"CostReporting/Dev\",\"ComponentError\",\"Severity\",\"HIGH\",{\"label\":\"High\",\"period\":3600,\"stat\":\"Sum\"}],[\"CostReporting/Dev\",\"ComponentError\",\"Severity\",\"CRITICAL\",{\"label\":\"Critical\",\"period\":3600,\"stat\":\"Sum\"}]],\"yAxis\":{\"left\":{\"min\":0}}}}]}"
+      ]
+     ]
+    },
+    "DashboardName": "cost-reporting-dev-business"
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/BusinessDashboard/Resource"
+   }
+  },
+  "SystemHealthDashboard0F434477": {
+   "Type": "AWS::CloudWatch::Dashboard",
+   "Properties": {
+    "DashboardBody": {
+     "Fn::Join": [
+      "",
+      [
+       "{\"start\":\"-PT6H\",\"periodOverride\":\"auto\",\"widgets\":[{\"type\":\"metric\",\"width\":8,\"height\":6,\"x\":0,\"y\":0,\"properties\":{\"view\":\"singleValue\",\"title\":\"Lambda Error Rate\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[{\"label\":\"Error Rate (%)\",\"expression\":\"errors / invocations * 100\"}],[\"AWS/Lambda\",\"Errors\",\"FunctionName\",\"",
+       {
+        "Ref": "CostReportingFunction455D0263"
+       },
+       "\",{\"stat\":\"Sum\",\"visible\":false,\"id\":\"errors\"}],[\"AWS/Lambda\",\"Invocations\",\"FunctionName\",\"",
+       {
+        "Ref": "CostReportingFunction455D0263"
+       },
+       "\",{\"stat\":\"Sum\",\"visible\":false,\"id\":\"invocations\"}]]}},{\"type\":\"metric\",\"width\":8,\"height\":6,\"x\":8,\"y\":0,\"properties\":{\"view\":\"singleValue\",\"title\":\"DynamoDB Throttles\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/DynamoDB\",\"ReadThrottles\",\"TableName\",\"",
+       {
+        "Ref": "ClientConfigTableE705763C"
+       },
+       "\",{\"period\":1800,\"stat\":\"Sum\"}]]}},{\"type\":\"metric\",\"width\":8,\"height\":6,\"x\":16,\"y\":0,\"properties\":{\"view\":\"singleValue\",\"title\":\"S3 4xx Errors\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/S3\",\"4xxErrors\",\"BucketName\",\"",
+       {
+        "Ref": "ReportsBucket4E7C5994"
+       },
+       "\",{\"period\":1800,\"stat\":\"Sum\"}]]}},{\"type\":\"metric\",\"width\":24,\"height\":6,\"x\":0,\"y\":6,\"properties\":{\"view\":\"singleValue\",\"title\":\"System Health Score\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[{\"label\":\"Health Score (%)\",\"expression\":\"100 - (errors / invocations * 100)\"}],[\"AWS/Lambda\",\"Errors\",\"FunctionName\",\"",
+       {
+        "Ref": "CostReportingFunction455D0263"
+       },
+       "\",{\"stat\":\"Sum\",\"visible\":false,\"id\":\"errors\"}],[\"AWS/Lambda\",\"Invocations\",\"FunctionName\",\"",
+       {
+        "Ref": "CostReportingFunction455D0263"
+       },
+       "\",{\"stat\":\"Sum\",\"visible\":false,\"id\":\"invocations\"}]]}}]}"
+      ]
+     ]
+    },
+    "DashboardName": "cost-reporting-dev-health"
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/SystemHealthDashboard/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/3WQy27CMBBFv4W9mRaQugeqbugiCuzRxB6CGz8qjw2KLP975QSVbrq6597RPOw1rNZreF3gnZdSDUujO8jHiHIQeOdzHixDPtAo9hd3oLEINTq0XnWQT9gZqvkERfAG8i7JgWINHzRL442W4zN++NnskGu3Y8gn/63lNLJCERot5NbPayZ9TpqpCIO2Uwj5IzkZtXe19pcbClYza+/qiWdkpsiwrSKM7xk+fd9SJDc10I1cZMhteixN9WnS+KTuGOUV8tZgsLU0wzvytfMYVI1+TSmiJfYpSBL7xNHbp724f0pN8DetKNQPEdOBx4i9dn0RzRiv3r1sYLWCt8UXa70MyUVtCdpZfwCGPtEqyQEAAA=="
+   },
+   "Metadata": {
+    "aws:cdk:path": "lambda-cost-reporting-dev/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A": {
+   "Value": {
+    "Fn::GetAtt": [
+     "CostReportingFunction455D0263",
+     "Arn"
+    ]
+   },
+   "Export": {
+    "Name": "lambda-cost-reporting-dev:ExportsOutputFnGetAttCostReportingFunction455D0263ArnFC8F881A"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

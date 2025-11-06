@@ -1,0 +1,1032 @@
+{
+ "Resources": {
+  "APIHandlerServiceRole41BB65E0": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/APIHandler/ServiceRole/Resource"
+   }
+  },
+  "APIHandlerServiceRoleDefaultPolicy3C24A6E6": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "dynamodb:DeleteItem",
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:UpdateItem"
+       ],
+       "Effect": "Allow",
+       "Resource": "arn:aws:dynamodb:us-east-1:008195334540:table/costhub-accounts"
+      },
+      {
+       "Action": [
+        "ce:GetCostAndUsage",
+        "ce:GetDimensionValues",
+        "ce:GetReservationCoverage",
+        "ce:GetReservationPurchaseRecommendation",
+        "ce:GetReservationUtilization",
+        "ce:GetRightsizingRecommendation",
+        "ce:GetUsageReport"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "APIHandlerServiceRoleDefaultPolicy3C24A6E6",
+    "Roles": [
+     {
+      "Ref": "APIHandlerServiceRole41BB65E0"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/APIHandler/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "APIHandler68F11976": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-008195334540-us-east-1",
+     "S3Key": "18b4f33b178b39c36426772e34ad39022db1691e25bfb146f0d6b0d976f125d9.zip"
+    },
+    "Description": "API Gateway Handler for Frontend Integration",
+    "Environment": {
+     "Variables": {
+      "CORS_ALLOWED_ORIGINS": "https://costhub.4bfast.com.br,https://www.costhub.4bfast.com.br",
+      "LOG_LEVEL": "INFO"
+     }
+    },
+    "Handler": "simple_handlers.api_gateway_handler_simple.lambda_handler",
+    "MemorySize": 512,
+    "Role": {
+     "Fn::GetAtt": [
+      "APIHandlerServiceRole41BB65E0",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.11",
+    "Timeout": 30
+   },
+   "DependsOn": [
+    "APIHandlerServiceRoleDefaultPolicy3C24A6E6",
+    "APIHandlerServiceRole41BB65E0"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/APIHandler/Resource",
+    "aws:asset:path": "asset.18b4f33b178b39c36426772e34ad39022db1691e25bfb146f0d6b0d976f125d9",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "CognitoAuthorizerF3215DBC": {
+   "Type": "AWS::ApiGateway::Authorizer",
+   "Properties": {
+    "IdentitySource": "method.request.header.Authorization",
+    "Name": "costhubfrontendapiprodCognitoAuthorizerAD28A7A4",
+    "ProviderARNs": [
+     "arn:aws:cognito-idp:us-east-1:008195334540:userpool/us-east-1_94OYkzcSO"
+    ],
+    "RestApiId": {
+     "Ref": "FrontendAPI00E92687"
+    },
+    "Type": "COGNITO_USER_POOLS"
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/CognitoAuthorizer/Resource"
+   }
+  },
+  "FrontendAPI00E92687": {
+   "Type": "AWS::ApiGateway::RestApi",
+   "Properties": {
+    "Description": "CostHub Frontend API with Authentication",
+    "Name": "costhub-frontend-api"
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Resource"
+   }
+  },
+  "FrontendAPIDeploymentBE18F28Ef9451e4db260e5bb7470f7e7b9a6bda1": {
+   "Type": "AWS::ApiGateway::Deployment",
+   "Properties": {
+    "Description": "CostHub Frontend API with Authentication",
+    "RestApiId": {
+     "Ref": "FrontendAPI00E92687"
+    }
+   },
+   "DependsOn": [
+    "CognitoAuthorizerF3215DBC",
+    "FrontendAPIapiOPTIONS091AE84E",
+    "FrontendAPIapi928960A9",
+    "FrontendAPIapiv1proxyANY62F43335",
+    "FrontendAPIapiv1proxyOPTIONS29816654",
+    "FrontendAPIapiv1proxy895339E7",
+    "FrontendAPIapiv1authproxyANY31D8ACD3",
+    "FrontendAPIapiv1authproxyOPTIONS5067979C",
+    "FrontendAPIapiv1authproxy0885399B",
+    "FrontendAPIapiv1authANY07601F38",
+    "FrontendAPIapiv1authOPTIONS008307F9",
+    "FrontendAPIapiv1authEAE3EF00",
+    "FrontendAPIapiv1OPTIONSE93B36D7",
+    "FrontendAPIapiv10C580F49",
+    "FrontendAPIOPTIONSDAA52701"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Deployment/Resource"
+   }
+  },
+  "FrontendAPIDeploymentStageprod1F4F1079": {
+   "Type": "AWS::ApiGateway::Stage",
+   "Properties": {
+    "DeploymentId": {
+     "Ref": "FrontendAPIDeploymentBE18F28Ef9451e4db260e5bb7470f7e7b9a6bda1"
+    },
+    "MethodSettings": [
+     {
+      "DataTraceEnabled": false,
+      "HttpMethod": "*",
+      "ResourcePath": "/*",
+      "ThrottlingBurstLimit": 2000,
+      "ThrottlingRateLimit": 1000
+     }
+    ],
+    "RestApiId": {
+     "Ref": "FrontendAPI00E92687"
+    },
+    "StageName": "prod"
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/DeploymentStage.prod/Resource"
+   }
+  },
+  "FrontendAPIOPTIONSDAA52701": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Requested-With,x-request-id,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'https://costhub.4bfast.com.br'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Allow-Credentials": "'true'"
+       },
+       "ResponseTemplates": {
+        "application/json": "#set($origin = $input.params().header.get(\"Origin\"))\n#if($origin == \"\")\n  #set($origin = $input.params().header.get(\"origin\"))\n#end\n#if($origin == \"https://www.costhub.4bfast.com.br\")\n  #set($context.responseOverride.header.Access-Control-Allow-Origin = $origin)\n#end"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Allow-Credentials": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Fn::GetAtt": [
+      "FrontendAPI00E92687",
+      "RootResourceId"
+     ]
+    },
+    "RestApiId": {
+     "Ref": "FrontendAPI00E92687"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/OPTIONS/Resource"
+   }
+  },
+  "FrontendAPIapi928960A9": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "FrontendAPI00E92687",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "api",
+    "RestApiId": {
+     "Ref": "FrontendAPI00E92687"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/api/Resource"
+   }
+  },
+  "FrontendAPIapiOPTIONS091AE84E": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Requested-With,x-request-id,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'https://costhub.4bfast.com.br'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Allow-Credentials": "'true'"
+       },
+       "ResponseTemplates": {
+        "application/json": "#set($origin = $input.params().header.get(\"Origin\"))\n#if($origin == \"\")\n  #set($origin = $input.params().header.get(\"origin\"))\n#end\n#if($origin == \"https://www.costhub.4bfast.com.br\")\n  #set($context.responseOverride.header.Access-Control-Allow-Origin = $origin)\n#end"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Allow-Credentials": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "FrontendAPIapi928960A9"
+    },
+    "RestApiId": {
+     "Ref": "FrontendAPI00E92687"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/api/OPTIONS/Resource"
+   }
+  },
+  "FrontendAPIapiv10C580F49": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "FrontendAPIapi928960A9"
+    },
+    "PathPart": "v1",
+    "RestApiId": {
+     "Ref": "FrontendAPI00E92687"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/api/v1/Resource"
+   }
+  },
+  "FrontendAPIapiv1OPTIONSE93B36D7": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Requested-With,x-request-id,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'https://costhub.4bfast.com.br'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Allow-Credentials": "'true'"
+       },
+       "ResponseTemplates": {
+        "application/json": "#set($origin = $input.params().header.get(\"Origin\"))\n#if($origin == \"\")\n  #set($origin = $input.params().header.get(\"origin\"))\n#end\n#if($origin == \"https://www.costhub.4bfast.com.br\")\n  #set($context.responseOverride.header.Access-Control-Allow-Origin = $origin)\n#end"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Allow-Credentials": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "FrontendAPIapiv10C580F49"
+    },
+    "RestApiId": {
+     "Ref": "FrontendAPI00E92687"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/api/v1/OPTIONS/Resource"
+   }
+  },
+  "FrontendAPIapiv1authEAE3EF00": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "FrontendAPIapiv10C580F49"
+    },
+    "PathPart": "auth",
+    "RestApiId": {
+     "Ref": "FrontendAPI00E92687"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/api/v1/auth/Resource"
+   }
+  },
+  "FrontendAPIapiv1authOPTIONS008307F9": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Requested-With,x-request-id,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'https://costhub.4bfast.com.br'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Allow-Credentials": "'true'"
+       },
+       "ResponseTemplates": {
+        "application/json": "#set($origin = $input.params().header.get(\"Origin\"))\n#if($origin == \"\")\n  #set($origin = $input.params().header.get(\"origin\"))\n#end\n#if($origin == \"https://www.costhub.4bfast.com.br\")\n  #set($context.responseOverride.header.Access-Control-Allow-Origin = $origin)\n#end"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Allow-Credentials": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "FrontendAPIapiv1authEAE3EF00"
+    },
+    "RestApiId": {
+     "Ref": "FrontendAPI00E92687"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/api/v1/auth/OPTIONS/Resource"
+   }
+  },
+  "FrontendAPIapiv1authANYApiPermissioncosthubfrontendapiprodFrontendAPI124EABEDANYapiv1auth637BB0F9": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "APIHandler68F11976",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "FrontendAPI00E92687"
+       },
+       "/",
+       {
+        "Ref": "FrontendAPIDeploymentStageprod1F4F1079"
+       },
+       "/*/api/v1/auth"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/api/v1/auth/ANY/ApiPermission.costhubfrontendapiprodFrontendAPI124EABED.ANY..api.v1.auth"
+   }
+  },
+  "FrontendAPIapiv1authANYApiPermissionTestcosthubfrontendapiprodFrontendAPI124EABEDANYapiv1auth3F7CB411": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "APIHandler68F11976",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "FrontendAPI00E92687"
+       },
+       "/test-invoke-stage/*/api/v1/auth"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/api/v1/auth/ANY/ApiPermission.Test.costhubfrontendapiprodFrontendAPI124EABED.ANY..api.v1.auth"
+   }
+  },
+  "FrontendAPIapiv1authANY07601F38": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "NONE",
+    "HttpMethod": "ANY",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "APIHandler68F11976",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "FrontendAPIapiv1authEAE3EF00"
+    },
+    "RestApiId": {
+     "Ref": "FrontendAPI00E92687"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/api/v1/auth/ANY/Resource"
+   }
+  },
+  "FrontendAPIapiv1authproxy0885399B": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "FrontendAPIapiv1authEAE3EF00"
+    },
+    "PathPart": "{proxy+}",
+    "RestApiId": {
+     "Ref": "FrontendAPI00E92687"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/api/v1/auth/{proxy+}/Resource"
+   }
+  },
+  "FrontendAPIapiv1authproxyOPTIONS5067979C": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Requested-With,x-request-id,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'https://costhub.4bfast.com.br'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Allow-Credentials": "'true'"
+       },
+       "ResponseTemplates": {
+        "application/json": "#set($origin = $input.params().header.get(\"Origin\"))\n#if($origin == \"\")\n  #set($origin = $input.params().header.get(\"origin\"))\n#end\n#if($origin == \"https://www.costhub.4bfast.com.br\")\n  #set($context.responseOverride.header.Access-Control-Allow-Origin = $origin)\n#end"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Allow-Credentials": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "FrontendAPIapiv1authproxy0885399B"
+    },
+    "RestApiId": {
+     "Ref": "FrontendAPI00E92687"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/api/v1/auth/{proxy+}/OPTIONS/Resource"
+   }
+  },
+  "FrontendAPIapiv1authproxyANYApiPermissioncosthubfrontendapiprodFrontendAPI124EABEDANYapiv1authproxy187BE663": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "APIHandler68F11976",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "FrontendAPI00E92687"
+       },
+       "/",
+       {
+        "Ref": "FrontendAPIDeploymentStageprod1F4F1079"
+       },
+       "/*/api/v1/auth/*"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/api/v1/auth/{proxy+}/ANY/ApiPermission.costhubfrontendapiprodFrontendAPI124EABED.ANY..api.v1.auth.{proxy+}"
+   }
+  },
+  "FrontendAPIapiv1authproxyANYApiPermissionTestcosthubfrontendapiprodFrontendAPI124EABEDANYapiv1authproxyA25A96E7": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "APIHandler68F11976",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "FrontendAPI00E92687"
+       },
+       "/test-invoke-stage/*/api/v1/auth/*"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/api/v1/auth/{proxy+}/ANY/ApiPermission.Test.costhubfrontendapiprodFrontendAPI124EABED.ANY..api.v1.auth.{proxy+}"
+   }
+  },
+  "FrontendAPIapiv1authproxyANY31D8ACD3": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "NONE",
+    "HttpMethod": "ANY",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "APIHandler68F11976",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "FrontendAPIapiv1authproxy0885399B"
+    },
+    "RestApiId": {
+     "Ref": "FrontendAPI00E92687"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/api/v1/auth/{proxy+}/ANY/Resource"
+   }
+  },
+  "FrontendAPIapiv1proxy895339E7": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "FrontendAPIapiv10C580F49"
+    },
+    "PathPart": "{proxy+}",
+    "RestApiId": {
+     "Ref": "FrontendAPI00E92687"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/api/v1/{proxy+}/Resource"
+   }
+  },
+  "FrontendAPIapiv1proxyOPTIONS29816654": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Requested-With,x-request-id,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'https://costhub.4bfast.com.br'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Allow-Credentials": "'true'"
+       },
+       "ResponseTemplates": {
+        "application/json": "#set($origin = $input.params().header.get(\"Origin\"))\n#if($origin == \"\")\n  #set($origin = $input.params().header.get(\"origin\"))\n#end\n#if($origin == \"https://www.costhub.4bfast.com.br\")\n  #set($context.responseOverride.header.Access-Control-Allow-Origin = $origin)\n#end"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Allow-Credentials": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "FrontendAPIapiv1proxy895339E7"
+    },
+    "RestApiId": {
+     "Ref": "FrontendAPI00E92687"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/api/v1/{proxy+}/OPTIONS/Resource"
+   }
+  },
+  "FrontendAPIapiv1proxyANYApiPermissioncosthubfrontendapiprodFrontendAPI124EABEDANYapiv1proxy0BD9D894": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "APIHandler68F11976",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "FrontendAPI00E92687"
+       },
+       "/",
+       {
+        "Ref": "FrontendAPIDeploymentStageprod1F4F1079"
+       },
+       "/*/api/v1/*"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/api/v1/{proxy+}/ANY/ApiPermission.costhubfrontendapiprodFrontendAPI124EABED.ANY..api.v1.{proxy+}"
+   }
+  },
+  "FrontendAPIapiv1proxyANYApiPermissionTestcosthubfrontendapiprodFrontendAPI124EABEDANYapiv1proxy34DE8D21": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "APIHandler68F11976",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:008195334540:",
+       {
+        "Ref": "FrontendAPI00E92687"
+       },
+       "/test-invoke-stage/*/api/v1/*"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/api/v1/{proxy+}/ANY/ApiPermission.Test.costhubfrontendapiprodFrontendAPI124EABED.ANY..api.v1.{proxy+}"
+   }
+  },
+  "FrontendAPIapiv1proxyANY62F43335": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CognitoAuthorizerF3215DBC"
+    },
+    "HttpMethod": "ANY",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "APIHandler68F11976",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Methods": true,
+       "method.response.header.Access-Control-Allow-Credentials": true
+      },
+      "StatusCode": "200"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "FrontendAPIapiv1proxy895339E7"
+    },
+    "RestApiId": {
+     "Ref": "FrontendAPI00E92687"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/FrontendAPI/Default/api/v1/{proxy+}/ANY/Resource"
+   }
+  },
+  "APIDomain02CC2FA9": {
+   "Type": "AWS::ApiGateway::DomainName",
+   "Properties": {
+    "DomainName": "api-costhub.4bfast.com.br",
+    "EndpointConfiguration": {
+     "Types": [
+      "REGIONAL"
+     ]
+    },
+    "RegionalCertificateArn": "arn:aws:acm:us-east-1:008195334540:certificate/cc33150f-be90-44d0-87ca-63caf5a48b2f"
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/APIDomain/Resource"
+   }
+  },
+  "APIDomainMapcosthubfrontendapiprodFrontendAPI124EABEDB2227A26": {
+   "Type": "AWS::ApiGateway::BasePathMapping",
+   "Properties": {
+    "DomainName": {
+     "Ref": "APIDomain02CC2FA9"
+    },
+    "RestApiId": {
+     "Ref": "FrontendAPI00E92687"
+    },
+    "Stage": {
+     "Ref": "FrontendAPIDeploymentStageprod1F4F1079"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/APIDomain/Map:--=>costhubfrontendapiprodFrontendAPI124EABED/Resource"
+   }
+  },
+  "APIAliasRecordD6C18557": {
+   "Type": "AWS::Route53::RecordSet",
+   "Properties": {
+    "AliasTarget": {
+     "DNSName": {
+      "Fn::GetAtt": [
+       "APIDomain02CC2FA9",
+       "RegionalDomainName"
+      ]
+     },
+     "HostedZoneId": {
+      "Fn::GetAtt": [
+       "APIDomain02CC2FA9",
+       "RegionalHostedZoneId"
+      ]
+     }
+    },
+    "HostedZoneId": "Z05900913NMLNYFKQHMUL",
+    "Name": "api-costhub.4bfast.com.br.",
+    "Type": "A"
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/APIAliasRecord/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/12QQU/DMAyFf8vuWWCr4N4NcRtUnThPXmvasCauYkdTqfrfUdIiKk7+nl/0npW93u33+nEDd95W9W3bmasezwLVTcGdL2MH9lqDHl+Dq8SQU8dPt+YCvTXMhtykDFg9ltRhNNIsqDPVkN4lmhRnF2BGYZ3HoTjTh1DdUA7AqKA3DQjeYdDjkRpnhD4YfUHUcR6kJW++0ce8lSqRJe9NKl3wBfuOBotO4nalzgJNOm+GEpmCrzCVn1BaqqO50K+7JM/8QhaMewOb1isVMwqQ9gR9b1wT3X+rSXkKgk+ZHvMSK/L1nBzpjDJNf43pc+KNS9J7kD7I+pBJFYO05B4yvdvp580XG7P1wYmxqMt5/gB3ZRZG3QEAAA=="
+   },
+   "Metadata": {
+    "aws:cdk:path": "costhub-frontend-api-prod/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "FrontendAPIEndpoint179AE72D": {
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Ref": "FrontendAPI00E92687"
+      },
+      ".execute-api.us-east-1.",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/",
+      {
+       "Ref": "FrontendAPIDeploymentStageprod1F4F1079"
+      },
+      "/"
+     ]
+    ]
+   }
+  },
+  "FrontendAPIUrl": {
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Ref": "FrontendAPI00E92687"
+      },
+      ".execute-api.us-east-1.",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/",
+      {
+       "Ref": "FrontendAPIDeploymentStageprod1F4F1079"
+      },
+      "/"
+     ]
+    ]
+   }
+  },
+  "CustomDomainUrl": {
+   "Value": "https://api-costhub.4bfast.com.br/api/v1"
+  },
+  "FrontendAPIId": {
+   "Value": {
+    "Ref": "FrontendAPI00E92687"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

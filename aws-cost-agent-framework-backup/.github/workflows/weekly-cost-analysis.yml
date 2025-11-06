@@ -1,0 +1,64 @@
+name: Weekly AWS Cost Analysis
+
+on:
+  schedule:
+    # Executa toda segunda-feira às 9:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Permite execução manual
+
+jobs:
+  weekly-cost-analysis:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install dependencies
+      run: |
+        cd aws-cost-agent-framework
+        pip install -r requirements.txt
+        
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+        
+    - name: Run weekly cost analysis
+      run: |
+        cd aws-cost-agent-framework
+        python cli.py \
+          --type weekly \
+          --periods 4 \
+          --threshold 10.0 \
+          --top-services 15 \
+          --top-accounts 10 \
+          --no-open \
+          --output weekly_report_$(date +%Y%m%d).html
+          
+    - name: Upload report artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: weekly-cost-report
+        path: aws-cost-agent-framework/reports/weekly_report_*.html
+        retention-days: 30
+        
+    - name: Send Slack notification (optional)
+      if: always()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#aws-costs'
+        text: |
+          Weekly AWS Cost Analysis completed!
+          Status: ${{ job.status }}
+          Download report from GitHub Actions artifacts.
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

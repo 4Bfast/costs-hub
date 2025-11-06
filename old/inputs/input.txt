@@ -1,0 +1,102 @@
+Título: Implementação da Análise de Tendências com Justificativa de Variação de Custo.
+
+Contexto:
+Para entregar um valor único, a plataforma precisa ir além de simplesmente relatar as variações de custo. Ela deve ser capaz de justificar por que essas variações ocorreram, diferenciando entre crescimento de custos impulsionado pelo aumento do uso (escala de negócio) e o aumento de custos devido à ineficiência ou mudanças de preço.
+
+Objetivo:
+Criar uma nova página de "Análise de Tendências" que compare os custos ao longo de até 12 meses. A funcionalidade principal será um "Motor de Justificativa" que analisa a correlação entre custo e consumo para explicar as variações, com os insights apresentados em um resumo gerado por IA.
+
+Parte 1: Especificações do Backend (O Novo Motor de Análise)
+Esta tarefa exigirá um endpoint de backend significativamente mais poderoso.
+
+1.1. Pré-requisito: Estrutura de Dados
+Ação: O executor deve garantir que nosso processo de ingestão esteja salvando os dados granulares da tabela cost_line_items, incluindo as colunas: cost, consumed_quantity e consumed_unit.
+
+1.2. O Novo Endpoint de Análise de Tendências
+Endpoint: GET /api/v1/trends/analysis
+
+Parâmetros de Query: start_date e end_date (permitindo um intervalo de até 12 meses).
+
+Lógica de Negócio (O "Motor de Justificativa"):
+
+Consulta de Dados: Buscar os dados granulares da cost_line_items para o período selecionado e o período anterior correspondente. A consulta deve trazer aws_service, cost e consumed_quantity.
+
+Agregação e Cálculo: Para cada período (atual e anterior) e para cada serviço, o backend deve calcular:
+
+totalCost: A soma total dos custos.
+
+totalUsage: A soma total do consumo (consumed_quantity).
+
+Métrica Chave - Custo Unitário Efetivo: effectiveUnitCost = totalCost / totalUsage.
+
+Análise Comparativa (O "Porquê"): Ao comparar os dois períodos para um serviço, o backend deve decompor a variação total do custo. A fórmula simplificada é:
+
+Variação devido ao Volume: (UsoAtual - UsoAnterior) * PrecoUnitarioAnterior
+
+Variação devido ao Preço/Mix: (PrecoUnitarioAtual - PrecoUnitarioAnterior) * UsoAtual
+Isso nos permite dizer quanto da variação veio do aumento de uso e quanto veio de uma mudança no custo por unidade.
+
+1.3. Integração com IA (LLM)
+Ação: O endpoint também chamará nosso serviço de IA (app/ai_services.py).
+
+Engenharia de Prompt (Aprimorada): O prompt enviado ao AWS Bedrock será muito mais rico. Ele incluirá os resultados da análise comparativa.
+
+Template do Prompt:
+
+Plaintext
+
+Você é o 'Costs-Hub AI', um especialista em FinOps. Analise os seguintes dados de variação de custo entre dois períodos.
+
+### DADOS DE CUSTO ###
+{
+  "totalCostChange": "+15%",
+  "topMovers": [
+    {
+      "service": "AmazonEC2",
+      "costChange": "+$2000",
+      "analysis": "A variação de custo do EC2 foi composta por: +$1800 devido a um aumento de 25% no uso (horas de instância) e +$200 devido a um aumento no custo unitário (mix de instâncias mais caras)."
+    },
+    {
+      "service": "AmazonS3",
+      "costChange": "-$300",
+      "analysis": "A redução no custo do S3 foi impulsionada por uma queda de 15% no armazenamento total, apesar de um leve aumento no custo por GB."
+    }
+  ]
+}
+### FIM DOS DADOS ###
+
+Gere um resumo executivo em português do Brasil. Explique se o crescimento geral dos custos é justificado pelo crescimento da infraestrutura ou se há sinais de ineficiência (aumento de custo unitário) que precisam de investigação.
+1.4. Estrutura da Resposta (JSON Payload)
+O endpoint retornará um único objeto JSON contendo:
+
+aiSummary: O texto gerado pelo LLM.
+
+chartData: Os dados para o gráfico de barras empilhadas mensal.
+
+trendTables: Os dados detalhados para as tabelas de variação por serviço e por conta, agora incluindo a decomposição da variação (se aplicável).
+
+Parte 2: Especificações do Frontend (A Nova Página)
+Arquivo a Criar: src/views/TrendAnalysisView.vue
+
+Controles: Um seletor de período flexível, permitindo a seleção de até 12 meses (ex: "Últimos 3 meses", "Últimos 6 meses", "Último Ano").
+
+Resumo Executivo com IA: O primeiro e mais proeminente componente da tela, exibindo o aiSummary.
+
+Gráfico de Tendência por Categoria: Um gráfico de barras empilhadas que mostra o custo total de cada mês, com as barras divididas pelas categorias de serviço (Compute, Storage, etc.).
+
+Tabelas de Análise Detalhada:
+
+Tabela 1: "Análise de Variação por Serviço":
+
+Colunas: Serviço, Custo Atual, Custo Anterior, Variação Total ($), e as novas colunas Variação por Uso ($) e Variação por Preço/Mix ($).
+
+Tabela 2: "Análise de Variação por Conta": (Estrutura similar, mas agrupada por conta).
+
+Critérios de Aceitação
+[ ] O backend possui o novo endpoint /trends/analysis que realiza a análise de variação de custo vs. consumo.
+
+[ ] A integração com o AWS Bedrock utiliza o novo prompt para gerar um insight que justifica a variação de custos.
+
+[ ] A nova página "Análise de Tendências" é acessível pelo menu.
+
+[ ] A página exibe corretamente o resumo da IA, o gráfico de barras empilhadas e as novas tabelas detalhadas com a decomposição da variação.

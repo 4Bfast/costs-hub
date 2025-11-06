@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CostHub AWS Cost Report</title>
+    
+    <style>
+        /* Email-safe CSS */
+        body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 0; background-color: #f1f5f9; }
+        .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+        
+        /* Header */
+        .email-header { background: linear-gradient(135deg, #1e40af, #3b82f6); color: #ffffff; padding: 30px 20px; text-align: center; }
+        .email-logo-container { margin-bottom: 12px; }
+        .email-logo-container img { max-width: 240px; height: auto; filter: brightness(0) invert(1); }
+        .costhub-logo { font-size: 32px; font-weight: bold; margin: 0 0 8px 0; }
+        .costhub-tagline { font-size: 14px; opacity: 0.9; margin: 0; }
+        
+        /* Content */
+        .email-content { padding: 30px 20px; }
+        
+        /* Summary */
+        .email-summary { background: linear-gradient(135deg, #1e40af, #3b82f6); color: #ffffff; padding: 25px; margin: 20px 0; border-radius: 8px; text-align: center; }
+        .email-summary h2 { margin: 0 0 15px 0; font-size: 24px; }
+        .summary-grid { display: table; width: 100%; margin-top: 15px; }
+        .summary-item { display: table-cell; text-align: center; padding: 10px; }
+        .summary-value { font-size: 24px; font-weight: bold; margin: 5px 0; }
+        .summary-label { font-size: 14px; opacity: 0.9; }
+        
+        /* Alerts */
+        .forecast-alert { padding: 20px; margin: 20px 0; border-radius: 8px; text-align: center; }
+        .forecast-alert.high { background-color: #dc2626; color: #ffffff; }
+        .forecast-alert.warning { background-color: #f59e0b; color: #ffffff; }
+        .forecast-alert.good { background-color: #059669; color: #ffffff; }
+        
+        /* Services Table */
+        .services-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .services-table th { background-color: #1e40af; color: #ffffff; padding: 12px 8px; text-align: left; font-size: 14px; }
+        .services-table td { padding: 12px 8px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
+        .services-table tr:nth-child(even) { background-color: #f8fafc; }
+        
+        /* Changes */
+        .changes-section { margin: 25px 0; }
+        .change-item { background-color: #f8fafc; padding: 15px; margin: 10px 0; border-radius: 6px; border-left: 4px solid #fbbf24; }
+        .change-service { font-weight: bold; color: #1e40af; margin-bottom: 5px; }
+        .change-amount { font-size: 16px; }
+        .increase { color: #dc2626; }
+        .decrease { color: #059669; }
+        
+        /* CTA */
+        .email-cta { text-align: center; margin: 30px 0; }
+        .cta-button { background-color: #fbbf24; color: #1e40af; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; }
+        
+        /* Footer */
+        .email-footer { background-color: #f8fafc; padding: 20px; text-align: center; color: #6b7280; font-size: 12px; }
+        
+        /* Badges */
+        .badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+        .badge-danger { background-color: #fee2e2; color: #991b1b; }
+        .badge-success { background-color: #d1fae5; color: #065f46; }
+        .badge-info { background-color: #dbeafe; color: #1e40af; }
+        
+        /* Responsive */
+        @media only screen and (max-width: 600px) {
+            .email-container { width: 100% !important; }
+            .email-content { padding: 20px 15px !important; }
+            .summary-item { display: block !important; margin: 10px 0 !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        
+        <div class="email-header">
+            <div class="email-logo-container">
+                <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjYwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkMSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWU0MGFmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMzYjgyZjY7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjYwIiBmaWxsPSJ1cmwoI2dyYWQxKSIgcng9IjgiLz4KICA8dGV4dCB4PSIxMDAiIHk9IjM1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiAKICAgICAgICB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSI+Q29zdEh1YjwvdGV4dD4KICA8Y2lyY2xlIGN4PSIyNSIgY3k9IjMwIiByPSI4IiBmaWxsPSIjZmJiZjI0Ii8+Cjwvc3ZnPg==" alt="CostHub" style="max-width: 180px; height: auto; display: block; margin: 0 auto;">
+            </div>
+            <div class="costhub-tagline">Monthly AWS Cost Analysis Report</div>
+        </div>
+        
+        <div class="email-content">
+            <div class="forecast-alert good">
+                <h3>✅ COSTS UNDER CONTROL</h3>
+                <p style="font-size: 18px; margin: 10px 0;">
+                    Forecasted month-end increase: <strong>+2.2%</strong>
+                </p>
+                <p>Primary cost driver: <strong>AWS Cost Explorer</strong></p>
+            </div>
+        </div>
+        
+        <div class="email-content">
+            <div class="email-summary">
+                <h2>📊 Executive Summary</h2>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="summary-label">Previous Month</div>
+                        <div class="summary-value">$30</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Current Month</div>
+                        <div class="summary-value">$31</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Change</div>
+                        <div class="summary-value">📈 $1</div>
+                        <div class="summary-label">(+2.2%)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="email-content">
+            <h2 style="color: #1e40af; border-left: 4px solid #fbbf24; padding-left: 15px;">🔝 Top Services</h2>
+            <table class="services-table">
+                <thead>
+                    <tr><th>Service</th><th>Cost</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>Amazon Q</td>
+                    <td>$19</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>EC2 - Other</td>
+                    <td>$4</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>Tax</td>
+                    <td>$4</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>AWS Cost Explorer</td>
+                    <td>$2</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>AWS Secrets Manager</td>
+                    <td>$1</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        
+        <div class="email-content">
+            <div class="email-cta">
+                <a href="#" class="cta-button">View Full Report</a>
+                <p style="margin-top: 15px; color: #6b7280; font-size: 14px;">
+                    Access detailed analysis, charts, and optimization recommendations
+                </p>
+            </div>
+        </div>
+        
+        <div class="email-footer">
+            <p>
+                <strong>CostHub</strong> - AWS Cost Analysis & Optimization Platform<br>
+                Data sourced from AWS Cost Explorer API<br>
+                <small>This is an automated report. Please do not reply to this email.</small>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

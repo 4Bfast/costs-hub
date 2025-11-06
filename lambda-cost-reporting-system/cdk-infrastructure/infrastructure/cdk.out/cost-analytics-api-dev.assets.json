@@ -1,0 +1,34 @@
+{
+  "version": "36.0.0",
+  "files": {
+    "a1a6083d4e269df081ed0bb8dfd7408dcad95b039a1ffb154bdfae99550303db": {
+      "source": {
+        "path": "asset.a1a6083d4e269df081ed0bb8dfd7408dcad95b039a1ffb154bdfae99550303db",
+        "packaging": "zip"
+      },
+      "destinations": {
+        "008195334540-us-east-1": {
+          "bucketName": "cdk-hnb659fds-assets-008195334540-us-east-1",
+          "objectKey": "a1a6083d4e269df081ed0bb8dfd7408dcad95b039a1ffb154bdfae99550303db.zip",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::008195334540:role/cdk-hnb659fds-file-publishing-role-008195334540-us-east-1"
+        }
+      }
+    },
+    "b9449b6aa695950aa864929069a6129f8349e5248845c24bb7d0f62a662445f6": {
+      "source": {
+        "path": "cost-analytics-api-dev.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "008195334540-us-east-1": {
+          "bucketName": "cdk-hnb659fds-assets-008195334540-us-east-1",
+          "objectKey": "b9449b6aa695950aa864929069a6129f8349e5248845c24bb7d0f62a662445f6.json",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::008195334540:role/cdk-hnb659fds-file-publishing-role-008195334540-us-east-1"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

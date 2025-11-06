@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Cost Analysis - Weekly Report</title>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: #f1f5f9; line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 25px rgba(30,58,138,0.15); }
+        .email-container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; font-family: Arial, sans-serif; }
+        
+        /* CostHub Branding */
+        .costhub-header { background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 25px; border-radius: 12px 12px 0 0; margin: -30px -30px 30px -30px; text-align: center; }
+        .costhub-logo-container { margin-bottom: 12px; }
+        .costhub-logo-container img { max-width: 200px; height: auto; filter: brightness(0) invert(1); }
+        .costhub-logo { font-size: 28px; font-weight: bold; margin-bottom: 8px; }
+        .costhub-tagline { font-size: 14px; opacity: 0.9; }
+        
+        h1 { color: #1e40af; text-align: center; border-bottom: 3px solid #fbbf24; padding-bottom: 15px; margin-bottom: 25px; }
+        h2 { color: #1e40af; border-left: 5px solid #fbbf24; padding-left: 20px; margin-top: 35px; background: #f8fafc; padding: 15px 20px; border-radius: 8px; }
+        h3 { color: #1e40af; margin-top: 25px; }
+        
+        /* Summary Section */
+        .summary { background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 25px; border-radius: 12px; margin: 25px 0; text-align: center; box-shadow: 0 4px 15px rgba(30,64,175,0.3); }
+        .summary h3 { color: white; margin-top: 0; }
+        
+        /* Cards and Grids */
+        .month-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin: 25px 0; }
+        .month-card { background: linear-gradient(135deg, #eff6ff, #dbeafe); padding: 20px; border-radius: 10px; text-align: center; border-left: 5px solid #fbbf24; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .month-card h4 { color: #1e40af; margin-top: 0; }
+        
+        .metric-card { background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 20px; border-radius: 10px; margin: 15px 0; border-left: 5px solid #1e40af; }
+        
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin: 25px 0; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 15px rgba(0,0,0,0.1); }
+        th, td { border: none; padding: 15px 12px; text-align: left; }
+        th { background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; font-weight: 600; }
+        tr:nth-child(even) { background-color: #f8fafc; }
+        tr:hover { background-color: #eff6ff; }
+        
+        /* Status Colors */
+        .increase { color: #dc2626; font-weight: bold; }
+        .decrease { color: #059669; font-weight: bold; }
+        .stable { color: #6b7280; }
+        
+        /* Badges */
+        .badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-info { background: #dbeafe; color: #1e40af; }
+        
+        /* New Services */
+        .new-service { background: linear-gradient(135deg, #dbeafe, #bfdbfe); padding: 15px; margin: 8px 0; border-radius: 8px; border-left: 5px solid #fbbf24; }
+        
+        /* Forecast Alerts */
+        .forecast-alert { padding: 25px; border-radius: 12px; margin: 25px 0; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .forecast-alert.high { background: linear-gradient(135deg, #dc2626, #ef4444); color: white; }
+        .forecast-alert.warning { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: white; }
+        .forecast-alert.good { background: linear-gradient(135deg, #059669, #10b981); color: white; }
+        
+        .forecast-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin: 25px 0; }
+        .forecast-card { background: #f8fafc; padding: 25px; border-radius: 12px; border-left: 5px solid #fbbf24; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .forecast-card.alert { border-left-color: #dc2626; background: #fef2f2; }
+        .forecast-card h4 { color: #1e40af; margin-top: 0; }
+        
+        .cost-driver { background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 20px; margin: 15px 0; border-radius: 10px; border-left: 5px solid #1e40af; }
+        .cost-driver.high { border-left-color: #dc2626; background: linear-gradient(135deg, #fee2e2, #fecaca); }
+        
+        /* Footer */
+        .footer { text-align: center; margin-top: 40px; padding-top: 25px; border-top: 2px solid #e5e7eb; color: #6b7280; }
+        .costhub-badge { background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 8px 16px; border-radius: 25px; font-size: 12px; font-weight: bold; }
+        
+        /* Email Specific Styles */
+        .email-header { background: #1e40af; color: white; padding: 20px; text-align: center; }
+        .email-summary { background: #f8fafc; padding: 20px; border-left: 5px solid #fbbf24; margin: 20px 0; }
+        .email-cta { background: #fbbf24; color: #1e40af; padding: 15px 30px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; margin: 20px 0; }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container, .email-container { padding: 15px; }
+            .month-grid, .forecast-grid { grid-template-columns: 1fr; }
+            table { font-size: 14px; }
+            th, td { padding: 10px 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <div class="costhub-header">
+            <div class="costhub-logo-container">
+                <img src="data:image/png;base64,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" alt="CostHub" style="width: 200px; height: auto; max-width: 100%;">
+            </div>
+            <div class="costhub-tagline">AWS Cost Analysis & Optimization Platform</div>
+        </div>
+        <h1>Weekly Cost Analysis Report</h1>
+        <div style="text-align: center; margin-bottom: 25px;">
+            <span class="costhub-badge">Generated on October 28, 2025 at 23:51</span>
+        </div>
+        
+        
+        <div class="summary">
+            <h3>📊 Executive Summary</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 15px;">
+                <div>
+                    <h4>Previous Week</h4>
+                    <p style="font-size: 24px; margin: 5px 0;">$5.69</p>
+                </div>
+                <div>
+                    <h4>Current Week</h4>
+                    <p style="font-size: 24px; margin: 5px 0;">$1.01</p>
+                </div>
+                <div>
+                    <h4>Change</h4>
+                    <p style="font-size: 24px; margin: 5px 0;">
+                        📉 $4.68<br>
+                        <span style="font-size: 18px;">(-82.2%)</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        
+        <h2>📅 Weekly Overview</h2>
+        <div class="month-grid">
+            <div class="month-card">
+                <h4>Week of Oct 27, 2025</h4>
+                <p style="font-size: 20px; color: #2563eb; margin: 10px 0;">
+                    <strong>$1.01</strong>
+                </p>
+                <p style="font-size: 14px; color: #6b7280;">
+                    12 services
+                </p>
+            </div>
+            <div class="month-card">
+                <h4>Week of Oct 20, 2025</h4>
+                <p style="font-size: 20px; color: #2563eb; margin: 10px 0;">
+                    <strong>$5.69</strong>
+                </p>
+                <p style="font-size: 14px; color: #6b7280;">
+                    14 services
+                </p>
+            </div></div>
+        
+        <h2>🔝 Top Services by Cost</h2>
+        <table>
+            <thead>
+                <tr><th>Service</th><th>Current Cost</th><th>% of Total</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Amazon Q</td>
+                    <td>$0.77</td>
+                    <td>75.7%</td>
+                    <td><span class="badge badge-success">-82.1%</span></td>
+                </tr>
+                <tr>
+                    <td>EC2 - Other</td>
+                    <td>$0.13</td>
+                    <td>13.3%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>AWS Cost Explorer</td>
+                    <td>$0.06</td>
+                    <td>6.3%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>AWS Secrets Manager</td>
+                    <td>$0.03</td>
+                    <td>3.3%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>Amazon EC2 Container Registry (ECR)</td>
+                    <td>$0.01</td>
+                    <td>0.9%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>Amazon Relational Database Service</td>
+                    <td>$0.00</td>
+                    <td>0.3%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>Amazon Simple Storage Service</td>
+                    <td>$0.00</td>
+                    <td>0.2%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>AWS Payment Cryptography</td>
+                    <td>$0.00</td>
+                    <td>0.1%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>Amazon Location Service</td>
+                    <td>$0.00</td>
+                    <td>0.0%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr>
+                <tr>
+                    <td>Amazon DynamoDB</td>
+                    <td>$0.00</td>
+                    <td>0.0%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr></tbody></table>
+        
+        <h2>🔝 Top Accounts by Cost</h2>
+        <table>
+            <thead>
+                <tr><th>Account ID</th><th>Current Cost</th><th>% of Total</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>008195334540</td>
+                    <td>$1.01</td>
+                    <td>100.0%</td>
+                    <td><span class="badge badge-success">-82.2%</span></td>
+                </tr>
+                <tr>
+                    <td>975050180090</td>
+                    <td>$0.00</td>
+                    <td>0.0%</td>
+                    <td><span class="badge badge-success">Stable</span></td>
+                </tr></tbody></table>
+        
+        <h2>📈 Main Weekly Cost Changes</h2>
+        <table>
+            <thead>
+                <tr><th>Service</th><th>Previous</th><th>Current</th><th>Change</th><th>%</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Amazon Q</td>
+                    <td>$4.29</td>
+                    <td>$0.77</td>
+                    <td class="decrease">$-3.52</td>
+                    <td class="decrease">-82.1%</td>
+                </tr></tbody></table>
+        
+        <h2>📈 Main Weekly Account Cost Changes</h2>
+        <table>
+            <thead>
+                <tr><th>Account ID</th><th>Previous</th><th>Current</th><th>Change</th><th>%</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>008195334540</td>
+                    <td>$5.69</td>
+                    <td>$1.01</td>
+                    <td class="decrease">$-4.68</td>
+                    <td class="decrease">-82.2%</td>
+                </tr></tbody></table>
+        
+        
+        
+        <div class="footer">
+            <p>
+                <span class="costhub-badge">CostHub</span><br>
+                <strong>AWS Cost Analysis & Optimization Platform</strong><br>
+                <small>Data sourced from AWS Cost Explorer API</small>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

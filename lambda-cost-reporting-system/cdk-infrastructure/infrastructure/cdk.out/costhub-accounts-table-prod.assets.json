@@ -1,0 +1,20 @@
+{
+  "version": "36.0.0",
+  "files": {
+    "d04a65da3de1a53dd95488e3d8575ea5d9e5c730f7fc53b7a843330d5b12c180": {
+      "source": {
+        "path": "costhub-accounts-table-prod.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "current_account-us-east-1": {
+          "bucketName": "cdk-hnb659fds-assets-${AWS::AccountId}-us-east-1",
+          "objectKey": "d04a65da3de1a53dd95488e3d8575ea5d9e5c730f7fc53b7a843330d5b12c180.json",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-file-publishing-role-${AWS::AccountId}-us-east-1"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

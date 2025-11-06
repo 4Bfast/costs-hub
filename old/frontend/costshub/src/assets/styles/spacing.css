@@ -1,0 +1,317 @@
+/* 
+ * Espaçamentos padronizados para toda a aplicação
+ * Baseado em um sistema de design consistente
+ */
+
+/* === CONTAINERS PRINCIPAIS === */
+.page-container {
+  @apply p-6 max-w-7xl mx-auto;
+}
+
+.page-container-sm {
+  @apply p-4 max-w-4xl mx-auto;
+}
+
+.page-container-lg {
+  @apply p-8 max-w-full mx-auto;
+}
+
+/* === CABEÇALHOS DE PÁGINA === */
+.page-header {
+  @apply mb-8;
+}
+
+.page-title {
+  @apply text-3xl font-bold text-gray-900 mb-2;
+}
+
+.page-subtitle {
+  @apply text-gray-600 text-lg;
+}
+
+.page-description {
+  @apply text-gray-600;
+}
+
+/* === CARDS E SEÇÕES === */
+.section-card {
+  @apply mb-8;
+}
+
+.section-card-sm {
+  @apply mb-6;
+}
+
+.section-card-lg {
+  @apply mb-12;
+}
+
+.card-header {
+  @apply p-6 pb-0;
+}
+
+.card-content {
+  @apply px-6 pb-6;
+}
+
+.card-title {
+  @apply text-xl font-semibold flex items-center;
+}
+
+.card-title-icon {
+  @apply mr-4 text-xl;
+}
+
+/* === ÍCONES PADRONIZADOS === */
+.icon-sm {
+  @apply mr-2 text-sm;
+}
+
+.icon-md {
+  @apply mr-3 text-base;
+}
+
+.icon-lg {
+  @apply mr-4 text-xl;
+}
+
+.icon-xl {
+  @apply mr-5 text-2xl;
+}
+
+/* Ícones em títulos principais */
+.page-title .pi {
+  @apply mr-4;
+}
+
+/* Ícones em títulos de cards */
+.card-title .pi {
+  @apply mr-4;
+}
+
+/* Ícones em listas */
+.list-item .pi {
+  @apply mr-3;
+}
+
+/* Ícones em botões (já padronizado pelo PrimeVue) */
+.p-button .pi {
+  @apply mr-2;
+}
+
+/* === BOTÕES E AÇÕES === */
+.action-bar {
+  @apply flex justify-between items-center mb-6;
+}
+
+.action-bar-start {
+  @apply flex items-center gap-4;
+}
+
+.action-bar-end {
+  @apply flex items-center gap-2;
+}
+
+.button-group {
+  @apply flex gap-2;
+}
+
+.button-group-vertical {
+  @apply flex flex-col gap-2;
+}
+
+/* === TABELAS === */
+.table-container {
+  @apply border border-gray-200 rounded-lg overflow-hidden bg-white;
+}
+
+.table-header {
+  @apply bg-gray-50 px-6 py-4 border-b border-gray-200;
+}
+
+.table-actions {
+  @apply flex gap-2 justify-end;
+}
+
+/* === FORMULÁRIOS === */
+.form-container {
+  @apply space-y-6;
+}
+
+.form-section {
+  @apply space-y-4;
+}
+
+.form-group {
+  @apply space-y-2;
+}
+
+.form-actions {
+  @apply flex justify-end gap-3 pt-6 border-t border-gray-200;
+}
+
+.form-actions-center {
+  @apply flex justify-center gap-3 pt-6 border-t border-gray-200;
+}
+
+.form-actions-between {
+  @apply flex justify-between gap-3 pt-6 border-t border-gray-200;
+}
+
+/* === MENSAGENS E ALERTAS === */
+.message-container {
+  @apply mb-6;
+}
+
+.alert-container {
+  @apply mb-4;
+}
+
+/* === MODAIS === */
+.modal-content {
+  @apply space-y-4;
+}
+
+.modal-section {
+  @apply space-y-3;
+}
+
+.modal-actions {
+  @apply flex justify-end gap-3;
+}
+
+.modal-actions-center {
+  @apply flex justify-center gap-3;
+}
+
+.modal-actions-between {
+  @apply flex justify-between gap-3;
+}
+
+/* === LISTAS === */
+.list-container {
+  @apply space-y-3;
+}
+
+.list-item {
+  @apply p-4 border border-gray-200 rounded-lg;
+}
+
+.list-item-content {
+  @apply space-y-2;
+}
+
+/* === ZONA DE PERIGO === */
+.danger-zone {
+  @apply border-red-200 bg-red-50;
+}
+
+.danger-zone-header {
+  @apply text-red-600;
+}
+
+.danger-zone-content {
+  @apply space-y-6;
+}
+
+.danger-zone-item {
+  @apply border border-red-200 rounded-lg p-6 bg-red-50;
+}
+
+.danger-zone-description {
+  @apply text-red-700 space-y-2;
+}
+
+.danger-zone-warning {
+  @apply bg-red-100 border border-red-300 rounded-lg p-3;
+}
+
+/* === ESTADOS DE LOADING === */
+.loading-container {
+  @apply text-center py-8;
+}
+
+.loading-spinner {
+  @apply mb-4;
+}
+
+.loading-text {
+  @apply text-gray-600;
+}
+
+/* === ESTADOS VAZIOS === */
+.empty-state {
+  @apply text-center py-12;
+}
+
+.empty-state-icon {
+  @apply text-4xl text-gray-300 mb-4;
+}
+
+.empty-state-text {
+  @apply text-gray-500;
+}
+
+/* === RESPONSIVIDADE === */
+@media (max-width: 768px) {
+  .page-container {
+    @apply p-4;
+  }
+  
+  .page-title {
+    @apply text-2xl;
+  }
+  
+  .action-bar {
+    @apply flex-col items-stretch gap-4;
+  }
+  
+  .form-actions,
+  .modal-actions {
+    @apply flex-col;
+  }
+  
+  .danger-zone-item {
+    @apply p-4;
+  }
+}
+
+/* === UTILITÁRIOS DE ESPAÇAMENTO === */
+.spacing-xs { @apply space-y-1; }
+.spacing-sm { @apply space-y-2; }
+.spacing-md { @apply space-y-4; }
+.spacing-lg { @apply space-y-6; }
+.spacing-xl { @apply space-y-8; }
+
+.gap-xs { @apply gap-1; }
+.gap-sm { @apply gap-2; }
+.gap-md { @apply gap-4; }
+.gap-lg { @apply gap-6; }
+.gap-xl { @apply gap-8; }
+
+/* === MARGENS PADRONIZADAS === */
+.mb-section { @apply mb-8; }
+.mb-card { @apply mb-6; }
+.mb-element { @apply mb-4; }
+.mb-small { @apply mb-2; }
+
+.mt-section { @apply mt-8; }
+.mt-card { @apply mt-6; }
+.mt-element { @apply mt-4; }
+.mt-small { @apply mt-2; }
+
+/* === PADDINGS PADRONIZADOS === */
+.p-section { @apply p-6; }
+.p-card { @apply p-4; }
+.p-element { @apply p-3; }
+.p-small { @apply p-2; }
+
+.px-section { @apply px-6; }
+.px-card { @apply px-4; }
+.px-element { @apply px-3; }
+.px-small { @apply px-2; }
+
+.py-section { @apply py-6; }
+.py-card { @apply py-4; }
+.py-element { @apply py-3; }
+.py-small { @apply py-2; }

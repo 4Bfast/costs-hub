@@ -1,0 +1,34 @@
+{
+  "version": "36.0.0",
+  "files": {
+    "18b4f33b178b39c36426772e34ad39022db1691e25bfb146f0d6b0d976f125d9": {
+      "source": {
+        "path": "asset.18b4f33b178b39c36426772e34ad39022db1691e25bfb146f0d6b0d976f125d9",
+        "packaging": "zip"
+      },
+      "destinations": {
+        "008195334540-us-east-1": {
+          "bucketName": "cdk-hnb659fds-assets-008195334540-us-east-1",
+          "objectKey": "18b4f33b178b39c36426772e34ad39022db1691e25bfb146f0d6b0d976f125d9.zip",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::008195334540:role/cdk-hnb659fds-file-publishing-role-008195334540-us-east-1"
+        }
+      }
+    },
+    "2eeab95fc7ec5513982f94db1ff6a33294f4d745fd32c7c03f374a0a4bde4628": {
+      "source": {
+        "path": "costhub-frontend-api-prod.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "008195334540-us-east-1": {
+          "bucketName": "cdk-hnb659fds-assets-008195334540-us-east-1",
+          "objectKey": "2eeab95fc7ec5513982f94db1ff6a33294f4d745fd32c7c03f374a0a4bde4628.json",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::008195334540:role/cdk-hnb659fds-file-publishing-role-008195334540-us-east-1"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

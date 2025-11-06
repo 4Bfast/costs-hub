@@ -1,0 +1,318 @@
+/* 
+ * Espaçamentos padronizados para toda a aplicação
+ * Baseado em um sistema de design consistente
+ * ATUALIZADO: Usando prefixo tw- para compatibilidade com Tailwind isolado
+ */
+
+/* === CONTAINERS PRINCIPAIS === */
+.page-container {
+  @apply tw-p-6 tw-max-w-7xl tw-mx-auto;
+}
+
+.page-container-sm {
+  @apply tw-p-4 tw-max-w-4xl tw-mx-auto;
+}
+
+.page-container-lg {
+  @apply tw-p-8 tw-max-w-full tw-mx-auto;
+}
+
+/* === CABEÇALHOS DE PÁGINA === */
+.page-header {
+  @apply tw-mb-8;
+}
+
+.page-title {
+  @apply tw-text-3xl tw-font-bold tw-text-gray-900 tw-mb-2;
+}
+
+.page-subtitle {
+  @apply tw-text-gray-600 tw-text-lg;
+}
+
+.page-description {
+  @apply tw-text-gray-600;
+}
+
+/* === CARDS E SEÇÕES === */
+.section-card {
+  @apply tw-mb-8;
+}
+
+.section-card-sm {
+  @apply tw-mb-6;
+}
+
+.section-card-lg {
+  @apply tw-mb-12;
+}
+
+.card-header {
+  @apply tw-p-6 tw-pb-0;
+}
+
+.card-content {
+  @apply tw-px-6 tw-pb-6;
+}
+
+.card-title {
+  @apply tw-text-xl tw-font-semibold tw-flex tw-items-center;
+}
+
+.card-title-icon {
+  @apply tw-mr-4 tw-text-xl;
+}
+
+/* === ÍCONES PADRONIZADOS === */
+.icon-sm {
+  @apply tw-mr-2 tw-text-sm;
+}
+
+.icon-md {
+  @apply tw-mr-3 tw-text-base;
+}
+
+.icon-lg {
+  @apply tw-mr-4 tw-text-xl;
+}
+
+.icon-xl {
+  @apply tw-mr-5 tw-text-2xl;
+}
+
+/* Ícones em títulos principais */
+.page-title .pi {
+  @apply tw-mr-4;
+}
+
+/* Ícones em títulos de cards */
+.card-title .pi {
+  @apply tw-mr-4;
+}
+
+/* Ícones em listas */
+.list-item .pi {
+  @apply tw-mr-3;
+}
+
+/* Ícones em botões (já padronizado pelo PrimeVue) */
+.p-button .pi {
+  @apply tw-mr-2;
+}
+
+/* === BOTÕES E AÇÕES === */
+.action-bar {
+  @apply tw-flex tw-justify-between tw-items-center tw-mb-6;
+}
+
+.action-bar-start {
+  @apply tw-flex tw-items-center tw-gap-4;
+}
+
+.action-bar-end {
+  @apply tw-flex tw-items-center tw-gap-2;
+}
+
+.button-group {
+  @apply tw-flex tw-gap-2;
+}
+
+.button-group-vertical {
+  @apply tw-flex tw-flex-col tw-gap-2;
+}
+
+/* === TABELAS === */
+.table-container {
+  @apply tw-border tw-border-gray-200 tw-rounded-lg tw-overflow-hidden tw-bg-white;
+}
+
+.table-header {
+  @apply tw-bg-gray-50 tw-px-6 tw-py-4 tw-border-b tw-border-gray-200;
+}
+
+.table-actions {
+  @apply tw-flex tw-gap-2 tw-justify-end;
+}
+
+/* === FORMULÁRIOS === */
+.form-container {
+  @apply tw-space-y-6;
+}
+
+.form-section {
+  @apply tw-space-y-4;
+}
+
+.form-group {
+  @apply tw-space-y-2;
+}
+
+.form-actions {
+  @apply tw-flex tw-justify-end tw-gap-3 tw-pt-6 tw-border-t tw-border-gray-200;
+}
+
+.form-actions-center {
+  @apply tw-flex tw-justify-center tw-gap-3 tw-pt-6 tw-border-t tw-border-gray-200;
+}
+
+.form-actions-between {
+  @apply tw-flex tw-justify-between tw-gap-3 tw-pt-6 tw-border-t tw-border-gray-200;
+}
+
+/* === MENSAGENS E ALERTAS === */
+.message-container {
+  @apply tw-mb-6;
+}
+
+.alert-container {
+  @apply tw-mb-4;
+}
+
+/* === MODAIS === */
+.modal-content {
+  @apply tw-space-y-4;
+}
+
+.modal-section {
+  @apply tw-space-y-3;
+}
+
+.modal-actions {
+  @apply tw-flex tw-justify-end tw-gap-3;
+}
+
+.modal-actions-center {
+  @apply tw-flex tw-justify-center tw-gap-3;
+}
+
+.modal-actions-between {
+  @apply tw-flex tw-justify-between tw-gap-3;
+}
+
+/* === LISTAS === */
+.list-container {
+  @apply tw-space-y-3;
+}
+
+.list-item {
+  @apply tw-p-4 tw-border tw-border-gray-200 tw-rounded-lg;
+}
+
+.list-item-content {
+  @apply tw-space-y-2;
+}
+
+/* === ZONA DE PERIGO === */
+.danger-zone {
+  @apply tw-border-red-200 tw-bg-red-50;
+}
+
+.danger-zone-header {
+  @apply tw-text-red-600;
+}
+
+.danger-zone-content {
+  @apply tw-space-y-6;
+}
+
+.danger-zone-item {
+  @apply tw-border tw-border-red-200 tw-rounded-lg tw-p-6 tw-bg-red-50;
+}
+
+.danger-zone-description {
+  @apply tw-text-red-700 tw-space-y-2;
+}
+
+.danger-zone-warning {
+  @apply tw-bg-red-100 tw-border tw-border-red-300 tw-rounded-lg tw-p-3;
+}
+
+/* === ESTADOS DE LOADING === */
+.loading-container {
+  @apply tw-text-center tw-py-8;
+}
+
+.loading-spinner {
+  @apply tw-mb-4;
+}
+
+.loading-text {
+  @apply tw-text-gray-600;
+}
+
+/* === ESTADOS VAZIOS === */
+.empty-state {
+  @apply tw-text-center tw-py-12;
+}
+
+.empty-state-icon {
+  @apply tw-text-4xl tw-text-gray-300 tw-mb-4;
+}
+
+.empty-state-text {
+  @apply tw-text-gray-500;
+}
+
+/* === RESPONSIVIDADE === */
+@media (max-width: 768px) {
+  .page-container {
+    @apply tw-p-4;
+  }
+  
+  .page-title {
+    @apply tw-text-2xl;
+  }
+  
+  .action-bar {
+    @apply tw-flex-col tw-items-stretch tw-gap-4;
+  }
+  
+  .form-actions,
+  .modal-actions {
+    @apply tw-flex-col;
+  }
+  
+  .danger-zone-item {
+    @apply tw-p-4;
+  }
+}
+
+/* === UTILITÁRIOS DE ESPAÇAMENTO === */
+.spacing-xs { @apply tw-space-y-1; }
+.spacing-sm { @apply tw-space-y-2; }
+.spacing-md { @apply tw-space-y-4; }
+.spacing-lg { @apply tw-space-y-6; }
+.spacing-xl { @apply tw-space-y-8; }
+
+.gap-xs { @apply tw-gap-1; }
+.gap-sm { @apply tw-gap-2; }
+.gap-md { @apply tw-gap-4; }
+.gap-lg { @apply tw-gap-6; }
+.gap-xl { @apply tw-gap-8; }
+
+/* === MARGENS PADRONIZADAS === */
+.mb-section { @apply tw-mb-8; }
+.mb-card { @apply tw-mb-6; }
+.mb-element { @apply tw-mb-4; }
+.mb-small { @apply tw-mb-2; }
+
+.mt-section { @apply tw-mt-8; }
+.mt-card { @apply tw-mt-6; }
+.mt-element { @apply tw-mt-4; }
+.mt-small { @apply tw-mt-2; }
+
+/* === PADDINGS PADRONIZADOS === */
+.p-section { @apply tw-p-6; }
+.p-card { @apply tw-p-4; }
+.p-element { @apply tw-p-3; }
+.p-small { @apply tw-p-2; }
+
+.px-section { @apply tw-px-6; }
+.px-card { @apply tw-px-4; }
+.px-element { @apply tw-px-3; }
+.px-small { @apply tw-px-2; }
+
+.py-section { @apply tw-py-6; }
+.py-card { @apply tw-py-4; }
+.py-element { @apply tw-py-3; }
+.py-small { @apply tw-py-2; }

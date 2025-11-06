@@ -1,0 +1,269 @@
+{
+  "version": "36.0.0",
+  "artifacts": {
+    "costshub-frontend-api-dev.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "costshub-frontend-api-dev.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "costshub-frontend-api-dev": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://008195334540/us-east-1",
+      "properties": {
+        "templateFile": "costshub-frontend-api-dev.template.json",
+        "terminationProtection": false,
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::008195334540:role/cdk-hnb659fds-deploy-role-008195334540-us-east-1",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::008195334540:role/cdk-hnb659fds-cfn-exec-role-008195334540-us-east-1",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-008195334540-us-east-1/7b58fe887d8cb4b55fe20c3ebbbb101c51d3522239a5442e0bc6b5c695fa82d4.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "costshub-frontend-api-dev.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::008195334540:role/cdk-hnb659fds-lookup-role-008195334540-us-east-1",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "costshub-frontend-api-dev.assets"
+      ],
+      "metadata": {
+        "/costshub-frontend-api-dev/APIHandler/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "APIHandlerServiceRole41BB65E0"
+          }
+        ],
+        "/costshub-frontend-api-dev/APIHandler/ServiceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "APIHandlerServiceRoleDefaultPolicy3C24A6E6"
+          }
+        ],
+        "/costshub-frontend-api-dev/APIHandler/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "APIHandler68F11976"
+          }
+        ],
+        "/costshub-frontend-api-dev/CognitoAuthorizer/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CognitoAuthorizerF3215DBC"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPI00E92687"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Deployment/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIDeploymentBE18F28E3559b0b83ca7bd841648e57f074c0e95"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/DeploymentStage.prod/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIDeploymentStageprod1F4F1079"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Endpoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIEndpoint179AE72D"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIOPTIONSDAA52701"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/api/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIapi928960A9"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/api/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIapiOPTIONS091AE84E"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/api/v1/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIapiv10C580F49"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/api/v1/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIapiv1OPTIONSE93B36D7"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIapiv1authEAE3EF00"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIapiv1authOPTIONS008307F9"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/ANY/ApiPermission.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.auth": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIapiv1authANYApiPermissioncostshubfrontendapidevFrontendAPIA17F46E8ANYapiv1auth330DF2E6"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/ANY/ApiPermission.Test.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.auth": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIapiv1authANYApiPermissionTestcostshubfrontendapidevFrontendAPIA17F46E8ANYapiv1auth11C47F96"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/ANY/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIapiv1authANY07601F38"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/{proxy+}/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIapiv1authproxy0885399B"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/{proxy+}/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIapiv1authproxyOPTIONS5067979C"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/{proxy+}/ANY/ApiPermission.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.auth.{proxy+}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIapiv1authproxyANYApiPermissioncostshubfrontendapidevFrontendAPIA17F46E8ANYapiv1authproxy5BF253EA"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/{proxy+}/ANY/ApiPermission.Test.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.auth.{proxy+}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIapiv1authproxyANYApiPermissionTestcostshubfrontendapidevFrontendAPIA17F46E8ANYapiv1authproxyE7EE933B"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/api/v1/auth/{proxy+}/ANY/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIapiv1authproxyANY31D8ACD3"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/api/v1/{proxy+}/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIapiv1proxy895339E7"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/api/v1/{proxy+}/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIapiv1proxyOPTIONS29816654"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/api/v1/{proxy+}/ANY/ApiPermission.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.{proxy+}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIapiv1proxyANYApiPermissioncostshubfrontendapidevFrontendAPIA17F46E8ANYapiv1proxy0EF224B6"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/api/v1/{proxy+}/ANY/ApiPermission.Test.costshubfrontendapidevFrontendAPIA17F46E8.ANY..api.v1.{proxy+}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIapiv1proxyANYApiPermissionTestcostshubfrontendapidevFrontendAPIA17F46E8ANYapiv1proxy5266A046"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPI/Default/api/v1/{proxy+}/ANY/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIapiv1proxyANY62F43335"
+          }
+        ],
+        "/costshub-frontend-api-dev/APIDomain/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "APIDomain02CC2FA9"
+          }
+        ],
+        "/costshub-frontend-api-dev/APIDomain/Map:--=>costshubfrontendapidevFrontendAPIA17F46E8/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "APIDomainMapcostshubfrontendapidevFrontendAPIA17F46E84FC6E2CD"
+          }
+        ],
+        "/costshub-frontend-api-dev/APIAliasRecord/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "APIAliasRecordD6C18557"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPIUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIUrl"
+          }
+        ],
+        "/costshub-frontend-api-dev/CustomDomainUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomDomainUrl"
+          }
+        ],
+        "/costshub-frontend-api-dev/FrontendAPIId": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FrontendAPIId"
+          }
+        ],
+        "/costshub-frontend-api-dev/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/costshub-frontend-api-dev/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/costshub-frontend-api-dev/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "costshub-frontend-api-dev"
+    },
+    "Tree": {
+      "type": "cdk:tree",
+      "properties": {
+        "file": "tree.json"
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+Collecting PyJWT
+  Obtaining dependency information for PyJWT from https://files.pythonhosted.org/packages/61/ad/689f02752eeec26aed679477e80e632ef1b682313be70793d798c1d5fc8f/PyJWT-2.10.1-py3-none-any.whl.metadata
+  Using cached PyJWT-2.10.1-py3-none-any.whl.metadata (4.0 kB)
+Using cached PyJWT-2.10.1-py3-none-any.whl (22 kB)
+Installing collected packages: PyJWT
+Successfully installed PyJWT-2.10.1

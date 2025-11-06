@@ -1,0 +1,55 @@
+{
+  "from_email": "costhub@yourdomain.com",
+  "reply_to": "noreply@yourdomain.com",
+  "recipients": [
+    "cfo@yourdomain.com",
+    "finance-team@yourdomain.com"
+  ],
+  "cc": [
+    "devops@yourdomain.com",
+    "cloud-team@yourdomain.com"
+  ],
+  "bcc": [
+    "audit@yourdomain.com"
+  ],
+  "recipient_groups": {
+    "executives": [
+      "ceo@yourdomain.com",
+      "cfo@yourdomain.com"
+    ],
+    "finance": [
+      "finance-team@yourdomain.com",
+      "accounting@yourdomain.com"
+    ],
+    "devops": [
+      "devops@yourdomain.com",
+      "sre@yourdomain.com"
+    ],
+    "alerts": [
+      "alerts@yourdomain.com",
+      "oncall@yourdomain.com"
+    ]
+  },
+  "ses_config": {
+    "region": "us-east-1",
+    "template_prefix": "costhub"
+  },
+  "schedule": {
+    "weekly": {
+      "enabled": true,
+      "day": "monday",
+      "time": "09:00",
+      "recipients": "finance"
+    },
+    "monthly": {
+      "enabled": true,
+      "day": 1,
+      "time": "08:00",
+      "recipients": "executives"
+    },
+    "alerts": {
+      "threshold_percent": 10,
+      "recipients": "alerts"
+    }
+  }
+}
